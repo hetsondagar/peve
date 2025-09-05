@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Peve Design System - Cutting Edge Futuristic Platform */
+
+@layer base {
+  :root {
+    /* Core Brand Colors - Deep Space Theme */
+    --background: 240 10% 6%;
+    --background-secondary: 240 8% 8%;
+    --background-tertiary: 240 6% 10%;
+    --foreground: 240 5% 96%;
+    --foreground-secondary: 240 4% 80%;
+
+    /* Glass Morphism Base */
+    --glass-background: 240 10% 15%;
+    --glass-border: 240 20% 25%;
+    
+    /* Primary Brand - Electric Blue */
+    --primary: 217 91% 60%;
+    --primary-glow: 217 91% 70%;
+    --primary-dark: 217 91% 50%;
+    --primary-foreground: 240 10% 6%;
+
+    /* Secondary - Cosmic Purple */
+    --secondary: 267 85% 65%;
+    --secondary-glow: 267 85% 75%;
+    --secondary-dark: 267 85% 55%;
+    --secondary-foreground: 240 10% 6%;
+
+    /* Accent - Neon Cyan */
+    --accent: 180 100% 70%;
+    --accent-glow: 180 100% 80%;
+    --accent-foreground: 240 10% 6%;
+
+    /* Status Colors */
+    --success: 142 76% 60%;
+    --warning: 45 93% 65%;
+    --destructive: 0 84% 60%;
+    --info: 217 91% 60%;
+
+    /* Surface Colors */
+    --card: 240 10% 8%;
+    --card-hover: 240 10% 12%;
+    --popover: 240 10% 8%;
+    --muted: 240 8% 15%;
+    --muted-foreground: 240 4% 60%;
+
+    /* Interactive Elements */
+    --border: 240 15% 20%;
+    --border-hover: 240 20% 30%;
+    --input: 240 10% 12%;
+    --ring: 217 91% 60%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(267 85% 65%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(267 85% 65%) 0%, hsl(300 85% 70%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(180 100% 70%) 0%, hsl(217 91% 60%) 100%);
+    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+
+    /* Shadows & Glows */
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.37);
+    --shadow-glow: 0 0 50px rgba(54, 157, 253, 0.3);
+    --shadow-glow-purple: 0 0 50px rgba(139, 92, 246, 0.3);
+    --shadow-elevation: 0 20px 40px rgba(0, 0, 0, 0.5);
+
+    /* Animations */
+    --animation-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Spacing & Sizing */
+    --radius: 1rem;
+    --radius-large: 1.5rem;
+    --radius-small: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: 
+      radial-gradient(ellipse at top, rgba(54, 157, 253, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+      hsl(var(--background));
+  }
+
+  /* Glass Morphism Base */
+  .glass {
+    @apply bg-glass-background/10 backdrop-blur-xl border border-glass-border/20;
+    box-shadow: var(--shadow-glass);
+  }
+
+  .glass-card {
+    @apply glass rounded-2xl p-6 transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    @apply bg-glass-background/15 border-glass-border/30 scale-[1.02];
+    box-shadow: var(--shadow-glass), var(--shadow-glow);
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    background: var(--gradient-primary);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .gradient-text-secondary {
+    background: var(--gradient-secondary);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Floating Elements */
+  .floating {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(2deg); }
+  }
+
+  /* Glow Effects */
+  .glow-primary {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .glow-purple {
+    box-shadow: var(--shadow-glow-purple);
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/20;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/50;
+  }
+}
