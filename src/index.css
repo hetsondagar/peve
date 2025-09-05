@@ -4,11 +4,93 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom scrollbar utilities */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Peve Design System - Cutting Edge Futuristic Platform */
 
 @layer base {
   :root {
-    /* Core Brand Colors - Deep Space Theme */
+    /* Light Theme - Clean & Modern */
+    --background: 0 0% 100%;
+    --background-secondary: 0 0% 98%;
+    --background-tertiary: 0 0% 96%;
+    --foreground: 240 10% 3.9%;
+    --foreground-secondary: 240 3.8% 46.1%;
+
+    /* Glass Morphism Base */
+    --glass-background: 0 0% 100%;
+    --glass-border: 240 5.9% 90%;
+    
+    /* Primary Brand - Electric Blue */
+    --primary: 217 91% 60%;
+    --primary-glow: 217 91% 70%;
+    --primary-dark: 217 91% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Cosmic Purple */
+    --secondary: 267 85% 65%;
+    --secondary-glow: 267 85% 75%;
+    --secondary-dark: 267 85% 55%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Accent - Neon Cyan */
+    --accent: 180 100% 70%;
+    --accent-glow: 180 100% 80%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Status Colors */
+    --success: 142 76% 60%;
+    --warning: 45 93% 65%;
+    --destructive: 0 84% 60%;
+    --info: 217 91% 60%;
+
+    /* Surface Colors */
+    --card: 0 0% 100%;
+    --card-hover: 240 4.8% 95.9%;
+    --popover: 0 0% 100%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    /* Interactive Elements */
+    --border: 240 5.9% 90%;
+    --border-hover: 240 5.9% 85%;
+    --input: 240 5.9% 90%;
+    --ring: 217 91% 60%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(267 85% 65%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(267 85% 65%) 0%, hsl(300 85% 70%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(180 100% 70%) 0%, hsl(217 91% 60%) 100%);
+    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%);
+
+    /* Shadows & Glows */
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.1);
+    --shadow-glow: 0 0 50px rgba(54, 157, 253, 0.2);
+    --shadow-glow-purple: 0 0 50px rgba(139, 92, 246, 0.2);
+    --shadow-elevation: 0 20px 40px rgba(0, 0, 0, 0.1);
+
+    /* Animations */
+    --animation-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Spacing & Sizing */
+    --radius: 1rem;
+    --radius-large: 1.5rem;
+    --radius-small: 0.5rem;
+  }
+
+  .dark {
+    /* Dark Theme - Deep Space Theme */
     --background: 240 10% 6%;
     --background-secondary: 240 8% 8%;
     --background-tertiary: 240 6% 10%;
@@ -91,6 +173,13 @@
   body {
     @apply bg-background text-foreground font-body antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    background: 
+      radial-gradient(ellipse at top, rgba(54, 157, 253, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+      hsl(var(--background));
+  }
+
+  .dark body {
     background: 
       radial-gradient(ellipse at top, rgba(54, 157, 253, 0.1) 0%, transparent 50%),
       radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.1) 0%, transparent 50%),

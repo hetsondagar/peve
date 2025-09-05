@@ -1,120 +1,114 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Navbar } from "@/components/navigation/Navbar";
+import { Input } from "@/components/ui/input";
 import { 
   Search, 
   Send, 
-  Paperclip, 
   Smile, 
+  Paperclip, 
   MoreVertical,
   Phone,
   Video,
+  Info,
   Star,
-  Image,
-  Mic
+  Archive,
+  Trash2,
+  Reply,
+  Forward
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 
 export default function Messages() {
-  const [selectedChat, setSelectedChat] = useState(0);
-  const [newMessage, setNewMessage] = useState("");
+  const [selectedChat, setSelectedChat] = useState("1");
+  const [message, setMessage] = useState("");
 
-  const contacts = [
+  const conversations = [
     {
+      id: "1",
       name: "Sarah Chen",
-      role: "Senior Designer",
-      avatar: "SC",
-      lastMessage: "That sounds like a great idea! When can we start?",
-      time: "2m ago",
+      role: "Full Stack Developer",
+      avatar: "/api/placeholder/60/60",
+      lastMessage: "Hey! I saw your latest project, it looks amazing!",
+      time: "2 min ago",
       unread: 2,
-      online: true
+      isOnline: true
     },
     {
-      name: "Marcus Rodriguez",
-      role: "Full Stack Dev",
-      avatar: "MR", 
-      lastMessage: "I've finished the API integration",
-      time: "15m ago",
-      unread: 0,
-      online: true
-    },
-    {
-      name: "Elena Vasquez",
-      role: "Data Scientist",
-      avatar: "EV",
-      lastMessage: "Can you review the ML model results?",
-      time: "1h ago",
-      unread: 1,
-      online: false
-    },
-    {
-      name: "James Wilson",
+      id: "2",
+      name: "Marcus Johnson",
       role: "Product Manager",
-      avatar: "JW",
-      lastMessage: "Meeting scheduled for tomorrow at 2 PM",
-      time: "3h ago",
+      avatar: "/api/placeholder/60/60",
+      lastMessage: "Thanks for the feedback on the design system",
+      time: "1 hour ago",
       unread: 0,
-      online: false
+      isOnline: false
     },
     {
-      name: "Lisa Park",
-      role: "Marketing Director",
-      avatar: "LP",
-      lastMessage: "Love the new brand direction!",
-      time: "1d ago",
+      id: "3",
+      name: "Elena Rodriguez",
+      role: "UX Designer",
+      avatar: "/api/placeholder/60/60",
+      lastMessage: "Let's schedule a call to discuss the collaboration",
+      time: "3 hours ago",
+      unread: 1,
+      isOnline: true
+    },
+    {
+      id: "4",
+      name: "David Kim",
+      role: "DevOps Engineer",
+      avatar: "/api/placeholder/60/60",
+      lastMessage: "The deployment went smoothly!",
+      time: "1 day ago",
       unread: 0,
-      online: true
+      isOnline: false
     }
   ];
 
   const messages = [
     {
-      id: 1,
-      sender: "Sarah Chen",
-      content: "Hey Alex! I saw your latest project on the dashboard. The UI looks amazing!",
+      id: "1",
+      sender: "sarah",
+      content: "Hey! I saw your latest project, it looks amazing!",
       time: "2:30 PM",
-      isMine: false
+      isOwn: false
     },
     {
-      id: 2,
-      sender: "Me",
-      content: "Thanks Sarah! I'd love to get your feedback on the user flow. Are you free for a quick call?",
-      time: "2:32 PM", 
-      isMine: true
+      id: "2",
+      sender: "you",
+      content: "Thank you! I've been working on it for weeks. The AI integration was particularly challenging.",
+      time: "2:32 PM",
+      isOwn: true
     },
     {
-      id: 3,
-      sender: "Sarah Chen",
-      content: "Absolutely! I'm free right now if you want to jump on a call.",
-      time: "2:33 PM",
-      isMine: false
-    },
-    {
-      id: 4,
-      sender: "Me", 
-      content: "Perfect! I'll send you the Figma link in a moment.",
+      id: "3",
+      sender: "sarah",
+      content: "I can imagine! I've been working on something similar. Would you be interested in collaborating?",
       time: "2:35 PM",
-      isMine: true
+      isOwn: false
     },
     {
-      id: 5,
-      sender: "Sarah Chen",
-      content: "That sounds like a great idea! When can we start working on the next iteration?",
+      id: "4",
+      sender: "you",
+      content: "Absolutely! I'd love to collaborate. What's your timeline?",
+      time: "2:37 PM",
+      isOwn: true
+    },
+    {
+      id: "5",
+      sender: "sarah",
+      content: "Perfect! I'm thinking we could start next week. I'll send you the project details.",
       time: "2:40 PM",
-      isMine: false
+      isOwn: false
     }
   ];
 
-  const quickReplies = [
-    "Sounds good!",
-    "Let me check",
-    "Thanks!",
-    "Can we schedule a call?"
-  ];
-
   const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      setNewMessage("");
+    if (message.trim()) {
+      // Handle sending message
+      setMessage("");
     }
   };
 
@@ -124,189 +118,164 @@ export default function Messages() {
       
       <div className="pt-20 px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-12 gap-6 h-[calc(100vh-6rem)]">
-            {/* Contacts Sidebar */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="grid grid-cols-12 gap-6 h-[calc(100vh-8rem)]"
+          >
+            {/* Conversations Sidebar */}
             <div className="col-span-4">
-              <GlassCard className="h-full flex flex-col animate-fade-in">
-                <div className="p-6 border-b border-border/20">
+              <GlassCard className="h-full flex flex-col">
+                <div className="p-6 border-b border-border">
                   <h2 className="text-2xl font-bold gradient-text mb-4">Messages</h2>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground-secondary" />
-                    <input
-                      type="text"
+                    <Input
                       placeholder="Search conversations..."
-                      className="w-full pl-10 pr-4 py-2 bg-muted/20 border border-border/30 rounded-lg text-foreground placeholder-foreground-secondary focus:outline-none focus:border-primary/50 transition-colors"
+                      className="pl-10"
                     />
                   </div>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto">
-                  {contacts.map((contact, index) => (
-                    <div
-                      key={contact.name}
-                      onClick={() => setSelectedChat(index)}
-                      className={`p-4 border-b border-border/10 cursor-pointer transition-colors hover:bg-muted/20 ${
-                        selectedChat === index ? 'bg-primary/10 border-r-2 border-r-primary' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-foreground font-semibold">
-                            {contact.avatar}
+                  <div className="p-4 space-y-2">
+                    {conversations.map((conversation, index) => (
+                      <motion.div
+                        key={conversation.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                        className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
+                          selectedChat === conversation.id
+                            ? 'bg-primary/20 border border-primary/30'
+                            : 'hover:bg-muted/20'
+                        }`}
+                        onClick={() => setSelectedChat(conversation.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-semibold">
+                              {conversation.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            {conversation.isOnline && (
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 border-2 border-background rounded-full" />
+                            )}
                           </div>
-                          {contact.online && (
-                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-background" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-semibold text-foreground truncate">
+                                {conversation.name}
+                              </h3>
+                              <span className="text-xs text-foreground-secondary">
+                                {conversation.time}
+                              </span>
+                            </div>
+                            <p className="text-sm text-foreground-secondary truncate">
+                              {conversation.lastMessage}
+                            </p>
+                            <p className="text-xs text-primary">{conversation.role}</p>
+                          </div>
+                          {conversation.unread > 0 && (
+                            <div className="w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center">
+                              {conversation.unread}
+                            </div>
                           )}
                         </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-center mb-1">
-                            <h3 className="font-semibold text-foreground truncate">{contact.name}</h3>
-                            <span className="text-xs text-foreground-secondary">{contact.time}</span>
-                          </div>
-                          <p className="text-sm text-foreground-secondary truncate">{contact.lastMessage}</p>
-                          <p className="text-xs text-foreground-secondary mt-1">{contact.role}</p>
-                        </div>
-                        
-                        {contact.unread > 0 && (
-                          <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                            <span className="text-xs text-foreground font-medium">{contact.unread}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
               </GlassCard>
             </div>
 
             {/* Chat Window */}
             <div className="col-span-8">
-              <GlassCard className="h-full flex flex-col animate-slide-up">
+              <GlassCard className="h-full flex flex-col">
                 {/* Chat Header */}
-                <div className="p-6 border-b border-border/20 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-foreground font-semibold">
-                        {contacts[selectedChat].avatar}
+                <div className="p-6 border-b border-border">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                        <span className="text-sm font-bold text-white">SC</span>
                       </div>
-                      {contacts[selectedChat].online && (
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-background" />
-                      )}
+                      <div>
+                        <h3 className="font-semibold text-foreground">Sarah Chen</h3>
+                        <p className="text-sm text-foreground-secondary">Full Stack Developer</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground">{contacts[selectedChat].name}</h3>
-                      <p className="text-sm text-foreground-secondary">
-                        {contacts[selectedChat].online ? 'Online' : 'Last seen 2h ago'}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="icon">
+                        <Phone className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Video className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Info className="w-4 h-4" />
+                      </Button>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon">
-                      <Phone className="w-5 h-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Video className="w-5 h-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Star className="w-5 h-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="w-5 h-5" />
-                    </Button>
                   </div>
                 </div>
 
-                {/* Messages Area */}
+                {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.isMine ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`max-w-[70%] ${message.isMine ? 'order-2' : 'order-1'}`}>
-                        <div
-                          className={`p-4 rounded-2xl ${
-                            message.isMine
-                              ? 'bg-gradient-primary text-foreground ml-4'
-                              : 'bg-muted/30 text-foreground mr-4'
-                          }`}
-                        >
-                          <p className="leading-relaxed">{message.content}</p>
-                        </div>
-                        <p className={`text-xs text-foreground-secondary mt-2 ${
-                          message.isMine ? 'text-right mr-4' : 'text-left ml-4'
-                        }`}>
-                          {message.time}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Typing Indicator */}
-                  <div className="flex justify-start">
-                    <div className="bg-muted/30 p-4 rounded-2xl mr-4">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-foreground-secondary rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-foreground-secondary rounded-full animate-bounce" style={{animationDelay: '0.1s'}} />
-                        <div className="w-2 h-2 bg-foreground-secondary rounded-full animate-bounce" style={{animationDelay: '0.2s'}} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* AI Quick Replies */}
-                <div className="px-6 py-2 border-t border-border/20">
-                  <div className="flex gap-2 mb-4">
-                    <span className="text-xs text-foreground-secondary">Quick replies:</span>
-                    {quickReplies.map((reply) => (
-                      <button
-                        key={reply}
-                        onClick={() => setNewMessage(reply)}
-                        className="px-3 py-1 bg-muted/20 hover:bg-muted/30 rounded-full text-xs text-foreground-secondary hover:text-foreground transition-colors"
+                  <AnimatePresence>
+                    {messages.map((msg, index) => (
+                      <motion.div
+                        key={msg.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                        className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}
                       >
-                        {reply}
-                      </button>
+                        <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+                          msg.isOwn 
+                            ? 'bg-primary text-white' 
+                            : 'bg-muted text-foreground'
+                        }`}>
+                          <p className="text-sm">{msg.content}</p>
+                          <p className={`text-xs mt-1 ${
+                            msg.isOwn ? 'text-white/70' : 'text-foreground-secondary'
+                          }`}>
+                            {msg.time}
+                          </p>
+                        </div>
+                      </motion.div>
                     ))}
-                  </div>
+                  </AnimatePresence>
                 </div>
 
                 {/* Message Input */}
-                <div className="p-6 border-t border-border/20">
+                <div className="p-6 border-t border-border">
                   <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon">
-                      <Paperclip className="w-5 h-5" />
+                      <Paperclip className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
-                      <Image className="w-5 h-5" />
-                    </Button>
-                    
                     <div className="flex-1 relative">
-                      <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type your message..."
-                        className="w-full px-4 py-3 bg-muted/20 border border-border/30 rounded-large text-foreground placeholder-foreground-secondary focus:outline-none focus:border-primary/50 transition-colors"
+                      <Input
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="Type a message..."
+                        className="pr-12"
                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                       />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2"
+                      >
+                        <Smile className="w-4 h-4" />
+                      </Button>
                     </div>
-                    
-                    <Button variant="ghost" size="icon">
-                      <Smile className="w-5 h-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Mic className="w-5 h-5" />
-                    </Button>
-                    <Button variant="default" size="icon" onClick={handleSendMessage}>
-                      <Send className="w-5 h-5" />
+                    <Button onClick={handleSendMessage} disabled={!message.trim()}>
+                      <Send className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
               </GlassCard>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

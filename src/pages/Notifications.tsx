@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Navbar } from "@/components/navigation/Navbar";
@@ -18,11 +18,27 @@ import {
   Calendar,
   TrendingUp,
   Shield,
-  BellRing
+  BellRing,
+  Zap,
+  Sparkles,
+  Crown,
+  Target,
+  Eye,
+  EyeOff,
+  Filter,
+  Search,
+  MoreVertical,
+  Archive,
+  Trash2,
+  RefreshCw
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Notifications() {
   const [filter, setFilter] = useState("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const notifications = [
     {
@@ -34,7 +50,10 @@ export default function Notifications() {
       time: "2 minutes ago",
       read: false,
       avatar: "SC",
-      action: "View Project"
+      action: "View Project",
+      priority: "high",
+      category: "engagement",
+      metadata: { projectId: "proj_123", userId: "user_456" }
     },
     {
       id: 2,
@@ -45,7 +64,10 @@ export default function Notifications() {
       time: "15 minutes ago",
       read: false,
       avatar: "MR",
-      action: "Reply"
+      action: "Reply",
+      priority: "high",
+      category: "message",
+      metadata: { messageId: "msg_789", userId: "user_123" }
     },
     {
       id: 3,
@@ -126,9 +148,52 @@ export default function Notifications() {
     }
   ];
 
+  // Simulate real-time notifications
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Simulate new notifications coming in
+      if (Math.random() > 0.7) {
+        const newNotification = {
+          id: Date.now(),
+          type: "social",
+          icon: Math.random() > 0.5 ? Heart : Star,
+          title: "New activity detected",
+          message: "Someone interacted with your content",
+          time: "Just now",
+          read: false,
+          avatar: "U" + Math.floor(Math.random() * 10),
+          action: "View",
+          priority: "medium",
+          category: "engagement",
+          metadata: {}
+        };
+        // In a real app, this would be handled by a state management system
+        console.log("New notification:", newNotification);
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   const getFilteredNotifications = () => {
-    if (filter === "all") return notifications;
-    return notifications.filter(n => n.type === filter);
+    let filtered = notifications;
+    
+    if (filter !== "all") {
+      filtered = filtered.filter(n => n.type === filter);
+    }
+    
+    if (searchQuery) {
+      filtered = filtered.filter(n => 
+        n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        n.message.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    if (!showArchived) {
+      filtered = filtered.filter(n => !n.archived);
+    }
+    
+    return filtered;
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -158,7 +223,12 @@ export default function Notifications() {
       <div className="pt-20 px-6">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <motion.div 
+            className="flex items-center justify-between mb-8"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
             <div>
               <h1 className="text-4xl font-bold gradient-text mb-2">Notifications</h1>
               <p className="text-foreground-secondary">
@@ -167,16 +237,34 @@ export default function Notifications() {
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-foreground-secondary">
+              <motion.div 
+                className="flex items-center gap-2 text-foreground-secondary"
+                animate={{ scale: unreadCount > 0 ? [1, 1.1, 1] : 1 }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
                 <BellRing className="w-5 h-5" />
                 <span className="text-sm">{unreadCount} unread</span>
-              </div>
-              <Button variant="outline" onClick={markAllAsRead}>
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Mark All Read
-              </Button>
+              </motion.div>
+              
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant="outline" onClick={markAllAsRead}>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Mark All Read
+                </Button>
+              </motion.div>
+              
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsRefreshing(true)}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </Button>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Notification Categories */}
           <Tabs value={filter} onValueChange={setFilter} className="w-full">
@@ -216,100 +304,178 @@ export default function Notifications() {
             </TabsList>
 
             <TabsContent value={filter} className="space-y-4">
-              {getFilteredNotifications().map((notification, index) => (
-                <GlassCard 
-                  key={notification.id} 
-                  className={`animate-fade-in transition-all duration-300 hover:scale-[1.01] ${
-                    !notification.read ? 'border-l-4 border-l-primary glow-primary' : ''
-                  }`}
-                  style={{animationDelay: `${index * 0.1}s`}}
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Avatar or Icon */}
-                    <div className="flex-shrink-0">
-                      {notification.avatar ? (
-                        <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-foreground font-semibold">
-                          {notification.avatar}
-                        </div>
-                      ) : (
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                          notification.type === 'system' ? 'bg-gradient-accent' :
-                          notification.type === 'personal' ? 'bg-gradient-secondary' :
-                          'bg-gradient-primary'
-                        }`}>
-                          {getNotificationIcon(notification)}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-foreground">{notification.title}</h3>
-                        <div className="flex items-center gap-2">
-                          {!notification.read && (
-                            <div className="w-2 h-2 bg-primary rounded-full" />
+              <AnimatePresence>
+                {getFilteredNotifications().map((notification, index) => (
+                  <motion.div
+                    key={notification.id}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    transition={{ duration: 0.4, delay: index * 0.05 }}
+                    layout
+                  >
+                    <GlassCard 
+                      className={`transition-all duration-300 hover:scale-[1.01] hover:shadow-lg ${
+                        !notification.read 
+                          ? 'border-l-4 border-l-primary glow-primary shadow-glow' 
+                          : 'hover:border-border/40'
+                      } ${
+                        notification.priority === 'high' 
+                          ? 'ring-2 ring-primary/20' 
+                          : ''
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* Avatar or Icon */}
+                        <div className="flex-shrink-0">
+                          {notification.avatar ? (
+                            <motion.div 
+                              className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-foreground font-semibold relative"
+                              whileHover={{ scale: 1.1, rotate: 5 }}
+                              transition={{ type: "spring", stiffness: 300 }}
+                            >
+                              {notification.avatar}
+                              {!notification.read && (
+                                <motion.div
+                                  className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full"
+                                  animate={{ scale: [1, 1.2, 1] }}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                />
+                              )}
+                            </motion.div>
+                          ) : (
+                            <motion.div 
+                              className={`w-12 h-12 rounded-full flex items-center justify-center relative ${
+                                notification.type === 'system' ? 'bg-gradient-accent' :
+                                notification.type === 'personal' ? 'bg-gradient-secondary' :
+                                'bg-gradient-primary'
+                              }`}
+                              whileHover={{ scale: 1.1, rotate: 5 }}
+                              transition={{ type: "spring", stiffness: 300 }}
+                            >
+                              {getNotificationIcon(notification)}
+                              {!notification.read && (
+                                <motion.div
+                                  className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full"
+                                  animate={{ scale: [1, 1.2, 1] }}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                />
+                              )}
+                            </motion.div>
                           )}
-                          <button
-                            onClick={() => markAsRead(notification.id)}
-                            className="text-foreground-secondary hover:text-foreground transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-2">
+                            <h3 className="font-semibold text-foreground">{notification.title}</h3>
+                            <div className="flex items-center gap-2">
+                              {!notification.read && (
+                                <motion.div 
+                                  className="w-2 h-2 bg-primary rounded-full"
+                                  animate={{ scale: [1, 1.5, 1] }}
+                                  transition={{ duration: 1.5, repeat: Infinity }}
+                                />
+                              )}
+                              <motion.button
+                                onClick={() => markAsRead(notification.id)}
+                                className="text-foreground-secondary hover:text-foreground transition-colors"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                <X className="w-4 h-4" />
+                              </motion.button>
+                            </div>
+                          </div>
+                          
+                          <p className="text-foreground-secondary text-sm leading-relaxed mb-3">
+                            {notification.message}
+                          </p>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-foreground-secondary">
+                                {notification.time}
+                              </span>
+                              {notification.priority === 'high' && (
+                                <motion.span 
+                                  className="px-2 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-medium"
+                                  animate={{ scale: [1, 1.05, 1] }}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                >
+                                  High Priority
+                                </motion.span>
+                              )}
+                            </div>
+                            
+                            {notification.action && (
+                              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="transition-transform"
+                                >
+                                  {notification.action}
+                                </Button>
+                              </motion.div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      
-                      <p className="text-foreground-secondary text-sm leading-relaxed mb-3">
-                        {notification.message}
-                      </p>
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-foreground-secondary">
-                          {notification.time}
-                        </span>
-                        
-                        {notification.action && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="hover:scale-105 transition-transform"
-                          >
-                            {notification.action}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </GlassCard>
-              ))}
+                    </GlassCard>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
 
               {getFilteredNotifications().length === 0 && (
-                <GlassCard className="text-center py-12">
-                  <Bell className="w-16 h-16 mx-auto mb-4 text-foreground-secondary opacity-50" />
-                  <h3 className="text-xl font-semibold text-foreground mb-2">No notifications</h3>
-                  <p className="text-foreground-secondary">
-                    You're all caught up! Check back later for new updates.
-                  </p>
-                </GlassCard>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <GlassCard className="text-center py-12">
+                    <motion.div
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <Bell className="w-16 h-16 mx-auto mb-4 text-foreground-secondary opacity-50" />
+                    </motion.div>
+                    <h3 className="text-xl font-semibold text-foreground mb-2">No notifications</h3>
+                    <p className="text-foreground-secondary">
+                      You're all caught up! Check back later for new updates.
+                    </p>
+                  </GlassCard>
+                </motion.div>
               )}
             </TabsContent>
           </Tabs>
 
           {/* Notification Settings Quick Access */}
-          <GlassCard className="mt-8 animate-slide-up">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-foreground mb-1">Notification Preferences</h3>
-                <p className="text-sm text-foreground-secondary">
-                  Customize when and how you receive notifications
-                </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <GlassCard className="mt-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1 flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-primary" />
+                    Notification Preferences
+                  </h3>
+                  <p className="text-sm text-foreground-secondary">
+                    Customize when and how you receive notifications
+                  </p>
+                </div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant="outline">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </Button>
+                </motion.div>
               </div>
-              <Button variant="outline">
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </Button>
-            </div>
-          </GlassCard>
+            </GlassCard>
+          </motion.div>
         </div>
       </div>
     </div>

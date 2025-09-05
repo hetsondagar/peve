@@ -18,10 +18,28 @@ import {
   Globe,
   Trophy,
   Target,
-  Activity
+  Activity,
+  Zap,
+  TrendingUp,
+  Heart,
+  Share2,
+  Eye,
+  Code,
+  Palette,
+  Database,
+  Cloud,
+  Shield,
+  Crown,
+  Medal,
+  Flame
 } from "lucide-react";
+import { motion } from "framer-motion";
+import { useState } from "react";
 
 export default function Profile() {
+  const [activeTab, setActiveTab] = useState("about");
+  const [likedProjects, setLikedProjects] = useState<Set<string>>(new Set());
+
   const skills = [
     { name: "React", level: 95, category: "Frontend" },
     { name: "TypeScript", level: 90, category: "Programming" },
@@ -31,50 +49,71 @@ export default function Profile() {
     { name: "Figma", level: 92, category: "Design" }
   ];
 
-  const achievements = [
-    { title: "Innovation Leader", description: "Led 5+ breakthrough projects", icon: Trophy, color: "primary" },
-    { title: "Community Champion", description: "Helped 100+ developers", icon: Users, color: "secondary" },
-    { title: "Code Master", description: "1000+ commits this year", icon: Target, color: "accent" },
-    { title: "Design Guru", description: "Featured in 10+ showcases", icon: Award, color: "primary" }
-  ];
-
   const projects = [
     {
-      title: "AI-Powered Analytics Dashboard",
-      description: "Real-time data visualization platform with ML insights",
-      tech: ["React", "Python", "TensorFlow"],
-      status: "Live",
-      collaborators: 4
+      id: "1",
+      title: "E-Commerce Platform",
+      description: "Full-stack e-commerce solution with React, Node.js, and MongoDB",
+      image: "/api/placeholder/400/200",
+      tags: ["React", "Node.js", "MongoDB", "Stripe"],
+      likes: 42,
+      views: 1200,
+      isLiked: likedProjects.has("1")
     },
     {
-      title: "Sustainable E-commerce Platform",
-      description: "Eco-friendly marketplace with carbon tracking",
-      tech: ["Next.js", "Stripe", "MongoDB"],
-      status: "In Progress",
-      collaborators: 6
+      id: "2", 
+      title: "AI Chat Assistant",
+      description: "Intelligent chatbot with natural language processing capabilities",
+      image: "/api/placeholder/400/200",
+      tags: ["Python", "OpenAI", "FastAPI", "React"],
+      likes: 38,
+      views: 980,
+      isLiked: likedProjects.has("2")
     },
     {
-      title: "AR Collaboration Tool",
-      description: "Virtual workspace for remote teams",
-      tech: ["Unity", "WebRTC", "Firebase"],
-      status: "Prototype",
-      collaborators: 3
+      id: "3",
+      title: "Mobile Banking App",
+      description: "Secure mobile banking application with biometric authentication",
+      image: "/api/placeholder/400/200", 
+      tags: ["React Native", "Node.js", "PostgreSQL", "AWS"],
+      likes: 56,
+      views: 1500,
+      isLiked: likedProjects.has("3")
     }
   ];
 
+  const achievements = [
+    { id: "1", title: "Code Master", description: "Completed 100+ coding challenges", icon: Trophy, color: "text-yellow-400" },
+    { id: "2", title: "Team Player", description: "Collaborated on 20+ projects", icon: Users, color: "text-blue-400" },
+    { id: "3", title: "Innovation Leader", description: "Launched 5 successful products", icon: Zap, color: "text-purple-400" },
+    { id: "4", title: "Mentor", description: "Helped 50+ developers grow", icon: Crown, color: "text-green-400" }
+  ];
+
   const connections = [
-    { name: "Sarah Chen", role: "Senior Designer", avatar: "SC", mutual: 12 },
-    { name: "Marcus Rodriguez", role: "Full Stack Dev", avatar: "MR", mutual: 8 },
-    { name: "Elena Vasquez", role: "Data Scientist", avatar: "EV", mutual: 15 },
-    { name: "James Wilson", role: "Product Manager", avatar: "JW", mutual: 6 }
+    { id: "1", name: "Sarah Chen", role: "Full Stack Developer", avatar: "/api/placeholder/60/60", mutual: 12 },
+    { id: "2", name: "Marcus Johnson", role: "Product Manager", avatar: "/api/placeholder/60/60", mutual: 8 },
+    { id: "3", name: "Elena Rodriguez", role: "UX Designer", avatar: "/api/placeholder/60/60", mutual: 15 },
+    { id: "4", name: "David Kim", role: "DevOps Engineer", avatar: "/api/placeholder/60/60", mutual: 6 }
   ];
 
   const activities = [
-    { action: "Completed project milestone", project: "AI Analytics Dashboard", time: "2 hours ago" },
-    { action: "Joined collaboration", project: "Sustainable E-commerce", time: "1 day ago" },
-    { action: "Earned achievement", project: "Innovation Leader", time: "3 days ago" },
-    { action: "Started new project", project: "AR Collaboration Tool", time: "1 week ago" }
+    { id: "1", type: "project", action: "published", target: "E-Commerce Platform", time: "2 hours ago" },
+    { id: "2", type: "skill", action: "earned", target: "React Expert badge", time: "1 day ago" },
+    { id: "3", type: "connection", action: "connected with", target: "Sarah Chen", time: "3 days ago" },
+    { id: "4", type: "achievement", action: "unlocked", target: "Code Master", time: "1 week ago" }
   ];
+
+  const toggleLike = (projectId: string) => {
+    setLikedProjects(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId);
+      } else {
+        newSet.add(projectId);
+      }
+      return newSet;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,252 +122,293 @@ export default function Profile() {
       <div className="pt-20 px-6">
         <div className="max-w-6xl mx-auto">
           {/* Profile Header */}
-          <GlassCard className="mb-8 animate-fade-in glow-primary">
-            <div className="flex flex-col lg:flex-row gap-8">
-              <div className="flex flex-col items-center lg:items-start">
-                <div className="w-32 h-32 bg-gradient-primary rounded-full flex items-center justify-center text-foreground font-bold text-4xl mb-4">
-                  AJ
-                </div>
-                <div className="flex gap-4">
-                  <Button variant="glass" size="icon">
-                    <Github className="w-5 h-5" />
-                  </Button>
-                  <Button variant="glass" size="icon">
-                    <Linkedin className="w-5 h-5" />
-                  </Button>
-                  <Button variant="glass" size="icon">
-                    <Globe className="w-5 h-5" />
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex-1">
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-6">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl font-bold gradient-text">Alex Johnson</h1>
-                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                        <span className="text-foreground text-xs">✓</span>
-                      </div>
-                    </div>
-                    <p className="text-xl text-foreground-secondary mb-2">Senior Full Stack Developer</p>
-                    <div className="flex items-center gap-2 text-foreground-secondary mb-4">
-                      <MapPin className="w-4 h-4" />
-                      San Francisco, CA
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    <Button variant="default" className="group">
-                      <MessageCircle className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                      Message
-                    </Button>
-                    <Button variant="secondary" className="group">
-                      <UserPlus className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                      Connect
-                    </Button>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <GlassCard className="p-8 mb-8">
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-shrink-0">
+                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                    <span className="text-4xl font-bold text-white">JD</span>
                   </div>
                 </div>
                 
-                <p className="text-foreground-secondary leading-relaxed mb-6">
-                  Passionate full-stack developer with 8+ years of experience building scalable web applications 
-                  and leading cross-functional teams. Specializing in React, Node.js, and cloud architecture. 
-                  Always excited to collaborate on innovative projects that make a positive impact.
-                </p>
-                
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-foreground">4.9</div>
-                    <div className="text-sm text-foreground-secondary flex items-center justify-center gap-1">
-                      <Star className="w-4 h-4 text-warning fill-current" />
-                      Rating
+                <div className="flex-1">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div>
+                      <h1 className="text-3xl font-bold gradient-text mb-2">John Doe</h1>
+                      <p className="text-foreground-secondary mb-2">Senior Full Stack Developer</p>
+                      <div className="flex items-center gap-2 text-sm text-foreground-secondary mb-4">
+                        <MapPin className="w-4 h-4" />
+                        <span>San Francisco, CA</span>
+                        <span>•</span>
+                        <span>Available for work</span>
+                      </div>
+                      <p className="text-foreground-secondary max-w-2xl">
+                        Passionate developer with 5+ years of experience building scalable web applications. 
+                        Love working with React, Node.js, and modern cloud technologies.
+                      </p>
                     </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-foreground">247</div>
-                    <div className="text-sm text-foreground-secondary flex items-center justify-center gap-1">
-                      <Users className="w-4 h-4" />
-                      Connections
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-foreground">31</div>
-                    <div className="text-sm text-foreground-secondary flex items-center justify-center gap-1">
-                      <Briefcase className="w-4 h-4" />
-                      Projects
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-foreground">12</div>
-                    <div className="text-sm text-foreground-secondary flex items-center justify-center gap-1">
-                      <Award className="w-4 h-4" />
-                      Achievements
+                    
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-2">
+                        <Button variant="glass" size="sm">
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Message
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Connect
+                        </Button>
+                      </div>
+                      
+                      <div className="flex gap-4">
+                        <a href="#" className="text-foreground-secondary hover:text-primary transition-colors">
+                          <Github className="w-5 h-5" />
+                        </a>
+                        <a href="#" className="text-foreground-secondary hover:text-primary transition-colors">
+                          <Linkedin className="w-5 h-5" />
+                        </a>
+                        <a href="#" className="text-foreground-secondary hover:text-primary transition-colors">
+                          <Globe className="w-5 h-5" />
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </GlassCard>
+            </GlassCard>
+          </motion.div>
 
-          {/* Tabs Content */}
-          <Tabs defaultValue="about" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 glass mb-8">
-              <TabsTrigger value="about">About</TabsTrigger>
-              <TabsTrigger value="projects">Projects</TabsTrigger>
-              <TabsTrigger value="connections">Connections</TabsTrigger>
-              <TabsTrigger value="activity">Activity</TabsTrigger>
-            </TabsList>
+          {/* Profile Tabs */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="about">About</TabsTrigger>
+                <TabsTrigger value="projects">Projects</TabsTrigger>
+                <TabsTrigger value="connections">Connections</TabsTrigger>
+                <TabsTrigger value="activity">Activity</TabsTrigger>
+              </TabsList>
 
-            {/* About Tab */}
-            <TabsContent value="about" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <GlassCard className="animate-slide-up">
-                  <h3 className="text-xl font-semibold text-foreground mb-6">Skills & Expertise</h3>
-                  <div className="space-y-4">
-                    {skills.map((skill, index) => (
-                      <div key={skill.name} className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-foreground font-medium">{skill.name}</span>
-                          <span className="text-sm text-foreground-secondary">{skill.level}%</span>
-                        </div>
-                        <div className="w-full bg-muted/30 rounded-full h-2">
-                          <div 
-                            className="bg-gradient-primary h-2 rounded-full transition-all duration-1000 ease-out"
-                            style={{width: `${skill.level}%`, animationDelay: `${index * 0.1}s`}}
-                          />
-                        </div>
-                        <span className="text-xs text-foreground-secondary">{skill.category}</span>
-                      </div>
-                    ))}
-                  </div>
-                </GlassCard>
-
-                <GlassCard className="animate-slide-up" style={{animationDelay: '0.2s'}}>
-                  <h3 className="text-xl font-semibold text-foreground mb-6">Achievements</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {achievements.map((achievement, index) => (
-                      <div 
-                        key={achievement.title}
-                        className="p-4 bg-muted/20 rounded-lg text-center hover:bg-muted/30 transition-colors"
-                      >
-                        <div className={`w-12 h-12 mx-auto mb-3 bg-gradient-${achievement.color} rounded-full flex items-center justify-center`}>
-                          <achievement.icon className="w-6 h-6 text-foreground" />
-                        </div>
-                        <div className="font-semibold text-foreground text-sm mb-1">
-                          {achievement.title}
-                        </div>
-                        <div className="text-xs text-foreground-secondary">
-                          {achievement.description}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </GlassCard>
-              </div>
-            </TabsContent>
-
-            {/* Projects Tab */}
-            <TabsContent value="projects" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {projects.map((project, index) => (
-                  <GlassCard 
-                    key={project.title} 
-                    className="animate-scale-in hover:glow-primary"
-                    style={{animationDelay: `${index * 0.1}s`}}
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-lg font-semibold text-foreground">{project.title}</h3>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium
-                        ${project.status === 'Live' ? 'bg-success/20 text-success' : 
-                          project.status === 'In Progress' ? 'bg-warning/20 text-warning' : 
-                          'bg-info/20 text-info'}
-                      `}>
-                        {project.status}
-                      </span>
-                    </div>
-                    
-                    <p className="text-foreground-secondary mb-4 leading-relaxed">
-                      {project.description}
-                    </p>
-                    
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {project.tech.map((tech) => (
-                        <span
-                          key={tech}
-                          className="px-3 py-1 bg-muted/30 rounded-full text-xs text-foreground-secondary"
+              {/* About Tab */}
+              <TabsContent value="about" className="space-y-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <GlassCard className="p-6">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                      <Target className="w-5 h-5 text-blue-400" />
+                      Skills & Expertise
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {skills.map((skill, index) => (
+                        <motion.div
+                          key={skill.name}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.5, delay: index * 0.1 }}
+                          className="space-y-2"
                         >
-                          {tech}
-                        </span>
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-foreground">{skill.name}</span>
+                            <span className="text-sm text-foreground-secondary">{skill.level}%</span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-1000"
+                              style={{ width: `${skill.level}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-foreground-secondary">{skill.category}</span>
+                        </motion.div>
                       ))}
                     </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2 text-sm text-foreground-secondary">
-                        <Users className="w-4 h-4" />
-                        {project.collaborators} collaborators
-                      </div>
-                      <Button variant="outline" size="sm">
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        View Project
-                      </Button>
+                  </GlassCard>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  <GlassCard className="p-6">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                      <Award className="w-5 h-5 text-yellow-400" />
+                      Achievements
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {achievements.map((achievement, index) => (
+                        <motion.div
+                          key={achievement.id}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.5, delay: index * 0.1 }}
+                          className="flex items-center gap-3 p-4 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors"
+                        >
+                          <achievement.icon className={`w-8 h-8 ${achievement.color}`} />
+                          <div>
+                            <h4 className="font-semibold text-foreground">{achievement.title}</h4>
+                            <p className="text-sm text-foreground-secondary">{achievement.description}</p>
+                          </div>
+                        </motion.div>
+                      ))}
                     </div>
                   </GlassCard>
-                ))}
-              </div>
-            </TabsContent>
+                </motion.div>
+              </TabsContent>
 
-            {/* Connections Tab */}
-            <TabsContent value="connections" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {connections.map((connection, index) => (
-                  <GlassCard 
-                    key={connection.name} 
-                    className="text-center animate-fade-in"
-                    style={{animationDelay: `${index * 0.1}s`}}
-                  >
-                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-primary rounded-full flex items-center justify-center text-foreground font-bold">
-                      {connection.avatar}
+              {/* Projects Tab */}
+              <TabsContent value="projects" className="space-y-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <GlassCard className="p-6">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                      <Briefcase className="w-5 h-5 text-green-400" />
+                      Featured Projects
+                    </h3>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {projects.map((project, index) => (
+                        <motion.div
+                          key={project.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.5, delay: index * 0.1 }}
+                          className="group"
+                        >
+                          <GlassCard className="p-4 h-full hover:shadow-lg transition-all duration-300">
+                            <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 rounded-lg mb-4 flex items-center justify-center">
+                              <Code className="w-12 h-12 text-primary" />
+                            </div>
+                            <h4 className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
+                              {project.title}
+                            </h4>
+                            <p className="text-sm text-foreground-secondary mb-4 line-clamp-2">
+                              {project.description}
+                            </p>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              {project.tags.map((tag) => (
+                                <span key={tag} className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4 text-sm text-foreground-secondary">
+                                <button
+                                  onClick={() => toggleLike(project.id)}
+                                  className={`flex items-center gap-1 hover:text-red-400 transition-colors ${
+                                    project.isLiked ? 'text-red-400' : ''
+                                  }`}
+                                >
+                                  <Heart className={`w-4 h-4 ${project.isLiked ? 'fill-current' : ''}`} />
+                                  {project.likes}
+                                </button>
+                                <div className="flex items-center gap-1">
+                                  <Eye className="w-4 h-4" />
+                                  {project.views}
+                                </div>
+                              </div>
+                              <Button variant="ghost" size="sm">
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </GlassCard>
+                        </motion.div>
+                      ))}
                     </div>
-                    <h3 className="font-semibold text-foreground mb-1">{connection.name}</h3>
-                    <p className="text-sm text-foreground-secondary mb-3">{connection.role}</p>
-                    <p className="text-xs text-foreground-secondary mb-4">
-                      {connection.mutual} mutual connections
-                    </p>
-                    <Button variant="outline" size="sm" className="w-full">
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Message
-                    </Button>
                   </GlassCard>
-                ))}
-              </div>
-            </TabsContent>
+                </motion.div>
+              </TabsContent>
 
-            {/* Activity Tab */}
-            <TabsContent value="activity" className="space-y-6">
-              <GlassCard className="animate-fade-in">
-                <h3 className="text-xl font-semibold text-foreground mb-6">Recent Activity</h3>
-                <div className="space-y-4">
-                  {activities.map((activity, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-start gap-4 p-4 hover:bg-muted/20 rounded-lg transition-colors"
-                    >
-                      <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
-                      <div className="flex-1">
-                        <p className="text-foreground">
-                          <span className="font-medium">{activity.action}</span>
-                          {activity.project && (
-                            <span className="text-foreground-secondary"> • {activity.project}</span>
-                          )}
-                        </p>
-                        <p className="text-sm text-foreground-secondary">{activity.time}</p>
-                      </div>
+              {/* Connections Tab */}
+              <TabsContent value="connections" className="space-y-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <GlassCard className="p-6">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-blue-400" />
+                      Professional Network
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {connections.map((connection, index) => (
+                        <motion.div
+                          key={connection.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.5, delay: index * 0.1 }}
+                          className="flex items-center gap-4 p-4 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors"
+                        >
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-semibold">
+                            {connection.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-foreground">{connection.name}</h4>
+                            <p className="text-sm text-foreground-secondary">{connection.role}</p>
+                            <p className="text-xs text-foreground-secondary">{connection.mutual} mutual connections</p>
+                          </div>
+                          <Button variant="outline" size="sm">
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            Message
+                          </Button>
+                        </motion.div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </GlassCard>
-            </TabsContent>
-          </Tabs>
+                  </GlassCard>
+                </motion.div>
+              </TabsContent>
+
+              {/* Activity Tab */}
+              <TabsContent value="activity" className="space-y-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <GlassCard className="p-6">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-green-400" />
+                      Recent Activity
+                    </h3>
+                    <div className="space-y-4">
+                      {activities.map((activity, index) => (
+                        <motion.div
+                          key={activity.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.5, delay: index * 0.1 }}
+                          className="flex items-center gap-4 p-4 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                            <Activity className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-foreground">
+                              <span className="font-semibold">{activity.action}</span> {activity.target}
+                            </p>
+                            <p className="text-sm text-foreground-secondary">{activity.time}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </GlassCard>
+                </motion.div>
+              </TabsContent>
+            </Tabs>
+          </motion.div>
         </div>
       </div>
     </div>

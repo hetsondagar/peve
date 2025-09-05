@@ -1,81 +1,54 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Navbar } from "@/components/navigation/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   User, 
-  Shield, 
   Bell, 
+  Shield, 
   Palette, 
-  Brain,
   Globe,
+  Database,
   Mail,
-  Phone,
-  MapPin,
-  Camera,
-  Save,
+  Lock,
   Eye,
   EyeOff,
+  Smartphone,
+  Monitor,
   Moon,
   Sun,
-  Zap,
-  Target,
-  Award
+  Volume2,
+  VolumeX,
+  Wifi,
+  WifiOff,
+  Download,
+  Upload,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  Settings as SettingsIcon
 } from "lucide-react";
+import { motion } from "framer-motion";
+import { useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Settings() {
-  const [darkMode, setDarkMode] = useState(true);
+  const { theme, toggleTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState("profile");
+  const [showPassword, setShowPassword] = useState(false);
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
     sms: false,
-    weekly: true,
-    mentions: true,
-    projects: true
+    marketing: false
   });
-  
-  const [privacy, setPrivacy] = useState({
-    profileVisible: true,
-    showEmail: false,
-    showPhone: false,
-    allowMessages: true,
-    showProjects: true,
-    analyticsOptIn: true
-  });
-
-  const [aiPreferences, setAiPreferences] = useState({
-    recommendations: true,
-    autoMatching: true,
-    skillSuggestions: true,
-    smartNotifications: true,
-    dataAnalysis: true
-  });
-
-  const gamificationStats = {
-    level: 12,
-    xp: 8420,
-    nextLevelXp: 10000,
-    badges: 18,
-    rank: "Innovation Leader"
-  };
-
-  const handleSaveProfile = () => {
-    // In a real app, this would save the profile data
-    console.log("Saving profile...");
-  };
 
   const handleNotificationChange = (key: string, value: boolean) => {
     setNotifications(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handlePrivacyChange = (key: string, value: boolean) => {
-    setPrivacy(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleAIChange = (key: string, value: boolean) => {
-    setAiPreferences(prev => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -84,346 +57,360 @@ export default function Settings() {
       
       <div className="pt-20 px-6">
         <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold gradient-text mb-2">Settings</h1>
-            <p className="text-foreground-secondary">
-              Customize your Peve experience and manage your account preferences
-            </p>
+          {/* Settings Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-8"
+          >
+            <GlassCard className="p-8">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                  <span className="text-xl font-bold text-white">JD</span>
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold gradient-text">Settings</h1>
+                  <p className="text-foreground-secondary">Manage your account preferences and privacy settings</p>
+                </div>
           </div>
+            </GlassCard>
+          </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Settings Navigation */}
-            <div className="lg:col-span-1">
-              <GlassCard className="sticky top-24">
-                <nav className="space-y-2">
-                  <Tabs defaultValue="profile" orientation="vertical" className="w-full">
-                    <TabsList className="flex flex-col h-auto bg-transparent p-0 w-full">
-                      <TabsTrigger value="profile" className="w-full justify-start data-[state=active]:bg-primary/20">
-                        <User className="w-4 h-4 mr-3" />
-                        Profile
-                      </TabsTrigger>
-                      <TabsTrigger value="privacy" className="w-full justify-start data-[state=active]:bg-primary/20">
-                        <Shield className="w-4 h-4 mr-3" />
-                        Privacy & Security
-                      </TabsTrigger>
-                      <TabsTrigger value="notifications" className="w-full justify-start data-[state=active]:bg-primary/20">
-                        <Bell className="w-4 h-4 mr-3" />
-                        Notifications
-                      </TabsTrigger>
-                      <TabsTrigger value="appearance" className="w-full justify-start data-[state=active]:bg-primary/20">
-                        <Palette className="w-4 h-4 mr-3" />
-                        Appearance
-                      </TabsTrigger>
-                      <TabsTrigger value="ai" className="w-full justify-start data-[state=active]:bg-primary/20">
-                        <Brain className="w-4 h-4 mr-3" />
-                        AI Preferences
-                      </TabsTrigger>
+          {/* Settings Tabs */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="profile">Profile</TabsTrigger>
+                <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                <TabsTrigger value="privacy">Privacy</TabsTrigger>
+                <TabsTrigger value="appearance">Appearance</TabsTrigger>
+                <TabsTrigger value="advanced">Advanced</TabsTrigger>
                     </TabsList>
-                  </Tabs>
-                </nav>
-              </GlassCard>
-            </div>
 
-            {/* Settings Content */}
-            <div className="lg:col-span-3">
-              <Tabs defaultValue="profile" orientation="vertical" className="w-full">
                 {/* Profile Settings */}
                 <TabsContent value="profile" className="space-y-6">
-                  <GlassCard className="animate-fade-in">
-                    <h3 className="text-xl font-semibold text-foreground mb-6">Profile Information</h3>
-                    
-                    <div className="space-y-6">
-                      {/* Avatar Section */}
-                      <div className="flex items-center gap-6">
-                        <div className="w-24 h-24 bg-gradient-primary rounded-full flex items-center justify-center text-foreground font-bold text-2xl">
-                          AJ
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <GlassCard className="p-6">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                      <User className="w-5 h-5 text-blue-400" />
+                      Personal Information
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">First Name</Label>
+                        <Input id="firstName" defaultValue="John" />
                         </div>
-                        <div>
-                          <Button variant="outline" className="mb-2">
-                            <Camera className="w-4 h-4 mr-2" />
-                            Change Avatar
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Last Name</Label>
+                        <Input id="lastName" defaultValue="Doe" />
+                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input id="email" type="email" defaultValue="john.doe@example.com" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input id="phone" type="tel" defaultValue="+1 (555) 123-4567" />
+                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="bio">Bio</Label>
+                        <Input id="bio" defaultValue="Full Stack Developer passionate about creating amazing user experiences" />
+                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="location">Location</Label>
+                        <Input id="location" defaultValue="San Francisco, CA" />
+                      </div>
+                    </div>
+                    <div className="flex justify-end mt-6">
+                      <Button>Save Changes</Button>
+                        </div>
+                  </GlassCard>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  <GlassCard className="p-6">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                      <Lock className="w-5 h-5 text-red-400" />
+                      Security
+                    </h3>
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="currentPassword">Current Password</Label>
+                        <div className="relative">
+                          <Input 
+                            id="currentPassword" 
+                            type={showPassword ? "text" : "password"} 
+                            placeholder="Enter current password"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </Button>
-                          <p className="text-sm text-foreground-secondary">
-                            JPG, PNG or GIF. Max size 2MB.
-                          </p>
                         </div>
                       </div>
-
-                      {/* Basic Info */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
-                            Full Name
-                          </label>
-                          <input
-                            type="text"
-                            defaultValue="Alex Johnson"
-                            className="w-full px-4 py-3 bg-muted/20 border border-border/30 rounded-lg text-foreground focus:outline-none focus:border-primary/50 transition-colors"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
-                            Job Title
-                          </label>
-                          <input
-                            type="text"
-                            defaultValue="Senior Full Stack Developer"
-                            className="w-full px-4 py-3 bg-muted/20 border border-border/30 rounded-lg text-foreground focus:outline-none focus:border-primary/50 transition-colors"
-                          />
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="newPassword">New Password</Label>
+                        <Input id="newPassword" type="password" placeholder="Enter new password" />
                       </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
-                            <Mail className="w-4 h-4 inline mr-2" />
-                            Email
-                          </label>
-                          <input
-                            type="email"
-                            defaultValue="alex.johnson@email.com"
-                            className="w-full px-4 py-3 bg-muted/20 border border-border/30 rounded-lg text-foreground focus:outline-none focus:border-primary/50 transition-colors"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
-                            <Phone className="w-4 h-4 inline mr-2" />
-                            Phone
-                          </label>
-                          <input
-                            type="tel"
-                            defaultValue="+1 (555) 123-4567"
-                            className="w-full px-4 py-3 bg-muted/20 border border-border/30 rounded-lg text-foreground focus:outline-none focus:border-primary/50 transition-colors"
-                          />
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <Input id="confirmPassword" type="password" placeholder="Confirm new password" />
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          <MapPin className="w-4 h-4 inline mr-2" />
-                          Location
-                        </label>
-                        <input
-                          type="text"
-                          defaultValue="San Francisco, CA"
-                          className="w-full px-4 py-3 bg-muted/20 border border-border/30 rounded-lg text-foreground focus:outline-none focus:border-primary/50 transition-colors"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Bio
-                        </label>
-                        <textarea
-                          rows={4}
-                          defaultValue="Passionate full-stack developer with 8+ years of experience building scalable web applications and leading cross-functional teams. Specializing in React, Node.js, and cloud architecture."
-                          className="w-full px-4 py-3 bg-muted/20 border border-border/30 rounded-lg text-foreground focus:outline-none focus:border-primary/50 transition-colors resize-none"
-                        />
-                      </div>
-
-                      <Button variant="default" onClick={handleSaveProfile} className="w-full md:w-auto">
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Changes
-                      </Button>
+                    </div>
+                    <div className="flex justify-end mt-6">
+                      <Button variant="outline">Change Password</Button>
                     </div>
                   </GlassCard>
+                </motion.div>
+              </TabsContent>
 
-                  {/* Gamification Stats */}
-                  <GlassCard className="animate-slide-up glow-purple">
-                    <h3 className="text-xl font-semibold text-foreground mb-6">Your Progress</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="text-center">
-                        <div className="w-16 h-16 mx-auto mb-3 bg-gradient-primary rounded-full flex items-center justify-center">
-                          <Target className="w-8 h-8 text-foreground" />
-                        </div>
-                        <div className="text-2xl font-bold text-foreground">Level {gamificationStats.level}</div>
-                        <div className="text-sm text-foreground-secondary">{gamificationStats.rank}</div>
-                      </div>
-                      
-                      <div className="text-center">
-                        <div className="w-16 h-16 mx-auto mb-3 bg-gradient-secondary rounded-full flex items-center justify-center">
-                          <Zap className="w-8 h-8 text-foreground" />
-                        </div>
-                        <div className="text-2xl font-bold text-foreground">{gamificationStats.xp.toLocaleString()}</div>
-                        <div className="text-sm text-foreground-secondary">XP Earned</div>
-                      </div>
-                      
-                      <div className="text-center">
-                        <div className="w-16 h-16 mx-auto mb-3 bg-gradient-accent rounded-full flex items-center justify-center">
-                          <Award className="w-8 h-8 text-foreground" />
-                        </div>
-                        <div className="text-2xl font-bold text-foreground">{gamificationStats.badges}</div>
-                        <div className="text-sm text-foreground-secondary">Badges</div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6">
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-foreground-secondary">Progress to Level {gamificationStats.level + 1}</span>
-                        <span className="text-foreground">{gamificationStats.xp}/{gamificationStats.nextLevelXp} XP</span>
-                      </div>
-                      <div className="w-full bg-muted/30 rounded-full h-3">
-                        <div 
-                          className="bg-gradient-primary h-3 rounded-full transition-all duration-1000"
-                          style={{width: `${(gamificationStats.xp / gamificationStats.nextLevelXp) * 100}%`}}
-                        />
-                      </div>
-                    </div>
-                  </GlassCard>
-                </TabsContent>
-
-                {/* Privacy & Security */}
-                <TabsContent value="privacy" className="space-y-6">
-                  <GlassCard className="animate-fade-in">
-                    <h3 className="text-xl font-semibold text-foreground mb-6">Privacy Settings</h3>
-                    
+              {/* Notifications Settings */}
+              <TabsContent value="notifications" className="space-y-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <GlassCard className="p-6">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                      <Bell className="w-5 h-5 text-yellow-400" />
+                      Notification Preferences
+                    </h3>
                     <div className="space-y-6">
-                      {Object.entries({
-                        profileVisible: "Make my profile visible to other users",
-                        showEmail: "Show my email address on my profile",
-                        showPhone: "Show my phone number on my profile", 
-                        allowMessages: "Allow other users to message me",
-                        showProjects: "Show my projects publicly",
-                        analyticsOptIn: "Allow analytics to improve recommendations"
-                      }).map(([key, label]) => (
-                        <div key={key} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            {key.includes('show') ? <Eye className="w-5 h-5 text-foreground-secondary" /> : 
-                             key === 'allowMessages' ? <Mail className="w-5 h-5 text-foreground-secondary" /> :
-                             <Shield className="w-5 h-5 text-foreground-secondary" />}
-                            <span className="text-foreground">{label}</span>
-                          </div>
-                          <Switch
-                            checked={privacy[key as keyof typeof privacy]}
-                            onCheckedChange={(value) => handlePrivacyChange(key, value)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </GlassCard>
-
-                  <GlassCard className="animate-slide-up">
-                    <h3 className="text-xl font-semibold text-foreground mb-6">Security</h3>
-                    
-                    <div className="space-y-4">
-                      <Button variant="outline" className="w-full justify-start">
-                        <Shield className="w-4 h-4 mr-3" />
-                        Change Password
-                      </Button>
-                      
-                      <Button variant="outline" className="w-full justify-start">
-                        <Shield className="w-4 h-4 mr-3" />
-                        Enable Two-Factor Authentication
-                      </Button>
-                      
-                      <Button variant="outline" className="w-full justify-start">
-                        <Globe className="w-4 h-4 mr-3" />
-                        Review Active Sessions
-                      </Button>
-                    </div>
-                  </GlassCard>
-                </TabsContent>
-
-                {/* Notifications */}
-                <TabsContent value="notifications" className="space-y-6">
-                  <GlassCard className="animate-fade-in">
-                    <h3 className="text-xl font-semibold text-foreground mb-6">Notification Preferences</h3>
-                    
-                    <div className="space-y-6">
-                      {Object.entries({
-                        email: "Email notifications",
-                        push: "Push notifications",
-                        sms: "SMS notifications",
-                        weekly: "Weekly digest email",
-                        mentions: "When someone mentions me",
-                        projects: "Project updates and invitations"
-                      }).map(([key, label]) => (
-                        <div key={key} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <Bell className="w-5 h-5 text-foreground-secondary" />
-                            <span className="text-foreground">{label}</span>
-                          </div>
-                          <Switch
-                            checked={notifications[key as keyof typeof notifications]}
-                            onCheckedChange={(value) => handleNotificationChange(key, value)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </GlassCard>
-                </TabsContent>
-
-                {/* Appearance */}
-                <TabsContent value="appearance" className="space-y-6">
-                  <GlassCard className="animate-fade-in">
-                    <h3 className="text-xl font-semibold text-foreground mb-6">Theme Preferences</h3>
-                    
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          {darkMode ? <Moon className="w-5 h-5 text-foreground-secondary" /> : 
-                                     <Sun className="w-5 h-5 text-foreground-secondary" />}
-                          <span className="text-foreground">Dark Mode</span>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-foreground">Email Notifications</h4>
+                          <p className="text-sm text-foreground-secondary">Receive notifications via email</p>
                         </div>
                         <Switch
-                          checked={darkMode}
-                          onCheckedChange={setDarkMode}
+                          checked={notifications.email}
+                          onCheckedChange={(checked) => handleNotificationChange('email', checked)}
                         />
                       </div>
-
-                      <div className="grid grid-cols-3 gap-4">
-                        {[
-                          { name: "Electric Blue", color: "bg-gradient-primary" },
-                          { name: "Cosmic Purple", color: "bg-gradient-secondary" },
-                          { name: "Neon Cyan", color: "bg-gradient-accent" }
-                        ].map((theme) => (
-                          <button
-                            key={theme.name}
-                            className="p-4 bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors text-center"
-                          >
-                            <div className={`w-12 h-12 mx-auto mb-2 rounded-full ${theme.color}`} />
-                            <span className="text-sm text-foreground">{theme.name}</span>
-                          </button>
-                        ))}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-foreground">Push Notifications</h4>
+                          <p className="text-sm text-foreground-secondary">Receive push notifications on your device</p>
+                        </div>
+                        <Switch
+                          checked={notifications.push}
+                          onCheckedChange={(checked) => handleNotificationChange('push', checked)}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-foreground">SMS Notifications</h4>
+                          <p className="text-sm text-foreground-secondary">Receive notifications via SMS</p>
+                        </div>
+                        <Switch
+                          checked={notifications.sms}
+                          onCheckedChange={(checked) => handleNotificationChange('sms', checked)}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-foreground">Marketing Emails</h4>
+                          <p className="text-sm text-foreground-secondary">Receive promotional and marketing emails</p>
+                    </div>
+                        <Switch
+                          checked={notifications.marketing}
+                          onCheckedChange={(checked) => handleNotificationChange('marketing', checked)}
+                        />
                       </div>
                     </div>
                   </GlassCard>
+                </motion.div>
                 </TabsContent>
 
-                {/* AI Preferences */}
-                <TabsContent value="ai" className="space-y-6">
-                  <GlassCard className="animate-fade-in glow-primary">
-                    <h3 className="text-xl font-semibold text-foreground mb-6">AI-Powered Features</h3>
-                    
+              {/* Privacy Settings */}
+                <TabsContent value="privacy" className="space-y-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <GlassCard className="p-6">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-green-400" />
+                      Privacy & Security
+                    </h3>
                     <div className="space-y-6">
-                      {Object.entries({
-                        recommendations: "AI-powered project and connection recommendations",
-                        autoMatching: "Automatic skill-based matching",
-                        skillSuggestions: "Personalized skill development suggestions",
-                        smartNotifications: "Smart notification filtering and prioritization",
-                        dataAnalysis: "Advanced analytics and insights"
-                      }).map(([key, label]) => (
-                        <div key={key} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <Brain className="w-5 h-5 text-foreground-secondary" />
-                            <span className="text-foreground">{label}</span>
+                      <div className="space-y-2">
+                        <Label>Profile Visibility</Label>
+                        <Select defaultValue="public">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="public">Public</SelectItem>
+                            <SelectItem value="connections">Connections Only</SelectItem>
+                            <SelectItem value="private">Private</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Activity Status</Label>
+                        <Select defaultValue="show">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="show">Show when online</SelectItem>
+                            <SelectItem value="hide">Hide activity status</SelectItem>
+                          </SelectContent>
+                        </Select>
                           </div>
-                          <Switch
-                            checked={aiPreferences[key as keyof typeof aiPreferences]}
-                            onCheckedChange={(value) => handleAIChange(key, value)}
-                          />
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-foreground">Data Analytics</h4>
+                          <p className="text-sm text-foreground-secondary">Allow us to collect usage data to improve our services</p>
                         </div>
-                      ))}
+                        <Switch defaultChecked />
+                    </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-foreground">Third-party Integrations</h4>
+                          <p className="text-sm text-foreground-secondary">Allow third-party services to access your data</p>
+                        </div>
+                        <Switch />
+                      </div>
                     </div>
                   </GlassCard>
+                </motion.div>
+                </TabsContent>
+
+              {/* Appearance Settings */}
+                <TabsContent value="appearance" className="space-y-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <GlassCard className="p-6">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                      <Palette className="w-5 h-5 text-purple-400" />
+                      Theme & Appearance
+                    </h3>
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <Label>Theme</Label>
+                        <div className="flex gap-4">
+                          <Button
+                            variant={theme === 'light' ? 'default' : 'outline'}
+                            onClick={() => theme !== 'light' && toggleTheme()}
+                            className="flex items-center gap-2"
+                          >
+                            <Sun className="w-4 h-4" />
+                            Light
+                          </Button>
+                          <Button
+                            variant={theme === 'dark' ? 'default' : 'outline'}
+                            onClick={() => theme !== 'dark' && toggleTheme()}
+                            className="flex items-center gap-2"
+                          >
+                            <Moon className="w-4 h-4" />
+                            Dark
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Language</Label>
+                        <Select defaultValue="en">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="es">Spanish</SelectItem>
+                            <SelectItem value="fr">French</SelectItem>
+                            <SelectItem value="de">German</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Font Size</Label>
+                        <Select defaultValue="medium">
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="small">Small</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="large">Large</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </GlassCard>
+                </motion.div>
+                </TabsContent>
+
+              {/* Advanced Settings */}
+              <TabsContent value="advanced" className="space-y-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <GlassCard className="p-6">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
+                      <Database className="w-5 h-5 text-orange-400" />
+                      Data Management
+                    </h3>
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-foreground">Export Data</h4>
+                          <p className="text-sm text-foreground-secondary">Download a copy of your data</p>
+                        </div>
+                        <Button variant="outline" className="flex items-center gap-2">
+                          <Download className="w-4 h-4" />
+                          Export
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-foreground">Import Data</h4>
+                          <p className="text-sm text-foreground-secondary">Import data from another service</p>
+                        </div>
+                        <Button variant="outline" className="flex items-center gap-2">
+                          <Upload className="w-4 h-4" />
+                          Import
+                        </Button>
+                          </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-foreground text-red-400">Delete Account</h4>
+                          <p className="text-sm text-foreground-secondary">Permanently delete your account and all data</p>
+                        </div>
+                        <Button variant="destructive" className="flex items-center gap-2">
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </GlassCard>
+                </motion.div>
                 </TabsContent>
               </Tabs>
-            </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>
