@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Peve Design System - Dark Futuristic Hive Aesthetic */
+/* peve Design System - Dark Futuristic Hive Aesthetic */
 
 @layer base {
   :root {
@@ -95,6 +95,30 @@
 }
 
 @layer components {
+  /* Modern Navbar */
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: transparent;
+    backdrop-filter: none;
+    border-bottom: none;
+    box-shadow: none;
+  }
+
+  .navbar.scrolled {
+    background: rgba(16, 21, 29, 0.6);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid hsl(var(--border));
+    box-shadow: 0 8px 30px hsl(180 100% 46% / 0.08);
+  }
+
+  /* Brand: Orbitron font + teal color for the word PEVE */
+  .brand-peve {
+    font-family: 'Orbitron', 'Poppins', sans-serif;
+    color: hsl(180 100% 35%);
+    letter-spacing: 0.04em;
+  }
   /* Hive Glow Effects */
   .glow-turquoise {
     box-shadow: var(--glow-turquoise);

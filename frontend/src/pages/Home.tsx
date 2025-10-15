@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { ProjectCard } from '@/components/ProjectCard';
 import { NetworkBackground } from '@/components/NetworkBackground';
 import { useNavigate } from 'react-router-dom';
-import hiveLogo from '@/assets/hive-logo.png';
+// Use public logo everywhere
 
 const mockProjects = [
   {
@@ -65,14 +65,14 @@ export default function Home() {
       <NetworkBackground />
       
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 glass border-b border-border">
+      <nav className="navbar">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo & Nav */}
             <div className="flex items-center gap-8">
-              <div className="flex items-center gap-3">
-                <img src={hiveLogo} alt="Peve" className="w-10 h-10" />
-                <button onClick={() => navigate('/home')} className="text-2xl font-bold gradient-text">Peve</button>
+              <div className="flex items-center gap-2">
+                <img src={'/final.png'} alt="peve" className="w-12 h-12" />
+                <button onClick={() => navigate('/home')} className="text-2xl font-bold brand-peve">peve</button>
               </div>
               <div className="hidden md:flex gap-6">
                 <button onClick={() => navigate('/home')} className="text-primary">Explore</button>
@@ -95,13 +95,19 @@ export default function Home() {
             </div>
 
             {/* User Actions */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
                 <Bell className="w-5 h-5 text-muted-foreground" />
               </button>
-              <button onClick={() => navigate('/profile')} className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
-                <User className="w-5 h-5 text-muted-foreground" />
-              </button>
+              <div className="relative group">
+                <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
+                  <User className="w-5 h-5 text-muted-foreground" />
+                </button>
+                <div className="absolute right-0 mt-2 w-40 rounded-xl glass border border-border p-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition">
+                  <button onClick={() => navigate('/dashboard')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-primary/10">Dashboard</button>
+                  <button onClick={() => { localStorage.removeItem('peve_token'); navigate('/login'); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-primary/10">Log out</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

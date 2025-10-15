@@ -29,10 +29,13 @@ export default function Dashboard() {
       <NetworkBackground />
       
       {/* Navbar */}
-      <nav className="relative z-10 border-b border-border glass">
+      <nav className="navbar">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <button onClick={() => navigate('/home')} className="text-2xl font-bold gradient-text">Peve</button>
+            <div className="flex items-center gap-3">
+              <img src={'/final.png'} alt="peve" className="w-12 h-12" />
+              <button onClick={() => navigate('/home')} className="text-2xl font-bold brand-peve">peve</button>
+            </div>
             <div className="hidden md:flex gap-6">
               <button onClick={() => navigate('/home')} className="text-muted-foreground hover:text-primary transition-colors">Explore</button>
               <button onClick={() => navigate('/dashboard')} className="text-primary">Dashboard</button>

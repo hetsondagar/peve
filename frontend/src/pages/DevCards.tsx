@@ -29,10 +29,13 @@ export default function DevCards() {
       <NetworkBackground />
       
       {/* Navbar */}
-      <nav className="relative z-10 border-b border-border glass">
+      <nav className="navbar">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <button onClick={() => navigate('/home')} className="text-2xl font-bold gradient-text">Peve</button>
+            <div className="flex items-center gap-3">
+              <img src={'/final.png'} alt="peve" className="w-12 h-12" />
+              <button onClick={() => navigate('/home')} className="text-2xl font-bold brand-peve">peve</button>
+            </div>
             <div className="hidden md:flex gap-6">
               <button onClick={() => navigate('/home')} className="text-muted-foreground hover:text-primary transition-colors">Explore</button>
               <button onClick={() => navigate('/devcards')} className="text-primary">DevCards</button>
@@ -186,7 +189,7 @@ export default function DevCards() {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <div className="text-xs text-white/60">Peve Hive</div>
+                      <div className="text-xs text-white/60">peve hive</div>
                       <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center">
                         <QrCode className="w-12 h-12 text-white/80" />
                       </div>
