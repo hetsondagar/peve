@@ -3,6 +3,7 @@ import { Search, Bell, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { ProjectCard } from '@/components/ProjectCard';
 import { NetworkBackground } from '@/components/NetworkBackground';
+import { useNavigate } from 'react-router-dom';
 import hiveLogo from '@/assets/hive-logo.png';
 
 const mockProjects = [
@@ -57,6 +58,8 @@ const mockProjects = [
 ];
 
 export default function Home() {
+  const navigate = useNavigate();
+  
   return (
     <div className="relative min-h-screen">
       <NetworkBackground />
@@ -65,10 +68,19 @@ export default function Home() {
       <nav className="sticky top-0 z-50 glass border-b border-border">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <img src={hiveLogo} alt="Peve" className="w-10 h-10" />
-              <span className="text-2xl font-bold gradient-text">Peve</span>
+            {/* Logo & Nav */}
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-3">
+                <img src={hiveLogo} alt="Peve" className="w-10 h-10" />
+                <button onClick={() => navigate('/home')} className="text-2xl font-bold gradient-text">Peve</button>
+              </div>
+              <div className="hidden md:flex gap-6">
+                <button onClick={() => navigate('/home')} className="text-primary">Explore</button>
+                <button onClick={() => navigate('/ideas')} className="text-muted-foreground hover:text-primary transition-colors">Ideas</button>
+                <button onClick={() => navigate('/projects')} className="text-muted-foreground hover:text-primary transition-colors">Projects</button>
+                <button onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-primary transition-colors">Dashboard</button>
+                <button onClick={() => navigate('/leaderboard')} className="text-muted-foreground hover:text-primary transition-colors">Leaderboard</button>
+              </div>
             </div>
 
             {/* Search Bar */}
@@ -87,7 +99,7 @@ export default function Home() {
               <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
                 <Bell className="w-5 h-5 text-muted-foreground" />
               </button>
-              <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
+              <button onClick={() => navigate('/profile')} className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
                 <User className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
