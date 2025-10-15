@@ -1,0 +1,203 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@300;400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Peve Design System - Dark Futuristic Hive Aesthetic */
+
+@layer base {
+  :root {
+    /* Dark Charcoal Foundation */
+    --background: 210 25% 6%;
+    --foreground: 0 0% 95%;
+
+    /* Surface Layers */
+    --card: 210 20% 8%;
+    --card-secondary: 210 20% 10%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 210 20% 8%;
+    --popover-foreground: 0 0% 95%;
+
+    /* Neon Accent Colors */
+    --primary: 180 100% 46%;
+    --primary-foreground: 210 25% 6%;
+    
+    --secondary: 270 100% 68%;
+    --secondary-foreground: 0 0% 95%;
+    
+    --accent: 45 100% 50%;
+    --accent-foreground: 210 25% 6%;
+
+    /* UI States */
+    --muted: 210 20% 12%;
+    --muted-foreground: 0 0% 75%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 95%;
+
+    --border: 210 20% 15%;
+    --input: 210 20% 12%;
+    --ring: 180 100% 46%;
+
+    --radius: 1rem;
+
+    /* Glow Effects */
+    --glow-turquoise: 0 0 20px hsl(180 100% 46% / 0.5);
+    --glow-violet: 0 0 20px hsl(270 100% 68% / 0.5);
+    --glow-amber: 0 0 20px hsl(45 100% 50% / 0.5);
+    --glow-subtle: 0 0 10px hsl(180 100% 46% / 0.2);
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(180 100% 46%), hsl(270 100% 68%));
+    --gradient-accent: linear-gradient(135deg, hsl(180 100% 46%), hsl(45 100% 50%));
+    --gradient-dark: linear-gradient(180deg, hsl(210 25% 6%), hsl(210 20% 8%));
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-glow: box-shadow 0.3s ease-in-out;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    scroll-behavior: smooth;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-background;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/50;
+  }
+}
+
+@layer components {
+  /* Hive Glow Effects */
+  .glow-turquoise {
+    box-shadow: var(--glow-turquoise);
+  }
+
+  .glow-violet {
+    box-shadow: var(--glow-violet);
+  }
+
+  .glow-amber {
+    box-shadow: var(--glow-amber);
+  }
+
+  .glow-subtle {
+    box-shadow: var(--glow-subtle);
+  }
+
+  /* Animated Gradient Text */
+  .gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glass Morphism */
+  .glass {
+    background: rgba(16, 21, 29, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid hsl(var(--border));
+  }
+
+  /* Hive Node Animation */
+  @keyframes pulse-node {
+    0%, 100% {
+      opacity: 0.4;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
+
+  .animate-node {
+    animation: pulse-node 3s ease-in-out infinite;
+  }
+
+  /* Glowing Border on Hover */
+  .hover-glow {
+    transition: var(--transition-glow);
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 20px hsl(180 100% 46% / 0.6),
+                inset 0 0 20px hsl(180 100% 46% / 0.1);
+  }
+
+  /* Floating Animation */
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  /* Rotating Hive Logo */
+  @keyframes rotate-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-rotate-slow {
+    animation: rotate-slow 20s linear infinite;
+  }
+
+  /* Network Lines Animation */
+  @keyframes draw-line {
+    from {
+      stroke-dashoffset: 1000;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
