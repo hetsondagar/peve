@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const ideas_controller_1 = require("../controllers/ideas.controller");
+const auth_1 = require("../middlewares/auth");
+const router = (0, express_1.Router)();
+router.get('/', ideas_controller_1.listIdeas);
+router.get('/trending', ideas_controller_1.getTrendingIdeas);
+router.get('/:id', ideas_controller_1.getIdea);
+router.get('/:id/detailed', ideas_controller_1.getIdeaWithComments);
+router.post('/', auth_1.requireAuth, ideas_controller_1.createIdea);
+router.post('/:id/join', auth_1.requireAuth, ideas_controller_1.joinIdea);
+router.post('/:id/join/:requestId/respond', auth_1.requireAuth, ideas_controller_1.respondJoin);
+router.post('/:id/like', auth_1.requireAuth, ideas_controller_1.likeIdea);
+router.post('/:ideaId/bookmark', auth_1.requireAuth, ideas_controller_1.bookmarkIdea);
+router.get('/:id/compatibility', ideas_controller_1.compatibility);
+exports.default = router;

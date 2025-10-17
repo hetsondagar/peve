@@ -1,30 +1,161 @@
 import { Request, Response } from 'express';
 import { Project } from '../models/Project';
+import { User } from '../models/User';
+import { Comment } from '../models/Comment';
+import { BadgeService } from '../services/badgeService';
 
 export async function listProjects(req: Request, res: Response) {
-  const { page = '1', limit = '20', tech, author } = req.query as any;
-  const q: any = {};
-  if (tech) q.techStack = { $in: String(tech).split(',') };
-  if (author) q.author = author;
-  const cursor = Project.find(q)
-    .sort({ createdAt: -1 })
-    .skip((Number(page) - 1) * Number(limit))
-    .limit(Number(limit));
-  const [items, total] = await Promise.all([cursor, Project.countDocuments(q)]);
-  return res.json({ success: true, data: { items, total, page: Number(page), limit: Number(limit) } });
+  try {
+    const { 
+      page = '1', 
+      limit = '20', 
+      tech, 
+      author, 
+      status, 
+      featured, 
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      search
+    } = req.query as any;
+    
+    const q: any = { visibility: 'public', isDraft: false };
+    
+    if (tech) q.techStack = { $in: String(tech).split(',') };
+    if (author) q.author = author;
+    if (status) q.status = status;
+    if (featured === 'true') q.featured = true;
+    if (search) {
+      q.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { tagline: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { tags: { $in: [new RegExp(search, 'i')] } },
+        { keyFeatures: { $in: [new RegExp(search, 'i')] } }
+      ];
+    }
+    
+    const sort: any = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    
+    const cursor = Project.find(q)
+      .populate('author', 'username name avatarUrl')
+      .populate('contributors.user', 'username name avatarUrl')
+      .sort(sort)
+      .skip((Number(page) - 1) * Number(limit))
+      .limit(Number(limit));
+      
+    const [items, total] = await Promise.all([cursor, Project.countDocuments(q)]);
+    
+    return res.json({ 
+      success: true, 
+      data: { 
+        items, 
+        total, 
+        page: Number(page), 
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit))
+      } 
+    });
+  } catch (error) {
+    console.error('List projects error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch projects' });
+  }
 }
 
 export async function getProject(req: Request, res: Response) {
-  const project = await Project.findById(req.params.id);
-  if (!project) return res.status(404).json({ success: false, error: 'Not found' });
-  return res.json({ success: true, data: project });
+  try {
+    const project = await Project.findById(req.params.id)
+      .populate('author', 'username name avatarUrl bio skills')
+      .populate('contributors.user', 'username name avatarUrl skills');
+    
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+    
+    // Increment view count
+    await Project.findByIdAndUpdate(req.params.id, {
+      $inc: { 'metrics.views': 1 }
+    });
+    
+    // Get comments for this project
+    const comments = await Comment.find({
+      parentType: 'Project',
+      parentId: req.params.id
+    })
+      .populate('author', 'username name avatarUrl')
+      .sort({ createdAt: -1 })
+      .limit(20);
+    
+    return res.json({ 
+      success: true, 
+      data: { 
+        project, 
+        comments 
+      } 
+    });
+  } catch (error) {
+    console.error('Get project error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch project' });
+  }
 }
 
 export async function createProject(req: Request, res: Response) {
-  const userId = (req as any).user?.id;
-  if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
-  const project = await Project.create({ ...req.body, author: userId });
-  return res.status(201).json({ success: true, data: project });
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    // Validate required fields
+    const { title, tagline, description, category, links } = req.body;
+    if (!title || !tagline || !description || !category || !links?.githubRepo) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing required fields: title, tagline, description, category, and githubRepo are required' 
+      });
+    }
+
+    const project = await Project.create({ 
+      ...req.body, 
+      author: userId,
+      metrics: {
+        views: 0,
+        likes: 0,
+        forks: 0,
+        comments: 0,
+        stars: 0,
+        saves: 0,
+        shares: 0
+      }
+    });
+
+    // Award badge for first project
+    const user = await User.findById(userId);
+    if (user && user.stats?.projectsUploaded === 0) {
+      await User.findByIdAndUpdate(userId, {
+        $inc: { 'stats.projectsUploaded': 1 }
+      });
+      // Note: Badge system will be implemented separately with proper ObjectId references
+    } else if (user) {
+      await User.findByIdAndUpdate(userId, {
+        $inc: { 'stats.projectsUploaded': 1 }
+      });
+    }
+
+    const populatedProject = await Project.findById(project._id)
+      .populate('author', 'username name avatarUrl')
+      .populate('contributors.user', 'username name avatarUrl');
+
+    // Check for badge awards
+    try {
+      await BadgeService.checkAndAwardBadges(userId, 'project_created', (project._id as any).toString());
+    } catch (badgeError) {
+      console.error('Error checking badges for project creation:', badgeError);
+    }
+
+    return res.status(201).json({ success: true, data: populatedProject });
+  } catch (error) {
+    console.error('Create project error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create project' });
+  }
 }
 
 export async function updateProject(req: Request, res: Response) {
@@ -47,23 +178,222 @@ export async function recalcHealth(req: Request, res: Response) {
 }
 
 export async function forkProject(req: Request, res: Response) {
-  const userId = (req as any).user?.id;
-  const project = await Project.findById(req.params.id);
-  if (!project) return res.status(404).json({ success: false, error: 'Not found' });
-  const fork = await Project.create({
-    title: project.title + ' (fork)',
-    description: project.description,
-    author: userId,
-    collaborators: [],
-    techStack: project.techStack,
-    coverImage: project.coverImage,
-    screenshots: project.screenshots,
-    repoUrl: project.repoUrl,
-    liveUrl: project.liveUrl,
-    docs: project.docs,
-    timeline: project.timeline,
-  });
-  return res.json({ success: true, data: fork });
+  try {
+    const userId = (req as any).user?.id;
+    const project = await Project.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+    
+    const fork = await Project.create({
+      title: project.title + ' (fork)',
+      tagline: project.tagline,
+      description: project.description,
+      author: userId,
+      contributors: [],
+      techStack: project.techStack,
+      category: project.category,
+      difficultyLevel: project.difficultyLevel,
+      developmentStage: 'idea',
+      coverImage: project.coverImage,
+      screenshots: project.screenshots,
+      keyFeatures: project.keyFeatures,
+      links: project.links,
+      collaboration: {
+        openToCollaboration: true,
+        lookingForRoles: [],
+        teammates: []
+      },
+      badges: [],
+      visibility: 'public',
+      isDraft: false,
+      tags: project.tags,
+      status: 'planning',
+      metrics: {
+        views: 0,
+        likes: 0,
+        forks: 0,
+        comments: 0,
+        stars: 0,
+        saves: 0,
+        shares: 0
+      }
+    });
+    
+    // Increment fork count on original project
+    await Project.findByIdAndUpdate(req.params.id, {
+      $inc: { 'metrics.forks': 1 }
+    });
+    
+    return res.json({ success: true, data: fork });
+  } catch (error) {
+    console.error('Fork project error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fork project' });
+  }
+}
+
+export async function getTrendingProjects(req: Request, res: Response) {
+  try {
+    const { limit = '10' } = req.query;
+    
+    // Get projects with highest engagement (likes + views + comments)
+    const projects = await Project.find({ visibility: 'public', isDraft: false })
+      .populate('author', 'username name avatarUrl')
+      .sort({ 
+        'metrics.likes': -1, 
+        'metrics.views': -1, 
+        'metrics.comments': -1,
+        createdAt: -1 
+      })
+      .limit(Number(limit));
+    
+    res.json({ success: true, data: projects });
+  } catch (error) {
+    console.error('Get trending projects error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch trending projects' });
+  }
+}
+
+export async function likeProject(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+    const { projectId } = req.params;
+    
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+    
+    // Check if user already liked this project
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    
+    // For now, just increment like count (in a real app, you'd track individual likes)
+    await Project.findByIdAndUpdate(projectId, {
+      $inc: { 'metrics.likes': 1 }
+    });
+    
+    // Update user's stats
+    await User.findByIdAndUpdate(userId, {
+      $inc: { 'stats.likesReceived': 1 }
+    });
+    
+    res.json({ success: true, message: 'Project liked successfully' });
+  } catch (error) {
+    console.error('Like project error:', error);
+    res.status(500).json({ success: false, error: 'Failed to like project' });
+  }
+}
+
+export async function bookmarkProject(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+    const { projectId } = req.params;
+    
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    
+    // Toggle bookmark
+    const isBookmarked = user.bookmarkedProjects.includes(projectId as any);
+    
+    if (isBookmarked) {
+      await User.findByIdAndUpdate(userId, {
+        $pull: { bookmarkedProjects: projectId }
+      });
+      await Project.findByIdAndUpdate(projectId, {
+        $inc: { 'metrics.saves': -1 }
+      });
+    } else {
+      await User.findByIdAndUpdate(userId, {
+        $addToSet: { bookmarkedProjects: projectId }
+      });
+      await Project.findByIdAndUpdate(projectId, {
+        $inc: { 'metrics.saves': 1 }
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      data: { 
+        bookmarked: !isBookmarked,
+        message: !isBookmarked ? 'Project bookmarked' : 'Bookmark removed'
+      } 
+    });
+  } catch (error) {
+    console.error('Bookmark project error:', error);
+    res.status(500).json({ success: false, error: 'Failed to bookmark project' });
+  }
+}
+
+export async function shareProject(req: Request, res: Response) {
+  try {
+    const { projectId } = req.params;
+    
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+    
+    // Increment share count
+    await Project.findByIdAndUpdate(projectId, {
+      $inc: { 'metrics.shares': 1 }
+    });
+    
+    res.json({ 
+      success: true, 
+      data: { 
+        message: 'Project shared successfully',
+        shareUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/projects/${projectId}`
+      } 
+    });
+  } catch (error) {
+    console.error('Share project error:', error);
+    res.status(500).json({ success: false, error: 'Failed to share project' });
+  }
+}
+
+export async function requestCollaboration(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+    const { projectId } = req.params;
+    const { message, role } = req.body;
+    
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+    
+    if (!project.collaboration?.openToCollaboration) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'This project is not open to collaboration' 
+      });
+    }
+    
+    // In a real app, you'd create a collaboration request record
+    // For now, we'll just return success
+    res.json({ 
+      success: true, 
+      data: { 
+        message: 'Collaboration request sent successfully',
+        projectTitle: project.title,
+        authorUsername: project.author
+      } 
+    });
+  } catch (error) {
+    console.error('Request collaboration error:', error);
+    res.status(500).json({ success: false, error: 'Failed to send collaboration request' });
+  }
 }
 
 

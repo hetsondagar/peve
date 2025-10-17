@@ -1,52 +1,129 @@
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { Bell, User } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { NetworkBackground } from '@/components/NetworkBackground';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Award, Zap, Crown } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import SearchBar from '@/components/SearchBar';
 
-const badges = [
-  { name: 'Top Collaborator', icon: '🤝', description: 'Worked on 10+ projects', unlocked: true },
-  { name: 'Idea Bee', icon: '💡', description: 'Shared 25+ ideas', unlocked: true },
-  { name: 'Project Master', icon: '🚀', description: 'Completed 5 projects', unlocked: true },
-  { name: 'Hive Leader', icon: '👑', description: 'Top 10 on leaderboard', unlocked: false },
-  { name: 'Code Wizard', icon: '🧙', description: '1000+ contributions', unlocked: false },
-  { name: 'Design Guru', icon: '🎨', description: 'Outstanding UI/UX work', unlocked: false },
-];
-
-const leaderboard = [
-  { rank: 1, username: 'Sarah Chen', avatar: '🧑‍💻', score: 2450, recentlyActive: true },
-  { rank: 2, username: 'Alex Rivera', avatar: '👨‍🎨', score: 2380, recentlyActive: true },
-  { rank: 3, username: 'Priya Sharma', avatar: '👩‍🔬', score: 2210, recentlyActive: false },
-  { rank: 4, username: 'David Kim', avatar: '👨‍💼', score: 2150, recentlyActive: true },
-  { rank: 5, username: 'Emma Wilson', avatar: '👩‍💻', score: 2090, recentlyActive: false },
-  { rank: 6, username: 'Carlos Garcia', avatar: '👨‍🔧', score: 1980, recentlyActive: true },
-  { rank: 7, username: 'Lisa Anderson', avatar: '👩‍🚀', score: 1875, recentlyActive: false },
-  { rank: 8, username: 'James Brown', avatar: '👨‍🎓', score: 1820, recentlyActive: true },
-];
 
 export default function Leaderboard() {
   const navigate = useNavigate();
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [userBadges, setUserBadges] = useState<any[]>([]);
+  const [userRank, setUserRank] = useState<any>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  // Fetch leaderboard data
+  useEffect(() => {
+    const fetchLeaderboardData = async () => {
+      try {
+        const [leaderboardResponse, badgesResponse, rankResponse] = await Promise.all([
+          apiFetch('/api/leaderboard'),
+          apiFetch('/api/leaderboard/badges'),
+          apiFetch('/api/leaderboard/rank')
+        ]);
+
+        console.log('Leaderboard response:', leaderboardResponse);
+        console.log('Badges response:', badgesResponse);
+        console.log('Rank response:', rankResponse);
+
+        if (leaderboardResponse.success && leaderboardResponse.data) {
+          setLeaderboardData(leaderboardResponse.data);
+        }
+        if (badgesResponse.success && badgesResponse.data) {
+          setUserBadges(badgesResponse.data);
+        }
+        if (rankResponse.success && rankResponse.data) {
+          setUserRank(rankResponse.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch leaderboard data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load leaderboard data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaderboardData();
+  }, [toast]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen overflow-hidden">
       <NetworkBackground />
       
       {/* Navbar */}
       <nav className="navbar">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-3">
-              <img src={'/final.png'} alt="peve" className="w-12 h-12" />
-              <button onClick={() => navigate('/home')} className="text-2xl font-bold brand-peve">peve</button>
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo & Nav */}
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <img src={'/final.png'} alt="peve" className="w-12 h-12" />
+                <button onClick={() => navigate('/home')} className="text-2xl font-bold brand-peve">peve</button>
+              </div>
+              <div className="hidden md:flex gap-6">
+                <button onClick={() => navigate('/home')} className="text-muted-foreground hover:text-primary transition-colors">Explore</button>
+                <button onClick={() => navigate('/ideas')} className="text-muted-foreground hover:text-primary transition-colors">Ideas</button>
+                <button onClick={() => navigate('/projects')} className="text-muted-foreground hover:text-primary transition-colors">Projects</button>
+                <button onClick={() => navigate('/codetalks')} className="text-muted-foreground hover:text-primary transition-colors">CodeTalks</button>
+                <button onClick={() => navigate('/leaderboard')} className="text-primary">Leaderboard</button>
+              </div>
             </div>
-            <div className="hidden md:flex gap-6">
-              <button onClick={() => navigate('/home')} className="text-muted-foreground hover:text-primary transition-colors">Explore</button>
-              <button onClick={() => navigate('/leaderboard')} className="text-primary">Leaderboard</button>
-              <button onClick={() => navigate('/profile')} className="text-muted-foreground hover:text-primary transition-colors">Profile</button>
+
+            {/* Search Bar */}
+            <div className="flex-1 max-w-2xl mx-8">
+              <SearchBar />
+            </div>
+
+            {/* User Actions */}
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
+                <Bell className="w-5 h-5 text-muted-foreground" />
+              </button>
+              <div className="relative" ref={dropdownRef}>
+                <button 
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="p-2 rounded-lg hover:bg-primary/10 transition-colors"
+                >
+                  <User className="w-5 h-5 text-muted-foreground" />
+                </button>
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-40 rounded-xl glass border border-border p-2 z-50">
+                    <button onClick={() => { navigate('/profile'); setShowProfileDropdown(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-primary/10">Profile</button>
+                    <button onClick={() => { navigate('/codetalks'); setShowProfileDropdown(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-primary/10">CodeTalks</button>
+                    <button onClick={() => { localStorage.removeItem('peve_token'); navigate('/login'); setShowProfileDropdown(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-primary/10">Log out</button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          <div className="text-3xl">👤</div>
         </div>
       </nav>
 
@@ -56,7 +133,7 @@ export default function Leaderboard() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl font-bold gradient-text mb-4">Every buzz counts</h1>
+          <h1 className="text-4xl font-bold mb-4">Every <span className="gradient-text">buzz</span> counts</h1>
           <p className="text-muted-foreground">Celebrate achievements and climb the ranks</p>
         </motion.div>
 
@@ -75,7 +152,10 @@ export default function Leaderboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {badges.map((badge, index) => (
+                  {loading ? (
+                    <div className="text-center py-4 text-muted-foreground">Loading badges...</div>
+                  ) : userBadges.length > 0 ? (
+                    userBadges.map((badge, index) => (
                     <motion.div
                       key={badge.name}
                       initial={{ opacity: 0, scale: 0.9 }}
@@ -96,7 +176,10 @@ export default function Leaderboard() {
                         {badge.unlocked && <Badge className="bg-primary/20 text-primary">✓</Badge>}
                       </div>
                     </motion.div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground">No badges yet</div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -117,7 +200,10 @@ export default function Leaderboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {leaderboard.map((user, index) => (
+                    {loading ? (
+                      <div className="text-center py-4 text-muted-foreground">Loading leaderboard...</div>
+                    ) : leaderboardData.length > 0 ? (
+                      leaderboardData.map((user, index) => (
                       <motion.div
                         key={user.rank}
                         initial={{ opacity: 0, x: 20 }}
@@ -137,7 +223,15 @@ export default function Leaderboard() {
 
                         {/* Avatar */}
                         <div className="relative">
-                          <div className="text-3xl">{user.avatar}</div>
+                          <div className="text-3xl">
+                            {user.avatarUrl ? (
+                              <img src={user.avatarUrl} alt={user.username} className="w-8 h-8 rounded-full" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-semibold">
+                                {user.username?.charAt(0).toUpperCase() || 'U'}
+                              </div>
+                            )}
+                          </div>
                           {user.recentlyActive && (
                             <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary animate-glow-pulse" />
                           )}
@@ -145,15 +239,23 @@ export default function Leaderboard() {
 
                         {/* Username */}
                         <div className="flex-1">
-                          <div className="font-semibold text-foreground group-hover:gradient-text transition-all">
-                            {user.username}
+                          <div className="font-semibold text-foreground">
+                            {user.username || user.name}
                           </div>
-                          {user.recentlyActive && (
-                            <div className="text-xs text-primary flex items-center gap-1">
-                              <Zap className="w-3 h-3" />
-                              Recently active
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2 mt-1">
+                            {user.badges && user.badges.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-sm">{user.badges[0].icon}</span>
+                                <span className="text-xs text-muted-foreground">{user.badges[0].name}</span>
+                              </div>
+                            )}
+                            {user.recentlyActive && (
+                              <div className="text-xs text-primary flex items-center gap-1">
+                                <Zap className="w-3 h-3" />
+                                Recently active
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* Score */}
@@ -162,7 +264,10 @@ export default function Leaderboard() {
                           <div className="text-xs text-muted-foreground">points</div>
                         </div>
                       </motion.div>
-                    ))}
+                      ))
+                    ) : (
+                      <div className="text-center py-4 text-muted-foreground">No leaderboard data available</div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

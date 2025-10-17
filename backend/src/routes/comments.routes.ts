@@ -1,14 +1,24 @@
 import { Router } from 'express';
-import { createComment, deleteComment, listComments, updateComment } from '../controllers/comments.controller';
 import { requireAuth } from '../middlewares/auth';
+import {
+  createComment,
+  getComments,
+  getCommentReplies,
+  updateComment,
+  deleteComment,
+  toggleLikeComment
+} from '../controllers/comments.controller';
 
 const router = Router();
 
-router.get('/', listComments);
+// Comment CRUD routes
 router.post('/', requireAuth, createComment);
-router.put('/:id', requireAuth, updateComment);
-router.delete('/:id', requireAuth, deleteComment);
+router.get('/:targetType/:targetId', getComments);
+router.get('/:commentId/replies', getCommentReplies);
+router.put('/:commentId', requireAuth, updateComment);
+router.delete('/:commentId', requireAuth, deleteComment);
+
+// Like comment
+router.post('/:commentId/like', requireAuth, toggleLikeComment);
 
 export default router;
-
-

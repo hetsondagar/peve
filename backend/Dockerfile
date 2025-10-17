@@ -1,21 +1,20 @@
-FROM node:18-alpine AS deps
-WORKDIR /app
-COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
-RUN npm ci || yarn install --frozen-lockfile || true
-
+# Stage 1: Build
 FROM node:18-alpine AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json ./
+RUN npm install --production=false
 COPY . .
 RUN npm run build
 
-FROM node:18-alpine AS runner
+# Stage 2: Run
+FROM node:18-alpine
 WORKDIR /app
-ENV NODE_ENV=production
+COPY --from=builder /app/package.json /app/package-lock.json ./
+RUN npm install --production=true
 COPY --from=builder /app/dist ./dist
-COPY package.json ./package.json
-RUN npm i --omit=dev && npm cache clean --force
+COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/env.example ./env.example
 EXPOSE 4000
-CMD ["node", "dist/index.js"]
+CMD ["npm", "start"]
 
 

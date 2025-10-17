@@ -48,7 +48,36 @@
     --glow-violet: 0 0 20px hsl(270 100% 68% / 0.5);
     --glow-amber: 0 0 20px hsl(45 100% 50% / 0.5);
     --glow-subtle: 0 0 10px hsl(180 100% 46% / 0.2);
+  }
 
+  .dark {
+    /* Ensure dark mode is always applied */
+    color-scheme: dark;
+  }
+
+  /* Force dark mode for all elements */
+  * {
+    color-scheme: dark;
+  }
+
+  /* Enhanced input styling for dark mode */
+  input, textarea, select {
+    color-scheme: dark;
+    background-color: hsl(var(--input));
+    color: hsl(var(--foreground));
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: hsl(var(--muted-foreground));
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+  }
+
+  :root {
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(180 100% 46%), hsl(270 100% 68%));
     --gradient-accent: linear-gradient(135deg, hsl(180 100% 46%), hsl(45 100% 50%));
@@ -136,12 +165,11 @@
     box-shadow: var(--glow-subtle);
   }
 
-  /* Animated Gradient Text */
+  /* Animated Gradient Text - Only for brand words */
   .gradient-text {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-family: 'Orbitron', 'Poppins', sans-serif;
+    color: hsl(180 100% 35%);
+    letter-spacing: 0.04em;
   }
 
   /* Glass Morphism */

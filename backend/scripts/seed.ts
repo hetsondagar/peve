@@ -1,71 +1,253 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 import { User } from '../src/models/User';
 import { Idea } from '../src/models/Idea';
 import { Project } from '../src/models/Project';
 import { Badge } from '../src/models/Badge';
+import bcrypt from 'bcryptjs';
 
-async function main() {
-  const uri = process.env.MONGO_URI;
-  if (!uri) throw new Error('MONGO_URI missing');
-  await mongoose.connect(uri);
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/peve';
+console.log('Seed script connecting to:', MONGO_URI);
 
-  await Promise.all([User.deleteMany({}), Idea.deleteMany({}), Project.deleteMany({}), Badge.deleteMany({})]);
+async function seedDatabase() {
+  try {
+    await mongoose.connect(MONGO_URI);
+    console.log('Connected to MongoDB');
 
-  const adminPass = await bcrypt.hash('admin123', 12);
-  const admin = await User.create({ name: 'Admin', email: 'admin@peve.dev', passwordHash: adminPass, role: 'admin', skills: ['React','Node','MongoDB'], interests: ['Web Dev','AI'] });
+    // Clear existing data
+    await User.deleteMany({});
+    await Idea.deleteMany({});
+    await Project.deleteMany({});
+    await Badge.deleteMany({});
+    console.log('Cleared existing data');
 
-  const users = await User.insertMany(
-    Array.from({ length: 10 }).map((_, i) => ({
-      name: `User ${i+1}`,
-      email: `user${i+1}@peve.dev`,
-      passwordHash: adminPass,
-      college: ['A','B','C'][i%3],
-      skills: ['React','Node','MongoDB','Python','Web3'].slice(0, (i%5)+1),
-      interests: ['Web Dev','AI','ML','Blockchain'].slice(0, (i%4)+1),
-    }))
-  );
+    // Create sample badges
+    const badges = await Badge.create([
+      {
+        key: 'first_project',
+        label: 'First Project',
+        description: 'Uploaded your first project',
+        iconUrl: '🏆',
+        criteria: { projectsUploaded: 1 }
+      },
+      {
+        key: 'idea_master',
+        label: 'Idea Master',
+        description: 'Posted 5 creative ideas',
+        iconUrl: '💡',
+        criteria: { ideasPosted: 5 }
+      },
+      {
+        key: 'collaborator',
+        label: 'Team Player',
+        description: 'Joined 3 collaborations',
+        iconUrl: '🤝',
+        criteria: { collaborationsJoined: 3 }
+      },
+      {
+        key: 'popular',
+        label: 'Popular',
+        description: 'Received 50+ likes',
+        iconUrl: '⭐',
+        criteria: { likesReceived: 50 }
+      }
+    ]);
+    console.log('Created badges');
 
-  const ideas = await Idea.insertMany(
-    Array.from({ length: 15 }).map((_, i) => ({
-      title: `Sample Idea ${i+1}`,
-      description: 'This is a seed idea',
-      author: users[i % users.length]._id,
-      tags: ['MERN','Campus','Productivity'].slice(0, (i%3)+1),
-      status: i % 2 === 0 ? 'brainstorm' : 'want_to_build',
-      likes: Math.floor(Math.random()*50),
-      views: Math.floor(Math.random()*200),
-      comments: Math.floor(Math.random()*20),
-    }))
-  );
+    // Create sample users
+    console.log('Creating users...');
+    const users = await User.create([
+      {
+        username: 'alexdev',
+        name: 'Alex Developer',
+        email: 'alex@example.com',
+        passwordHash: 'password123',
+        bio: 'Full-stack developer passionate about React and Node.js',
+        skills: ['React', 'Node.js', 'TypeScript', 'MongoDB'],
+        interests: ['Web Development', 'AI/ML', 'Open Source'],
+        college: 'Tech University',
+        role: 'developer',
+        stats: {
+          projectsUploaded: 3,
+          ideasPosted: 5,
+          collaborationsJoined: 2,
+          likesReceived: 25,
+          totalViews: 150
+        },
+        badges: [badges[0]._id, badges[1]._id]
+      },
+      {
+        username: 'sarahcoder',
+        name: 'Sarah Coder',
+        email: 'sarah@example.com',
+        passwordHash: 'password123',
+        bio: 'Frontend specialist with a love for beautiful UIs',
+        skills: ['React', 'Vue.js', 'CSS', 'Design Systems'],
+        interests: ['UI/UX', 'Design', 'Animation'],
+        college: 'Design Institute',
+        role: 'developer',
+        stats: {
+          projectsUploaded: 2,
+          ideasPosted: 3,
+          collaborationsJoined: 4,
+          likesReceived: 18,
+          totalViews: 120
+        },
+        badges: [badges[0]._id, badges[2]._id]
+      },
+      {
+        username: 'mikebuilder',
+        name: 'Mike Builder',
+        email: 'mike@example.com',
+        passwordHash: 'password123',
+        bio: 'Backend engineer focused on scalable systems',
+        skills: ['Python', 'Django', 'PostgreSQL', 'Docker'],
+        interests: ['Backend', 'DevOps', 'Microservices'],
+        college: 'Engineering College',
+        role: 'developer',
+        stats: {
+          projectsUploaded: 4,
+          ideasPosted: 2,
+          collaborationsJoined: 1,
+          likesReceived: 32,
+          totalViews: 200
+        },
+        badges: [badges[0]._id, badges[3]._id]
+      }
+    ]);
+    console.log('Created users:', users.length);
+    console.log('First user:', users[0] ? { username: users[0].username, email: users[0].email } : 'None');
 
-  await Project.insertMany(
-    Array.from({ length: 6 }).map((_, i) => ({
-      title: `Sample Project ${i+1}`,
-      description: 'This is a seed project',
-      author: users[i % users.length]._id,
-      techStack: ['React','Node','MongoDB','Redis'].slice(0, (i%4)+1),
-      metrics: { views: Math.floor(Math.random()*500), likes: Math.floor(Math.random()*100), forks: 0, comments: Math.floor(Math.random()*40) },
-      healthScore: Math.floor(Math.random()*100),
-    }))
-  );
+    // Create sample ideas
+    const ideas = await Idea.create([
+      {
+        title: 'AI-Powered Code Review Assistant',
+        description: 'Build an AI tool that automatically reviews code and suggests improvements, focusing on security vulnerabilities and performance optimizations.',
+        author: users[0]._id,
+        tags: ['AI', 'Code Review', 'Security', 'Performance'],
+        skillsNeeded: ['Python', 'Machine Learning', 'NLP', 'Git'],
+        difficulty: 'advanced',
+        estimatedTime: '3-6 months',
+        status: 'brainstorm',
+        isPublic: true,
+        likes: 15,
+        views: 45,
+        comments: 3
+      },
+      {
+        title: 'Real-time Collaborative Whiteboard',
+        description: 'A web-based whiteboard where multiple users can draw, write, and collaborate in real-time with features like sticky notes and shapes.',
+        author: users[1]._id,
+        tags: ['Real-time', 'Collaboration', 'Canvas', 'WebRTC'],
+        skillsNeeded: ['React', 'Socket.io', 'Canvas API', 'WebRTC'],
+        difficulty: 'intermediate',
+        estimatedTime: '2-3 months',
+        status: 'planning',
+        isPublic: true,
+        likes: 22,
+        views: 67,
+        comments: 8
+      },
+      {
+        title: 'Smart Home Energy Monitor',
+        description: 'IoT device and app to monitor and optimize home energy usage with machine learning predictions and cost savings recommendations.',
+        author: users[2]._id,
+        tags: ['IoT', 'Energy', 'Machine Learning', 'Mobile App'],
+        skillsNeeded: ['Arduino', 'Python', 'React Native', 'ML'],
+        difficulty: 'advanced',
+        estimatedTime: '4-6 months',
+        status: 'brainstorm',
+        likes: 18,
+        views: 52,
+        comments: 5
+      },
+      {
+        title: 'Study Group Matching Platform',
+        description: 'Connect students with similar study goals and schedules for virtual study sessions with built-in productivity tools.',
+        author: users[0]._id,
+        tags: ['Education', 'Matching', 'Productivity', 'Social'],
+        skillsNeeded: ['React', 'Node.js', 'Matching Algorithm', 'Video Chat'],
+        difficulty: 'intermediate',
+        estimatedTime: '2-4 months',
+        status: 'in-progress',
+        isPublic: true,
+        likes: 12,
+        views: 38,
+        comments: 2
+      }
+    ]);
+    console.log('Created ideas');
 
-  await Badge.insertMany([
-    { key: 'innovator', label: 'Innovator', description: 'Post 5 ideas' },
-    { key: 'team-player', label: 'Team Player', description: 'Accepted join requests >= 3' },
-    { key: 'mern-wizard', label: 'MERN Wizard', description: '2 MERN projects with health > 70' },
-  ]);
+    // Create sample projects
+    const projects = await Project.create([
+      {
+        title: 'TaskFlow - Project Management Tool',
+        description: 'A modern project management application with kanban boards, time tracking, and team collaboration features.',
+        author: users[0]._id,
+        techStack: ['React', 'Node.js', 'MongoDB', 'Socket.io'],
+        tags: ['Productivity', 'Management', 'Collaboration'],
+        status: 'completed',
+        isPublic: true,
+        repoUrl: 'https://github.com/alexdev/taskflow',
+        liveUrl: 'https://taskflow-demo.vercel.app',
+        metrics: {
+          views: 150,
+          likes: 25,
+          forks: 8,
+          comments: 12,
+          stars: 15
+        },
+        healthScore: 85
+      },
+      {
+        title: 'WeatherWise - Weather Dashboard',
+        description: 'Beautiful weather dashboard with 7-day forecasts, interactive maps, and weather alerts.',
+        author: users[1]._id,
+        techStack: ['Vue.js', 'Chart.js', 'Weather API', 'CSS3'],
+        tags: ['Weather', 'Dashboard', 'Visualization'],
+        status: 'completed',
+        isPublic: true,
+        repoUrl: 'https://github.com/sarahcoder/weatherwise',
+        liveUrl: 'https://weatherwise.netlify.app',
+        metrics: {
+          views: 89,
+          likes: 18,
+          forks: 5,
+          comments: 7,
+          stars: 12
+        },
+        healthScore: 72
+      },
+      {
+        title: 'EcoTracker - Carbon Footprint Calculator',
+        description: 'Track your carbon footprint with daily activities, transportation, and consumption patterns.',
+        author: users[2]._id,
+        techStack: ['Python', 'Django', 'PostgreSQL', 'Chart.js'],
+        tags: ['Environment', 'Tracking', 'Sustainability'],
+        status: 'in-progress',
+        isPublic: true,
+        repoUrl: 'https://github.com/mikebuilder/ecotracker',
+        metrics: {
+          views: 67,
+          likes: 14,
+          forks: 3,
+          comments: 5,
+          stars: 8
+        },
+        healthScore: 68
+      }
+    ]);
+    console.log('Created projects');
 
-  // eslint-disable-next-line no-console
-  console.log('Seed completed:', { admin: admin.email, users: users.length, ideas: ideas.length });
-  await mongoose.disconnect();
+    console.log('✅ Database seeded successfully!');
+    console.log(`Created ${users.length} users, ${ideas.length} ideas, ${projects.length} projects, and ${badges.length} badges`);
+    
+  } catch (error) {
+    console.error('❌ Error seeding database:', error);
+  } finally {
+    await mongoose.disconnect();
+    console.log('Disconnected from MongoDB');
+  }
 }
 
-main().catch((e) => {
-  // eslint-disable-next-line no-console
-  console.error(e);
-  process.exit(1);
-});
-
-
+seedDatabase();

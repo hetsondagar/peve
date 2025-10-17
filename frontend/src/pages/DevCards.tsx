@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GlowButton } from '@/components/ui/glow-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Download, QrCode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -25,8 +26,13 @@ export default function DevCards() {
   });
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen overflow-hidden">
       <NetworkBackground />
+      
+      {/* Theme Toggle */}
+      <div className="absolute top-6 right-6 z-20">
+        <ThemeToggle />
+      </div>
       
       {/* Navbar */}
       <nav className="navbar">
@@ -51,7 +57,7 @@ export default function DevCards() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl font-bold gradient-text mb-4">DevCard Generator</h1>
+          <h1 className="text-4xl font-bold mb-4"><span className="gradient-text">DevCard</span> Generator</h1>
           <p className="text-muted-foreground">Create beautiful cards for your portfolio</p>
         </motion.div>
 

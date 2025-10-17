@@ -3,14 +3,42 @@ export const API_BASE = import.meta?.env?.VITE_API_URL || 'http://localhost:4000
 export async function apiFetch(path: string, init?: RequestInit) {
   const token = localStorage.getItem('peve_token');
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
     ...(init?.headers || {}),
   };
+  
+  // Only set Content-Type for non-FormData requests
+  if (!(init?.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
   if (token) (headers as any).Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || 'Request failed');
-  return data;
+  
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+    const data = await res.json().catch(() => ({}));
+    
+    if (!res.ok) {
+      // Provide more specific error messages based on status code
+      if (res.status === 400) {
+        throw new Error(data?.error || 'Invalid request. Please check your input.');
+      } else if (res.status === 401) {
+        throw new Error(data?.error || 'Authentication failed. Please check your credentials.');
+      } else if (res.status === 409) {
+        throw new Error(data?.error || 'This username or email is already taken.');
+      } else if (res.status === 500) {
+        throw new Error('Server error. Please try again later.');
+      } else {
+        throw new Error(data?.error || `Request failed with status ${res.status}`);
+      }
+    }
+    
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Network error. Please check your connection.');
+  }
 }
 
 export function setAuthTokens(token: string, refreshToken?: string) {

@@ -9,7 +9,7 @@ const glowButtonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gradient-primary text-primary-foreground shadow-[0_0_20px_hsl(180_100%_46%/0.4)] hover:shadow-[0_0_30px_hsl(180_100%_46%/0.6)] hover:scale-105",
+          "bg-primary text-primary-foreground shadow-[0_0_20px_hsl(180_100%_46%/0.4)] hover:shadow-[0_0_30px_hsl(180_100%_46%/0.6)] hover:scale-105",
         outline:
           "border-2 border-primary text-primary bg-transparent hover:bg-primary/10 hover:shadow-[0_0_20px_hsl(180_100%_46%/0.3)]",
         ghost:

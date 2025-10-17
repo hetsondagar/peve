@@ -1,0 +1,18 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const projects_controller_1 = require("../controllers/projects.controller");
+const auth_1 = require("../middlewares/auth");
+const router = (0, express_1.Router)();
+router.get('/', projects_controller_1.listProjects);
+router.get('/trending', projects_controller_1.getTrendingProjects);
+router.get('/:id', projects_controller_1.getProject);
+router.post('/', auth_1.requireAuth, projects_controller_1.createProject);
+router.put('/:id', auth_1.requireAuth, projects_controller_1.updateProject);
+router.post('/:id/health', auth_1.requireAuth, projects_controller_1.recalcHealth);
+router.post('/:id/fork', auth_1.requireAuth, projects_controller_1.forkProject);
+router.post('/:projectId/like', auth_1.requireAuth, projects_controller_1.likeProject);
+router.post('/:projectId/bookmark', auth_1.requireAuth, projects_controller_1.bookmarkProject);
+router.post('/:projectId/share', projects_controller_1.shareProject);
+router.post('/:projectId/collaborate', auth_1.requireAuth, projects_controller_1.requestCollaboration);
+exports.default = router;

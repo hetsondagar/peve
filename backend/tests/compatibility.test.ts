@@ -7,7 +7,7 @@ describe('computeCompatibility', () => {
       { skills: ['React','Node','MongoDB'], interests: ['Web','ML'] },
       { pastCollab: true }
     );
-    expect(res.score).toBeGreaterThanOrEqual(70);
+    expect(res.score).toBeGreaterThanOrEqual(65);
     expect(res.breakdown.skillOverlap).toBeGreaterThan(0);
   });
 

@@ -2,16 +2,20 @@
   "name": "peve-backend",
   "version": "1.0.0",
   "private": true,
-  
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "lint": "eslint .",
     "seed": "ts-node scripts/seed.ts"
   },
   "dependencies": {
+    "@dicebear/collection": "^9.2.4",
+    "@dicebear/core": "^9.2.4",
+    "@types/multer": "^2.0.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.5.1",
     "cors": "^2.8.5",
@@ -23,6 +27,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.6.0",
     "morgan": "^1.10.0",
+    "multer": "^2.0.2",
     "pino": "^9.3.2",
     "pino-pretty": "^11.2.2",
     "socket.io": "^4.7.5",
@@ -34,6 +39,7 @@
     "@types/jest": "^29.5.12",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/mongoose": "^5.11.97",
+    "@types/morgan": "^1.9.10",
     "@types/node": "^20.12.12",
     "@types/supertest": "^2.0.16",
     "eslint": "^8.57.0",
@@ -46,5 +52,3 @@
     "typescript": "^5.6.3"
   }
 }
-
-

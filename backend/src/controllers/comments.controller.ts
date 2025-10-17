@@ -1,42 +1,329 @@
 import { Request, Response } from 'express';
 import { Comment } from '../models/Comment';
+import { Idea } from '../models/Idea';
+import { Project } from '../models/Project';
+import { User } from '../models/User';
 
 export async function createComment(req: Request, res: Response) {
-  const userId = (req as any).user?.id;
-  if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
-  const { parentType, parentId, body, attachments } = req.body;
-  const c = await Comment.create({ author: userId, parentType, parentId, body, attachments });
-  return res.status(201).json({ success: true, data: c });
+  try {
+    const userId = (req as any).user?.id;
+    const { content, targetType, targetId, parentComment } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    if (!content || !targetType || !targetId) {
+      return res.status(400).json({ success: false, error: 'Content, targetType, and targetId are required' });
+    }
+
+    const normalizedTargetType = targetType.toLowerCase();
+    if (!['idea', 'project', 'prompt'].includes(normalizedTargetType)) {
+      return res.status(400).json({ success: false, error: 'targetType must be "idea", "project", or "prompt"' });
+    }
+
+    // Verify target exists
+    if (normalizedTargetType === 'idea') {
+      const idea = await Idea.findById(targetId);
+      if (!idea) {
+        return res.status(404).json({ success: false, error: 'Idea not found' });
+      }
+    } else if (normalizedTargetType === 'project') {
+      const project = await Project.findById(targetId);
+      if (!project) {
+        return res.status(404).json({ success: false, error: 'Project not found' });
+      }
+    } else if (normalizedTargetType === 'prompt') {
+      // For prompts, we don't need to verify existence as they're managed by the prompt system
+      // The prompt controller will handle this
+    }
+
+    // Create comment
+    const comment = await Comment.create({
+      content: content.trim(),
+      author: userId,
+      targetType: normalizedTargetType,
+      targetId,
+      parentComment: parentComment || undefined,
+    });
+
+    // Populate author info
+    await comment.populate('author', 'username name avatarUrl');
+
+    // Update comment count on target
+    if (normalizedTargetType === 'idea') {
+      await Idea.findByIdAndUpdate(targetId, {
+        $inc: { commentCount: 1 }
+      });
+
+      // Create notification for idea author (if not the same user)
+      const idea = await Idea.findById(targetId);
+      if (idea && idea.author.toString() !== userId) {
+        const user = await User.findById(userId);
+        await User.findByIdAndUpdate(idea.author, {
+          $push: {
+            notifications: {
+              type: 'idea_commented',
+              message: `💬 ${user?.username || user?.name} commented on your idea: "${idea.title}"`,
+              relatedId: targetId,
+              seen: false,
+              createdAt: new Date(),
+            }
+          }
+        });
+      }
+    } else {
+      await Project.findByIdAndUpdate(targetId, {
+        $inc: { 'metrics.comments': 1 }
+      });
+
+      // Create notification for project author (if not the same user)
+      const project = await Project.findById(targetId);
+      if (project && project.author.toString() !== userId) {
+        const user = await User.findById(userId);
+        await User.findByIdAndUpdate(project.author, {
+          $push: {
+            notifications: {
+              type: 'project_commented',
+              message: `💬 ${user?.username || user?.name} commented on your project: "${project.title}"`,
+              relatedId: targetId,
+              seen: false,
+              createdAt: new Date(),
+            }
+          }
+        });
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      data: comment
+    });
+
+  } catch (error) {
+    console.error('Error creating comment:', error);
+    res.status(500).json({ success: false, error: 'Failed to create comment' });
+  }
 }
 
-export async function listComments(req: Request, res: Response) {
-  const { parentType, parentId, page = '1', limit = '20' } = req.query as any;
-  const q: any = { parentType, parentId };
-  const cursor = Comment.find(q)
-    .sort({ createdAt: -1 })
-    .skip((Number(page) - 1) * Number(limit))
-    .limit(Number(limit));
-  const [items, total] = await Promise.all([cursor, Comment.countDocuments(q)]);
-  return res.json({ success: true, data: { items, total, page: Number(page), limit: Number(limit) } });
+export async function getComments(req: Request, res: Response) {
+  try {
+    const { targetType, targetId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    const normalizedTargetType = targetType.toLowerCase();
+    if (!['idea', 'project', 'prompt'].includes(normalizedTargetType)) {
+      return res.status(400).json({ success: false, error: 'targetType must be "idea", "project", or "prompt"' });
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const comments = await Comment.find({
+      targetType: normalizedTargetType,
+      targetId,
+      parentComment: { $exists: false } // Only top-level comments
+    })
+      .populate('author', 'username name avatarUrl')
+      .populate({
+        path: 'repliesCount',
+        select: '_id'
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    const totalComments = await Comment.countDocuments({
+      targetType,
+      targetId,
+      parentComment: { $exists: false }
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        comments,
+        pagination: {
+          current: Number(page),
+          total: Math.ceil(totalComments / Number(limit)),
+          hasNext: skip + comments.length < totalComments,
+          hasPrev: Number(page) > 1
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting comments:', error);
+    res.status(500).json({ success: false, error: 'Failed to get comments' });
+  }
+}
+
+export async function getCommentReplies(req: Request, res: Response) {
+  try {
+    const { commentId } = req.params;
+    const { page = 1, limit = 5 } = req.query;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const replies = await Comment.find({
+      parentComment: commentId
+    })
+      .populate('author', 'username name avatarUrl')
+      .sort({ createdAt: 1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    const totalReplies = await Comment.countDocuments({
+      parentComment: commentId
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        replies,
+        pagination: {
+          current: Number(page),
+          total: Math.ceil(totalReplies / Number(limit)),
+          hasNext: skip + replies.length < totalReplies,
+          hasPrev: Number(page) > 1
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting comment replies:', error);
+    res.status(500).json({ success: false, error: 'Failed to get comment replies' });
+  }
 }
 
 export async function updateComment(req: Request, res: Response) {
-  const userId = (req as any).user?.id;
-  const c = await Comment.findById(req.params.id);
-  if (!c) return res.status(404).json({ success: false, error: 'Not found' });
-  if (String(c.author) !== String(userId)) return res.status(403).json({ success: false, error: 'Forbidden' });
-  c.body = req.body.body ?? c.body;
-  await c.save();
-  return res.json({ success: true, data: c });
+  try {
+    const userId = (req as any).user?.id;
+    const { commentId } = req.params;
+    const { content } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'Content is required' });
+    }
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return res.status(404).json({ success: false, error: 'Comment not found' });
+    }
+
+    if (comment.author.toString() !== userId) {
+      return res.status(403).json({ success: false, error: 'Not authorized to edit this comment' });
+    }
+
+    comment.content = content.trim();
+    comment.isEdited = true;
+    comment.editedAt = new Date();
+
+    await comment.save();
+    await comment.populate('author', 'username name avatarUrl');
+
+    return res.json({
+      success: true,
+      data: comment
+    });
+
+  } catch (error) {
+    console.error('Error updating comment:', error);
+    res.status(500).json({ success: false, error: 'Failed to update comment' });
+  }
 }
 
 export async function deleteComment(req: Request, res: Response) {
-  const userId = (req as any).user?.id;
-  const c = await Comment.findById(req.params.id);
-  if (!c) return res.status(404).json({ success: false, error: 'Not found' });
-  if (String(c.author) !== String(userId)) return res.status(403).json({ success: false, error: 'Forbidden' });
-  await c.deleteOne();
-  return res.json({ success: true, data: { deleted: true } });
+  try {
+    const userId = (req as any).user?.id;
+    const { commentId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return res.status(404).json({ success: false, error: 'Comment not found' });
+    }
+
+    if (comment.author.toString() !== userId) {
+      return res.status(403).json({ success: false, error: 'Not authorized to delete this comment' });
+    }
+
+    // Delete all replies first
+    await Comment.deleteMany({ parentComment: commentId });
+
+    // Delete the comment
+    await Comment.findByIdAndDelete(commentId);
+
+    // Update comment count on target
+    if (comment.targetType === 'idea') {
+      await Idea.findByIdAndUpdate(comment.targetId, {
+        $inc: { commentCount: -1 }
+      });
+    } else {
+      await Project.findByIdAndUpdate(comment.targetId, {
+        $inc: { 'metrics.comments': -1 }
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Comment deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete comment' });
+  }
 }
 
+export async function toggleLikeComment(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+    const { commentId } = req.params;
 
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return res.status(404).json({ success: false, error: 'Comment not found' });
+    }
+
+    const isLiked = comment.likedBy.includes(userId as any);
+    let action = '';
+
+    if (isLiked) {
+      // Unlike
+      comment.likedBy = comment.likedBy.filter(id => id.toString() !== userId);
+      comment.likes = Math.max(0, comment.likes - 1);
+      action = 'unliked';
+    } else {
+      // Like
+      comment.likedBy.push(userId as any);
+      comment.likes += 1;
+      action = 'liked';
+    }
+
+    await comment.save();
+
+    return res.json({
+      success: true,
+      data: {
+        action,
+        likes: comment.likes,
+        isLiked: !isLiked
+      }
+    });
+
+  } catch (error) {
+    console.error('Error toggling comment like:', error);
+    res.status(500).json({ success: false, error: 'Failed to toggle comment like' });
+  }
+}

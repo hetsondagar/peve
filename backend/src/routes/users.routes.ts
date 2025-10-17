@@ -1,15 +1,19 @@
 import { Router } from 'express';
-import { User } from '../models/User';
+import { requireAuth } from '../middlewares/auth';
+import { getCurrentUser, updateProfile, getUserById, searchUsers } from '../controllers/users.controller';
 
 const router = Router();
 
-router.get('/check-username', async (req, res) => {
-  const { username } = req.query as any;
-  if (!username) return res.status(400).json({ success: false, error: 'username required' });
-  const exists = await User.exists({ username: String(username).toLowerCase() });
-  return res.json({ success: true, data: { available: !exists } });
-});
+// Get current user profile
+router.get('/me', requireAuth, getCurrentUser);
+
+// Update current user profile
+router.put('/profile', requireAuth, updateProfile);
+
+// Get user by ID (public)
+router.get('/:userId', getUserById);
+
+// Search users (public)
+router.get('/', searchUsers);
 
 export default router;
-
-
