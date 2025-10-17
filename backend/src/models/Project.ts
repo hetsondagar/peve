@@ -42,9 +42,7 @@ export interface IProject extends Document {
   metrics: {
     views: number;
     likes: number;
-    forks: number;
     comments: number;
-    stars: number;
     saves: number;
     shares: number;
   };
@@ -100,9 +98,7 @@ const metricSchema = new Schema(
   {
     views: { type: Number, default: 0 },
     likes: { type: Number, default: 0 },
-    forks: { type: Number, default: 0 },
     comments: { type: Number, default: 0 },
-    stars: { type: Number, default: 0 },
     saves: { type: Number, default: 0 },
     shares: { type: Number, default: 0 },
   },

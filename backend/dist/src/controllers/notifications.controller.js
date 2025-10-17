@@ -8,6 +8,7 @@ async function listNotifications(req, res) {
     const { page = '1', limit = '20' } = req.query;
     const q = { user: userId };
     const cursor = Notification_1.Notification.find(q)
+        .populate('user', 'username name avatarUrl')
         .sort({ createdAt: -1 })
         .skip((Number(page) - 1) * Number(limit))
         .limit(Number(limit));

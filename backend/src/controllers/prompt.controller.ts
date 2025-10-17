@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Prompt } from '../models/Prompt';
 import { Vote } from '../models/Vote';
 import { Comment } from '../models/Comment';
+import { BadgeService } from '../services/badgeService';
 
 // Get today's prompt (same prompt for all users on the same day)
 export async function getTodaysPrompt(req: Request, res: Response) {
@@ -58,13 +59,27 @@ export async function getTodaysPrompt(req: Request, res: Response) {
     
     // Get recent comments
     const comments = await Comment.find({
-      parentType: 'Prompt',
-      parentId: prompt._id
+      targetType: 'prompt',
+      targetId: prompt._id,
+      parentComment: { $exists: false } // Only top-level comments
     })
-      .populate('author', 'username name avatarUrl')
+      .populate('author', 'username name avatarUrl avatarStyle')
       .sort({ createdAt: -1 })
       .limit(10)
       .lean();
+
+    // Add replies count to each comment
+    const commentsWithRepliesCount = await Promise.all(
+      comments.map(async (comment) => {
+        const repliesCount = await Comment.countDocuments({
+          parentComment: comment._id
+        });
+        return {
+          ...comment,
+          repliesCount
+        };
+      })
+    );
     
     // Format vote counts
     const votes = {
@@ -86,7 +101,7 @@ export async function getTodaysPrompt(req: Request, res: Response) {
         prompt,
         votes,
         userVote,
-        comments,
+        comments: commentsWithRepliesCount,
         date: dateString
       }
     });
@@ -105,6 +120,8 @@ export async function voteOnPrompt(req: Request, res: Response) {
     const userId = (req as any).user?.id;
     const { promptId } = req.params;
     const { voteType, optionValue } = req.body;
+    
+    console.log('Vote request:', { userId, promptId, voteType, optionValue });
     
     if (!userId) {
       return res.status(401).json({ 
@@ -140,11 +157,15 @@ export async function voteOnPrompt(req: Request, res: Response) {
       optionValue
     });
     
+    console.log('Vote created:', vote);
+    
     // Get updated vote counts
     const voteCounts = await Vote.aggregate([
       { $match: { promptId } },
       { $group: { _id: '$voteType', count: { $sum: 1 } } }
     ]);
+    
+    console.log('Vote counts:', voteCounts);
     
     const votes = {
       agree: 0,
@@ -158,6 +179,13 @@ export async function voteOnPrompt(req: Request, res: Response) {
       votes[vote._id as keyof typeof votes] = vote.count;
       votes.total += vote.count;
     });
+
+    // Check for badge awards
+    try {
+      await BadgeService.checkAndAwardBadges(userId, 'prompt_voted', promptId);
+    } catch (badgeError) {
+      console.error('Error checking badges for prompt vote:', badgeError);
+    }
     
     return res.json({
       success: true,
@@ -240,6 +268,68 @@ export async function createPrompt(req: Request, res: Response) {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to create prompt' 
+    });
+  }
+}
+
+export async function seedPrompts(req: Request, res: Response) {
+  try {
+    // Check if prompts already exist
+    const existingPrompts = await Prompt.countDocuments();
+    if (existingPrompts > 0) {
+      return res.json({
+        success: true,
+        message: 'Prompts already exist',
+        count: existingPrompts
+      });
+    }
+
+    const samplePrompts = [
+      {
+        question: "Should AI replace human developers in the next 10 years?",
+        type: "debate",
+        category: "tech",
+        tags: ["AI", "development", "future"]
+      },
+      {
+        question: "What's the most important skill for a developer in 2024?",
+        type: "poll",
+        category: "tech",
+        options: ["Problem Solving", "Communication", "Learning Agility", "Technical Skills"],
+        tags: ["skills", "development", "career"]
+      },
+      {
+        question: "If you could only use one programming language for the rest of your career, which would it be?",
+        type: "open",
+        category: "tech",
+        tags: ["programming", "languages", "career"]
+      },
+      {
+        question: "Is remote work better for software development teams?",
+        type: "debate",
+        category: "community",
+        tags: ["remote work", "team", "productivity"]
+      },
+      {
+        question: "What's the biggest challenge facing the tech industry today?",
+        type: "open",
+        category: "future",
+        tags: ["challenges", "industry", "technology"]
+      }
+    ];
+
+    const createdPrompts = await Prompt.insertMany(samplePrompts);
+    
+    return res.json({
+      success: true,
+      message: 'Sample prompts created successfully',
+      data: createdPrompts
+    });
+  } catch (error) {
+    console.error('Seed prompts error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to seed prompts' 
     });
   }
 }

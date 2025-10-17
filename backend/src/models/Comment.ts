@@ -3,7 +3,7 @@ import mongoose, { Schema, Types, Document } from 'mongoose';
 export interface IComment extends Document {
   content: string;
   author: Types.ObjectId;
-  targetType: 'idea' | 'project';
+  targetType: 'idea' | 'project' | 'prompt';
   targetId: Types.ObjectId;
   parentComment?: Types.ObjectId; // For nested comments/replies
   likes: number;
@@ -30,7 +30,7 @@ const commentSchema = new Schema<IComment>(
     },
     targetType: { 
       type: String, 
-      enum: ['idea', 'project'], 
+      enum: ['idea', 'project', 'prompt'], 
       required: true 
     },
     targetId: { 

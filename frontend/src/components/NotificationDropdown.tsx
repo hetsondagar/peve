@@ -27,6 +27,25 @@ export default function NotificationDropdown({ onNotificationClick }: Notificati
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const getNotificationMessage = (type: string, data: any) => {
+    switch (type) {
+      case 'collaboration_request':
+        if (data?.projectTitle) {
+          return `${data?.requesterName || 'Someone'} wants to collaborate on your project: ${data.projectTitle}`;
+        } else if (data?.ideaTitle) {
+          return `${data?.requesterName || 'Someone'} wants to collaborate on your idea: ${data.ideaTitle}`;
+        } else {
+          return `${data?.requesterName || 'Someone'} wants to collaborate with you`;
+        }
+      case 'collaboration_accepted':
+        return `Your collaboration request has been accepted!`;
+      case 'collaboration_rejected':
+        return `Your collaboration request was not accepted`;
+      default:
+        return 'New notification';
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchNotifications();
@@ -47,8 +66,17 @@ export default function NotificationDropdown({ onNotificationClick }: Notificati
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const response = await apiFetch('/api/collaboration/notifications');
-      setNotifications(response.data);
+      const response = await apiFetch('/api/notifications');
+      // Transform the backend notification format to match frontend expectations
+      const transformedNotifications = response.data.items.map((notif: any) => ({
+        _id: notif._id,
+        type: notif.type,
+        message: getNotificationMessage(notif.type, notif.data),
+        relatedId: notif.data?.ideaId || notif.data?.projectId || notif.data?.collaborationId || notif._id,
+        seen: notif.read,
+        createdAt: notif.createdAt
+      }));
+      setNotifications(transformedNotifications);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     } finally {
@@ -59,8 +87,9 @@ export default function NotificationDropdown({ onNotificationClick }: Notificati
   const markAsSeen = async (notificationId: string) => {
     setMarkingAsSeen(notificationId);
     try {
-      await apiFetch(`/api/collaboration/notifications/${notificationId}/seen`, {
-        method: 'PATCH'
+      await apiFetch('/api/notifications/mark-read', {
+        method: 'POST',
+        body: JSON.stringify({ ids: [notificationId] })
       });
       
       setNotifications(prev => 
@@ -77,8 +106,9 @@ export default function NotificationDropdown({ onNotificationClick }: Notificati
 
   const markAllAsSeen = async () => {
     try {
-      await apiFetch('/api/collaboration/notifications/seen-all', {
-        method: 'PATCH'
+      await apiFetch('/api/notifications/mark-read', {
+        method: 'POST',
+        body: JSON.stringify({ ids: [] }) // Empty array marks all as read
       });
       
       setNotifications(prev => 

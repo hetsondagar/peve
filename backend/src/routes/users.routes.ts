@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middlewares/auth';
-import { getCurrentUser, updateProfile, getUserById, searchUsers } from '../controllers/users.controller';
+import { getCurrentUser, updateProfile, getUserById, searchUsers, validateUsernames } from '../controllers/users.controller';
 
 const router = Router();
 
@@ -15,5 +15,8 @@ router.get('/:userId', getUserById);
 
 // Search users (public)
 router.get('/', searchUsers);
+
+// Validate usernames (public)
+router.post('/validate', validateUsernames);
 
 export default router;

@@ -13,8 +13,8 @@ const router = Router();
 
 // Comment CRUD routes
 router.post('/', requireAuth, createComment);
-router.get('/:targetType/:targetId', getComments);
 router.get('/:commentId/replies', getCommentReplies);
+router.get('/:targetType/:targetId', getComments);
 router.put('/:commentId', requireAuth, updateComment);
 router.delete('/:commentId', requireAuth, deleteComment);
 

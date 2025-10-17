@@ -10,7 +10,13 @@ async function completeProfile(req, res) {
         }
         const { avatarStyle, profileComplete } = req.body;
         // Validate avatar style
-        const validStyles = ['botttsNeutral', 'pixelArtNeutral', 'identicon', 'avataaars', 'personas'];
+        const validStyles = [
+            'botttsNeutral', 'pixelArtNeutral', 'identicon', 'avataaars', 'personas',
+            'adventurer', 'adventurerNeutral', 'bigEars', 'bigEarsNeutral', 'bigSmile',
+            'croodles', 'croodlesNeutral', 'funEmoji', 'icons', 'initials',
+            'lorelei', 'loreleiNeutral', 'micah', 'miniavs', 'openPeeps',
+            'shapes', 'thumbs'
+        ];
         if (avatarStyle && !validStyles.includes(avatarStyle)) {
             return res.status(400).json({
                 success: false,

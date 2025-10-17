@@ -10,6 +10,7 @@ const Comment_1 = require("../models/Comment");
 const Idea_1 = require("../models/Idea");
 const Project_1 = require("../models/Project");
 const User_1 = require("../models/User");
+const badgeService_1 = require("../services/badgeService");
 async function createComment(req, res) {
     try {
         const userId = req.user?.id;
@@ -94,6 +95,13 @@ async function createComment(req, res) {
                 });
             }
         }
+        // Check for badge awards
+        try {
+            await badgeService_1.BadgeService.checkAndAwardBadges(userId, 'comment_created', comment._id.toString());
+        }
+        catch (badgeError) {
+            console.error('Error checking badges for comment creation:', badgeError);
+        }
         return res.status(201).json({
             success: true,
             data: comment
@@ -118,14 +126,20 @@ async function getComments(req, res) {
             targetId,
             parentComment: { $exists: false } // Only top-level comments
         })
-            .populate('author', 'username name avatarUrl')
-            .populate({
-            path: 'repliesCount',
-            select: '_id'
-        })
+            .populate('author', 'username name avatarUrl avatarStyle')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(Number(limit));
+        // Add replies count to each comment
+        const commentsWithRepliesCount = await Promise.all(comments.map(async (comment) => {
+            const repliesCount = await Comment_1.Comment.countDocuments({
+                parentComment: comment._id
+            });
+            return {
+                ...comment.toObject(),
+                repliesCount
+            };
+        }));
         const totalComments = await Comment_1.Comment.countDocuments({
             targetType,
             targetId,
@@ -134,7 +148,7 @@ async function getComments(req, res) {
         return res.json({
             success: true,
             data: {
-                comments,
+                comments: commentsWithRepliesCount,
                 pagination: {
                     current: Number(page),
                     total: Math.ceil(totalComments / Number(limit)),
@@ -157,7 +171,7 @@ async function getCommentReplies(req, res) {
         const replies = await Comment_1.Comment.find({
             parentComment: commentId
         })
-            .populate('author', 'username name avatarUrl')
+            .populate('author', 'username name avatarUrl avatarStyle')
             .sort({ createdAt: 1 })
             .skip(skip)
             .limit(Number(limit));

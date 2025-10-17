@@ -6,6 +6,7 @@ export async function listNotifications(req: Request, res: Response) {
   const { page = '1', limit = '20' } = req.query as any;
   const q = { user: userId };
   const cursor = Notification.find(q)
+    .populate('user', 'username name avatarUrl')
     .sort({ createdAt: -1 })
     .skip((Number(page) - 1) * Number(limit))
     .limit(Number(limit));

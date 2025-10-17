@@ -7,6 +7,7 @@ import { apiFetch } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { InteractionButtons } from '@/components/InteractionButtons';
 import Avatar from './Avatar';
+import UsernameWithAvatar from './UsernameWithAvatar';
 
 interface ProjectCardProps {
   id?: string;
@@ -30,6 +31,7 @@ interface ProjectCardProps {
   onLike?: (projectId: string) => void;
   onComment?: (project: any) => void;
   isLiked?: boolean;
+  isSaved?: boolean;
 }
 
 export const ProjectCard = ({
@@ -49,6 +51,7 @@ export const ProjectCard = ({
   onLike,
   onComment,
   isLiked = false,
+  isSaved = false,
 }: ProjectCardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -123,9 +126,15 @@ export const ProjectCard = ({
         {author && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>by</span>
-            <span className="font-medium text-foreground">
-              {author.username || author.name || 'Unknown'}
-            </span>
+            <UsernameWithAvatar
+              username={author.username || author.name || 'Unknown'}
+              userId={author._id}
+              name={author.name}
+              avatarUrl={author.avatarUrl}
+              size={20}
+              variant="compact"
+              className="font-medium"
+            />
           </div>
         )}
         
@@ -166,18 +175,20 @@ export const ProjectCard = ({
           </div>
           
           {id && (
-            <InteractionButtons
-              targetType="project"
-              targetId={id}
-              initialLikeCount={likes}
-              commentCount={comments}
-              onCommentClick={() => {
-                if (onComment) {
-                  onComment({ id, title, description, author });
-                }
-              }}
-              size="sm"
-            />
+            <div onClick={(e) => e.stopPropagation()}>
+              <InteractionButtons
+                targetType="project"
+                targetId={id}
+                initialLikeCount={likes}
+                commentCount={comments}
+                onCommentClick={() => {
+                  if (onComment) {
+                    onComment({ id, title, description, author });
+                  }
+                }}
+                size="sm"
+              />
+            </div>
           )}
         </div>
       </div>

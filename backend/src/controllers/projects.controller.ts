@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { Project } from '../models/Project';
 import { User } from '../models/User';
 import { Comment } from '../models/Comment';
+import { CollaborationRequest } from '../models/CollaborationRequest';
+import { Notification } from '../models/Notification';
 import { BadgeService } from '../services/badgeService';
 
 export async function listProjects(req: Request, res: Response) {
@@ -79,8 +81,8 @@ export async function getProject(req: Request, res: Response) {
     
     // Get comments for this project
     const comments = await Comment.find({
-      parentType: 'Project',
-      parentId: req.params.id
+      targetType: 'project',
+      targetId: req.params.id
     })
       .populate('author', 'username name avatarUrl')
       .sort({ createdAt: -1 })
@@ -113,15 +115,21 @@ export async function createProject(req: Request, res: Response) {
       });
     }
 
+    // Add teammates as tags if they exist
+    const projectData = { ...req.body };
+    if (projectData.collaboration?.teammates && projectData.collaboration.teammates.length > 0) {
+      // Add teammates as tags with @ prefix
+      const teammateTags = projectData.collaboration.teammates.map((teammate: string) => `@${teammate}`);
+      projectData.tags = [...(projectData.tags || []), ...teammateTags];
+    }
+
     const project = await Project.create({ 
-      ...req.body, 
+      ...projectData, 
       author: userId,
       metrics: {
         views: 0,
         likes: 0,
-        forks: 0,
         comments: 0,
-        stars: 0,
         saves: 0,
         shares: 0
       }
@@ -368,7 +376,7 @@ export async function requestCollaboration(req: Request, res: Response) {
     const { projectId } = req.params;
     const { message, role } = req.body;
     
-    const project = await Project.findById(projectId);
+    const project = await Project.findById(projectId).populate('author', 'username name');
     if (!project) {
       return res.status(404).json({ success: false, error: 'Project not found' });
     }
@@ -380,14 +388,70 @@ export async function requestCollaboration(req: Request, res: Response) {
       });
     }
     
-    // In a real app, you'd create a collaboration request record
-    // For now, we'll just return success
+    // Check if user is trying to collaborate on their own project
+    if (project.author._id.toString() === userId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cannot send collaboration request to yourself' 
+      });
+    }
+    
+    // Check if request already exists
+    const existingRequest = await CollaborationRequest.findOne({
+      projectId,
+      requesterId: userId
+    });
+    
+    if (existingRequest) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Request already sent for this project' 
+      });
+    }
+    
+    // Create collaboration request
+    const collaborationRequest = await CollaborationRequest.create({
+      projectId,
+      requesterId: userId,
+      receiverId: project.author._id,
+      compatibilityScore: 0, // Default score for project collaboration
+      message: message || '',
+      role: role || ''
+    });
+    
+    // Create notification for project owner
+    const requester = await User.findById(userId).select('username name');
+    await Notification.create({
+      user: project.author._id,
+      type: 'collaboration_request',
+      data: {
+        requesterId: userId,
+        requesterName: requester?.username,
+        projectId: projectId,
+        projectTitle: project.title,
+        collaborationRequestId: collaborationRequest._id,
+        message: message || '',
+        role: role || ''
+      }
+    });
+    
+    // Add to users' tracking arrays
+    await Promise.all([
+      User.findByIdAndUpdate(userId, {
+        $push: { collabRequestsSent: collaborationRequest._id }
+      }),
+      User.findByIdAndUpdate(project.author._id, {
+        $push: { collabRequestsReceived: collaborationRequest._id }
+      })
+    ]);
+    
     res.json({ 
       success: true, 
       data: { 
         message: 'Collaboration request sent successfully',
         projectTitle: project.title,
-        authorUsername: project.author
+        authorUsername: project.author.username,
+        collaborationRequestId: collaborationRequest._id
       } 
     });
   } catch (error) {

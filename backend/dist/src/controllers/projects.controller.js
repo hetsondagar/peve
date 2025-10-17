@@ -75,8 +75,8 @@ async function getProject(req, res) {
         });
         // Get comments for this project
         const comments = await Comment_1.Comment.find({
-            parentType: 'Project',
-            parentId: req.params.id
+            targetType: 'project',
+            targetId: req.params.id
         })
             .populate('author', 'username name avatarUrl')
             .sort({ createdAt: -1 })
@@ -107,15 +107,20 @@ async function createProject(req, res) {
                 error: 'Missing required fields: title, tagline, description, category, and githubRepo are required'
             });
         }
+        // Add teammates as tags if they exist
+        const projectData = { ...req.body };
+        if (projectData.collaboration?.teammates && projectData.collaboration.teammates.length > 0) {
+            // Add teammates as tags with @ prefix
+            const teammateTags = projectData.collaboration.teammates.map((teammate) => `@${teammate}`);
+            projectData.tags = [...(projectData.tags || []), ...teammateTags];
+        }
         const project = await Project_1.Project.create({
-            ...req.body,
+            ...projectData,
             author: userId,
             metrics: {
                 views: 0,
                 likes: 0,
-                forks: 0,
                 comments: 0,
-                stars: 0,
                 saves: 0,
                 shares: 0
             }

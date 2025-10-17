@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { apiFetch } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import UsernameWithAvatar from './UsernameWithAvatar';
 
 interface SearchResult {
   projects: any[];
@@ -278,29 +279,33 @@ export default function SearchBar({
                           Users ({results.users.length})
                         </div>
                         {results.users.map((user, index) => (
-                          <button
+                          <div
                             key={user._id}
-                            onClick={() => handleItemClick((results.projects?.length || 0) + (results.ideas?.length || 0) + index)}
-                            className={`w-full px-4 py-3 text-left hover:bg-accent/50 transition-colors flex items-center gap-3 ${
+                            className={`w-full px-4 py-3 hover:bg-accent/50 transition-colors flex items-center gap-3 ${
                               selectedIndex === (results.projects?.length || 0) + (results.ideas?.length || 0) + index ? 'bg-accent/50' : ''
                             }`}
                           >
-                            <User className="w-4 h-4 text-teal-500 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground truncate">{user.username}</p>
-                              <p className="text-sm text-muted-foreground truncate">{user.name}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                {user.skills && user.skills.length > 0 && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    {user.skills[0]}
-                                  </Badge>
-                                )}
-                                <span className="text-xs text-muted-foreground">
-                                  {user.role || 'Developer'}
-                                </span>
-                              </div>
+                            <UsernameWithAvatar
+                              username={user.username}
+                              userId={user._id}
+                              name={user.name}
+                              avatarStyle={user.avatarStyle}
+                              avatarUrl={user.avatarUrl}
+                              size={32}
+                              variant="detailed"
+                              className="flex-1"
+                            />
+                            <div className="flex items-center gap-2">
+                              {user.skills && user.skills.length > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {user.skills[0]}
+                                </Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {user.role || 'Developer'}
+                              </span>
                             </div>
-                          </button>
+                          </div>
                         ))}
                       </div>
                     )}

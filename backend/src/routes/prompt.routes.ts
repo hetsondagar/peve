@@ -4,7 +4,8 @@ import {
   getTodaysPrompt, 
   voteOnPrompt, 
   getAllPrompts, 
-  createPrompt 
+  createPrompt,
+  seedPrompts
 } from '../controllers/prompt.controller';
 
 const router = Router();
@@ -20,5 +21,8 @@ router.post('/:promptId/vote', requireAuth, voteOnPrompt);
 
 // Create a new prompt (authenticated - could be admin only later)
 router.post('/', requireAuth, createPrompt);
+
+// Seed sample prompts (public - for testing)
+router.post('/seed', seedPrompts);
 
 export default router;

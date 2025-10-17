@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import IdeaBoard from "./pages/IdeaBoard";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
+import IdeaDetail from "./pages/IdeaDetail";
 import CodeTalks from "./pages/CodeTalks";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
@@ -46,11 +47,13 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/home" element={<Home />} />
               <Route path="/ideas" element={<IdeaBoard />} />
+              <Route path="/ideas/:id" element={<IdeaDetail />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:id" element={<ProjectDetail />} />
               <Route path="/codetalks" element={<CodeTalks />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/:userId" element={<Profile />} />
               <Route path="/devcards" element={<DevCards />} />
               <Route path="/search" element={<SearchResults />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -58,9 +58,7 @@ const collaborationSchema = new mongoose_1.Schema({
 const metricSchema = new mongoose_1.Schema({
     views: { type: Number, default: 0 },
     likes: { type: Number, default: 0 },
-    forks: { type: Number, default: 0 },
     comments: { type: Number, default: 0 },
-    stars: { type: Number, default: 0 },
     saves: { type: Number, default: 0 },
     shares: { type: Number, default: 0 },
 }, { _id: false });

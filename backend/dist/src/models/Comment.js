@@ -49,7 +49,7 @@ const commentSchema = new mongoose_1.Schema({
     },
     targetType: {
         type: String,
-        enum: ['idea', 'project'],
+        enum: ['idea', 'project', 'prompt'],
         required: true
     },
     targetId: {

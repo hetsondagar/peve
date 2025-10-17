@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { apiFetch } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
+import UsernameTag from '@/components/UsernameTag';
 
 interface ProjectSubmissionFormProps {
   isOpen: boolean;
@@ -95,8 +96,41 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
   const [newTech, setNewTech] = useState('');
   const [newTag, setNewTag] = useState('');
   const [newTeammate, setNewTeammate] = useState('');
+  const [usernameValidation, setUsernameValidation] = useState<{
+    isValidating: boolean;
+    invalidUsernames: string[];
+    validUsernames: string[];
+  }>({
+    isValidating: false,
+    invalidUsernames: [],
+    validUsernames: []
+  });
 
   const totalSteps = 5;
+
+  const validateUsernames = async (usernames: string[]) => {
+    if (usernames.length === 0) return;
+    
+    setUsernameValidation(prev => ({ ...prev, isValidating: true }));
+    
+    try {
+      const response = await apiFetch('/api/users/validate', {
+        method: 'POST',
+        body: JSON.stringify({ usernames })
+      });
+      
+      if (response.success) {
+        setUsernameValidation({
+          isValidating: false,
+          invalidUsernames: response.data.invalid,
+          validUsernames: response.data.valid
+        });
+      }
+    } catch (error) {
+      console.error('Failed to validate usernames:', error);
+      setUsernameValidation(prev => ({ ...prev, isValidating: false }));
+    }
+  };
 
   const handleFileUpload = async (file: File) => {
     try {
@@ -169,6 +203,26 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
         [field]: [...(prev[field as keyof typeof prev] as string[]), value.trim()]
       }));
     }
+  };
+
+  const addTeammate = async (username: string) => {
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) return;
+    
+    const currentTeammates = formData.collaboration.teammates;
+    if (currentTeammates.includes(trimmedUsername)) return;
+    
+    // Validate the username
+    await validateUsernames([trimmedUsername]);
+    
+    // Add to form data
+    setFormData(prev => ({
+      ...prev,
+      collaboration: {
+        ...prev.collaboration,
+        teammates: [...prev.collaboration.teammates, trimmedUsername]
+      }
+    }));
   };
 
   const removeArrayItem = (field: string, index: number) => {
@@ -696,7 +750,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                           onChange={(e) => setNewTeammate(e.target.value)}
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
-                              addArrayItem('collaboration.teammates', newTeammate);
+                              addTeammate(newTeammate);
                               setNewTeammate('');
                             }
                           }}
@@ -705,24 +759,35 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                         <GlowButton
                           size="sm"
                           onClick={() => {
-                            addArrayItem('collaboration.teammates', newTeammate);
+                            addTeammate(newTeammate);
                             setNewTeammate('');
                           }}
+                          disabled={usernameValidation.isValidating}
                         >
-                          <Plus className="w-4 h-4" />
+                          {usernameValidation.isValidating ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Plus className="w-4 h-4" />
+                          )}
                         </GlowButton>
                       </div>
+                      
+                      {/* Validation feedback */}
+                      {usernameValidation.invalidUsernames.length > 0 && (
+                        <div className="flex items-center gap-2 text-red-500 text-sm">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>Invalid usernames: {usernameValidation.invalidUsernames.join(', ')}</span>
+                        </div>
+                      )}
+                      
                       <div className="flex flex-wrap gap-2">
                         {formData.collaboration.teammates.map((teammate, index) => (
-                          <Badge key={index} variant="outline" className="flex items-center gap-1">
-                            @{teammate}
-                            <button
-                              onClick={() => removeArrayItem('collaboration.teammates', index)}
-                              className="ml-1 hover:text-red-500"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </Badge>
+                          <UsernameTag
+                            key={index}
+                            username={teammate}
+                            onRemove={() => removeArrayItem('collaboration.teammates', index)}
+                            variant={usernameValidation.invalidUsernames.includes(teammate) ? 'destructive' : 'outline'}
+                          />
                         ))}
                       </div>
                     </div>

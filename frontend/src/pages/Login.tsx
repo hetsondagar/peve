@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { GlowButton } from '@/components/ui/glow-button';
 import { NetworkBackground } from '@/components/NetworkBackground';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { apiFetch, setAuthTokens } from '@/lib/api';
 import { TECH_SKILLS, ALL_SKILLS } from '@/data/skills';
 import { Badge } from '@/components/ui/badge';
@@ -169,10 +168,6 @@ export default function Login() {
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <NetworkBackground />
       
-      {/* Theme Toggle */}
-      <div className="absolute top-6 right-6 z-20">
-        <ThemeToggle />
-      </div>
       
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}

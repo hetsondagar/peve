@@ -1,13 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Bell, User, X, Heart, Bookmark, Share2, MessageCircle, 
-  ExternalLink, Github, Users, Star, Eye, GitFork, Calendar,
-  Award, Tag, Code, Zap, Globe, FileText, Play
+  ExternalLink, Github, Users, Eye, Calendar,
+  Award, Tag, Code, Zap, Globe, FileText, Play, BarChart3
 } from 'lucide-react';
 import { NetworkBackground } from '@/components/NetworkBackground';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import UsernameLink from '@/components/UsernameLink';
 import Avatar from '@/components/Avatar';
 import { GlowButton } from '@/components/ui/glow-button';
@@ -18,6 +17,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { apiFetch } from '@/lib/api';
 import SearchBar from '@/components/SearchBar';
+import { requireAuth } from '@/utils/auth';
+import { CommentComponent } from '@/components/CommentComponent';
+import UsernameTag from '@/components/UsernameTag';
+import UsernameWithAvatar from '@/components/UsernameWithAvatar';
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -31,32 +34,60 @@ export default function ProjectDetail() {
   const [selectedRole, setSelectedRole] = useState('');
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [saveCount, setSaveCount] = useState(0);
   const [newComment, setNewComment] = useState('');
   const [commentText, setCommentText] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
+    try {
+      const [projectResponse, commentsResponse] = await Promise.all([
+        apiFetch(`/api/projects/${id}`),
+        apiFetch(`/api/comments/project/${id}`)
+      ]);
+      
+      const projectData = projectResponse.data.project;
+      console.log('Project data:', projectData);
+      console.log('Project metrics:', projectData.metrics);
+      setProject(projectData);
+      setComments(commentsResponse.data?.comments || []);
+      setLikeCount(projectData.metrics?.likes || 0);
+      setSaveCount(projectData.metrics?.saves || 0);
+      
+      // Fetch interaction status
       try {
-        const [projectResponse, commentsResponse] = await Promise.all([
-          apiFetch(`/api/projects/${id}`),
-          apiFetch(`/api/comments/project/${id}`)
-        ]);
+        const interactionResponse = await apiFetch('/api/interactions/status', {
+          method: 'POST',
+          body: JSON.stringify({
+            items: [{
+              targetType: 'project',
+              targetId: id
+            }]
+          })
+        });
         
-        setProject(projectResponse.data.project);
-        setComments(commentsResponse.data?.comments || []);
-      } catch (error) {
-        console.error('Failed to fetch project:', error);
-        navigate('/projects');
-      } finally {
-        setLoading(false);
+        if (interactionResponse.success && interactionResponse.data.length > 0) {
+          const status = interactionResponse.data[0];
+          setIsLiked(status.isLiked);
+          setIsBookmarked(status.isSaved);
+        }
+      } catch (interactionError) {
+        console.error('Failed to fetch interaction status:', interactionError);
       }
-    };
+    } catch (error) {
+      console.error('Failed to fetch project:', error);
+      navigate('/projects');
+    } finally {
+      setLoading(false);
+    }
+  }, [id, navigate]);
 
+  useEffect(() => {
     if (id) {
       fetchProject();
     }
-  }, [id, navigate]);
+  }, [id, navigate, fetchProject]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -71,10 +102,15 @@ export default function ProjectDetail() {
   }, []);
 
   const handleLike = async () => {
+    if (!requireAuth()) {
+      return;
+    }
+
     try {
       const response = await apiFetch(`/api/interactions/like/project/${id}`, { method: 'POST' });
       if (response.success) {
         setIsLiked(response.data.isLiked);
+        setLikeCount(response.data.likeCount);
         if (project) {
           setProject({
             ...project,
@@ -86,15 +122,28 @@ export default function ProjectDetail() {
         }
       }
     } catch (error) {
-      console.error('Failed to like project:', error);
+      if (error.message?.includes('Authentication failed')) {
+        // Don't show error, just log it
+        console.warn('Authentication required for liking projects');
+        return;
+      } else {
+        console.error('Failed to like project:', error);
+      }
     }
   };
 
   const handleBookmark = async () => {
+    if (!requireAuth()) {
+      return;
+    }
+
     try {
       const response = await apiFetch(`/api/interactions/save/project/${id}`, { method: 'POST' });
       if (response.success) {
         setIsBookmarked(response.data.isSaved);
+        if (response.data.saveCount !== undefined) {
+          setSaveCount(response.data.saveCount);
+        }
         if (project && response.data.saveCount !== undefined) {
           setProject({
             ...project,
@@ -106,7 +155,13 @@ export default function ProjectDetail() {
         }
       }
     } catch (error) {
-      console.error('Failed to bookmark project:', error);
+      if (error.message?.includes('Authentication failed')) {
+        // Don't show error, just log it
+        console.warn('Authentication required for bookmarking projects');
+        return;
+      } else {
+        console.error('Failed to bookmark project:', error);
+      }
     }
   };
 
@@ -234,7 +289,6 @@ export default function ProjectDetail() {
 
             {/* User Actions */}
             <div className="flex items-center gap-2">
-              <ThemeToggle />
               <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
                 <Bell className="w-5 h-5 text-muted-foreground" />
               </button>
@@ -294,7 +348,7 @@ export default function ProjectDetail() {
                       className="flex items-center gap-2"
                     >
                       <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                      {project.metrics?.likes || 0}
+                      {likeCount}
                     </GlowButton>
                     <GlowButton
                       variant={isBookmarked ? "default" : "outline"}
@@ -303,7 +357,7 @@ export default function ProjectDetail() {
                       className="flex items-center gap-2"
                     >
                       <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
-                      {project.metrics?.saves || 0}
+                      {saveCount}
                     </GlowButton>
                     <GlowButton
                       variant="outline"
@@ -327,14 +381,6 @@ export default function ProjectDetail() {
                     <Eye className="w-4 h-4" />
                     {project.metrics?.views || 0} views
                   </div>
-                  <div className="flex items-center gap-2">
-                    <GitFork className="w-4 h-4" />
-                    {project.metrics?.forks || 0} forks
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Star className="w-4 h-4" />
-                    {project.metrics?.stars || 0} stars
-                  </div>
                 </div>
               </div>
 
@@ -349,32 +395,34 @@ export default function ProjectDetail() {
                 <CardContent>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-lg">
-                        {project.author?.name?.charAt(0) || '👤'}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground">
-                          {project.author?._id ? (
-                            <UsernameLink
-                              username={project.author.username || 'Unknown'}
-                              userId={project.author._id}
-                              showFullName={true}
-                              fullName={project.author.name}
-                            />
-                          ) : (
-                            project.author?.name || 'Unknown'
-                          )}
-                        </p>
+                      <UsernameWithAvatar
+                        username={project.author?.username || project.author?.name || 'Unknown'}
+                        userId={project.author?._id}
+                        name={project.author?.name}
+                        avatarStyle={project.author?.avatarStyle}
+                        avatarUrl={project.author?.avatarUrl}
+                        size={40}
+                        variant="detailed"
+                        showFullName={true}
+                        className="flex-1"
+                      />
+                      <div className="text-right">
                         <p className="text-sm text-muted-foreground">Project Owner</p>
                       </div>
                     </div>
                     {project.contributors?.map((contributor: any, index: number) => (
                       <div key={index} className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-full bg-gradient-secondary flex items-center justify-center text-lg">
-                          {contributor.user?.name?.charAt(0) || '👤'}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-foreground">{contributor.user?.name || 'Unknown'}</p>
+                        <UsernameWithAvatar
+                          username={contributor.user?.username || contributor.user?.name || 'Unknown'}
+                          userId={contributor.user?._id}
+                          name={contributor.user?.name}
+                          avatarStyle={contributor.user?.avatarStyle}
+                          avatarUrl={contributor.user?.avatarUrl}
+                          size={40}
+                          variant="detailed"
+                          className="flex-1"
+                        />
+                        <div className="text-right">
                           <p className="text-sm text-muted-foreground">{contributor.role}</p>
                         </div>
                       </div>
@@ -382,6 +430,53 @@ export default function ProjectDetail() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Collaboration */}
+              {project.collaboration && (
+                <Card className="glass border-border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="w-5 h-5 text-primary" />
+                      Collaboration
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {project.collaboration.openToCollaboration && (
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2">Open to Collaboration</h4>
+                        {project.collaboration.lookingForRoles && project.collaboration.lookingForRoles.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-sm text-muted-foreground mb-2">Looking for:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {project.collaboration.lookingForRoles.map((role: string, index: number) => (
+                                <Badge key={index} variant="secondary">
+                                  {role}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {project.collaboration.teammates && project.collaboration.teammates.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2">Team Members</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {project.collaboration.teammates.map((teammate: string, index: number) => (
+                            <UsernameTag
+                              key={index}
+                              username={teammate}
+                              clickable={true}
+                              variant="outline"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Overview */}
               <Card className="glass border-border">
@@ -565,23 +660,24 @@ export default function ProjectDetail() {
                   {/* Comments List */}
                   <div className="space-y-4">
                     {Array.isArray(comments) && comments.length > 0 ? (
-                      comments.map((comment, index) => (
-                        <div key={index} className="p-4 rounded-lg bg-card-secondary">
-                          <div className="flex items-center gap-3 mb-2">
-                            <Avatar 
-                              username={comment.author?.username || 'user'} 
-                              avatarStyle={comment.author?.avatarStyle || 'botttsNeutral'} 
-                              size={32} 
-                            />
-                            <div>
-                              <p className="font-semibold text-foreground">{comment.author?.name || 'Unknown'}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(comment.createdAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <p className="text-muted-foreground">{comment.content}</p>
-                        </div>
+                      comments.map((comment) => (
+                        <CommentComponent
+                          key={comment._id}
+                          comment={comment}
+                          currentUserId={project?.author?._id}
+                          onUpdate={() => {
+                            // Refresh comments
+                            const fetchComments = async () => {
+                              try {
+                                const response = await apiFetch(`/api/comments/project/${id}`);
+                                setComments(response.data?.comments || []);
+                              } catch (error) {
+                                console.error('Failed to fetch comments:', error);
+                              }
+                            };
+                            fetchComments();
+                          }}
+                        />
                       ))
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
@@ -617,6 +713,36 @@ export default function ProjectDetail() {
                 <div className="space-y-2">
                   <p className="text-sm font-semibold text-foreground">Status</p>
                   <Badge variant="outline" className="capitalize">{project.status}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Project Stats */}
+            <Card className="glass border-border">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  Project Stats
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 rounded-lg bg-card-secondary">
+                    <div className="text-2xl font-bold text-primary">{likeCount}</div>
+                    <div className="text-sm text-muted-foreground">Likes</div>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-card-secondary">
+                    <div className="text-2xl font-bold text-primary">{saveCount}</div>
+                    <div className="text-sm text-muted-foreground">Saves</div>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-card-secondary">
+                    <div className="text-2xl font-bold text-primary">{project.metrics?.views || 0}</div>
+                    <div className="text-sm text-muted-foreground">Views</div>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-card-secondary">
+                    <div className="text-2xl font-bold text-primary">{project.metrics?.comments || 0}</div>
+                    <div className="text-sm text-muted-foreground">Comments</div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -704,34 +830,15 @@ export default function ProjectDetail() {
                 <div className="space-y-3 max-h-[400px] overflow-y-auto">
                   {comments.length > 0 ? (
                     comments.map((comment: any) => (
-                      <div key={comment._id} className="p-3 rounded-lg bg-card-secondary border border-border">
-                        <div className="flex items-start gap-3">
-                          <Avatar 
-                            username={comment.author?.username || 'user'} 
-                            avatarStyle={comment.author?.avatarStyle || 'botttsNeutral'} 
-                            size={32} 
-                          />
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm text-foreground">
-                                {comment.author?._id ? (
-                                  <UsernameLink
-                                    username={comment.author.username || 'Anonymous'}
-                                    userId={comment.author._id}
-                                    className="text-sm"
-                                  />
-                                ) : (
-                                  comment.author?.username || 'Anonymous'
-                                )}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(comment.createdAt).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{comment.content}</p>
-                          </div>
-                        </div>
-                      </div>
+                      <CommentComponent
+                        key={comment._id}
+                        comment={comment}
+                        targetType="project"
+                        targetId={project._id}
+                        depth={0}
+                        maxDepth={2}
+                        onUpdate={fetchProject}
+                      />
                     ))
                   ) : (
                     <div className="text-center py-6 text-muted-foreground">

@@ -48,12 +48,15 @@ information
 
 - **Node.js** (v18 or higher)
 - **MongoDB** (local or Atlas)
+
+
 - **npm** or **yarn**
 
 ## 🚀 Quick Start
 
 ### 1. Clone the Repository
-```bash
+```
+
 git clone <repository-url>
 cd peve
 ```

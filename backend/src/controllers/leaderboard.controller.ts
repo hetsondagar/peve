@@ -10,9 +10,25 @@ export async function getLeaderboard(req: Request, res: Response) {
     const { type = 'overall', limit = 50 } = req.query;
 
     // Get all users with their stats
-    const users = await User.find({ isActive: true })
-      .select('username name avatarUrl stats createdAt')
+    const users = await User.find({})
+      .select('username name avatarUrl avatarStyle stats createdAt')
       .lean();
+
+    console.log(`Found ${users.length} users for leaderboard`);
+    
+    // If no users found, return empty array
+    if (users.length === 0) {
+      console.log('No users found in database');
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
+
+    // Log first user for debugging
+    if (users.length > 0) {
+      console.log('Sample user data:', users[0]);
+    }
 
     // Calculate scores for each user
     const leaderboardData = await Promise.all(
@@ -94,6 +110,9 @@ export async function getLeaderboard(req: Request, res: Response) {
 
     // Apply limit
     const limitedData = leaderboardData.slice(0, Number(limit));
+
+    console.log(`Returning ${limitedData.length} users in leaderboard`);
+    console.log('Sample user data:', limitedData[0]);
 
     return res.json({
       success: true,
@@ -180,8 +199,8 @@ export async function getUserRank(req: Request, res: Response) {
     }
 
     // Get all users with scores
-    const users = await User.find({ isActive: true })
-      .select('username name avatarUrl stats')
+    const users = await User.find({})
+      .select('username name avatarUrl avatarStyle stats')
       .lean();
 
     const userScores = await Promise.all(
@@ -260,5 +279,23 @@ export async function getAllBadges(req: Request, res: Response) {
   } catch (error) {
     console.error('Error fetching all badges:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch badges' });
+  }
+}
+
+export async function testUsers(req: Request, res: Response) {
+  try {
+    const userCount = await User.countDocuments();
+    const users = await User.find({}).select('username name').limit(5);
+    
+    return res.json({
+      success: true,
+      data: {
+        totalUsers: userCount,
+        sampleUsers: users
+      }
+    });
+  } catch (error) {
+    console.error('Error testing users:', error);
+    res.status(500).json({ success: false, error: 'Failed to test users' });
   }
 }

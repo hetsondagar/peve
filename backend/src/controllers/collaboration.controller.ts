@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { User } from '../models/User';
 import { Idea } from '../models/Idea';
 import { CollaborationRequest } from '../models/CollaborationRequest';
+import { Notification } from '../models/Notification';
 import { computeCompatibility } from '../services/compatibility';
 
 // Check compatibility between two users
@@ -131,16 +132,18 @@ export async function createCollaborationRequest(req: Request, res: Response) {
       })
     ]);
 
-    // Create notification for receiver
+    // Create notification for receiver using the Notification model
     const requester = await User.findById(userId).select('username name');
-    await User.findByIdAndUpdate(receiverId, {
-      $push: {
-        notifications: {
-          type: 'collaboration_request',
-          message: `${requester?.username} wants to collaborate on your idea: ${idea.title}`,
-          relatedId: collaborationRequest._id,
-          seen: false
-        }
+    await Notification.create({
+      user: receiverId,
+      type: 'collaboration_request',
+      data: {
+        requesterId: userId,
+        requesterName: requester?.username,
+        ideaId: ideaId,
+        ideaTitle: idea.title,
+        collaborationRequestId: collaborationRequest._id,
+        message: message || ''
       }
     });
 

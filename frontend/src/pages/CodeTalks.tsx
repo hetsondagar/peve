@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Bell, User, Heart, MessageCircle, Share2, 
+  Heart, MessageCircle, Share2, 
   ThumbsUp, ThumbsDown, Zap, TrendingUp, Users, Clock
 } from 'lucide-react';
 import { NetworkBackground } from '@/components/NetworkBackground';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import UsernameLink from '@/components/UsernameLink';
 import Avatar from '@/components/Avatar';
 import { GlowButton } from '@/components/ui/glow-button';
@@ -15,48 +14,51 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { InteractionButtons } from '@/components/InteractionButtons';
 import { apiFetch } from '@/lib/api';
-import SearchBar from '@/components/SearchBar';
+import { CommentComponent } from '@/components/CommentComponent';
+import Navbar from '@/components/Navbar';
 
 export default function CodeTalks() {
   const [prompt, setPrompt] = useState<any>(null);
-  const [votes, setVotes] = useState<any>({});
+  const [votes, setVotes] = useState<any>({
+    agree: 0,
+    disagree: 0,
+    yes: 0,
+    no: 0,
+    total: 0
+  });
   const [userVote, setUserVote] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [voting, setVoting] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTodaysPrompt();
   }, []);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowProfileDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const fetchTodaysPrompt = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await apiFetch('/api/prompts/today');
+      console.log('Today\'s prompt response:', response);
       if (response.success) {
         setPrompt(response.data.prompt);
         setVotes(response.data.votes);
         setUserVote(response.data.userVote);
         setComments(response.data.comments || []);
+        console.log('Prompt data:', response.data.prompt);
+        console.log('Votes data:', response.data.votes);
+      } else {
+        setError(response.error || 'Failed to fetch today\'s prompt');
       }
     } catch (error) {
       console.error('Failed to fetch today\'s prompt:', error);
+      setError('Failed to fetch today\'s prompt');
     } finally {
       setLoading(false);
     }
@@ -65,19 +67,29 @@ export default function CodeTalks() {
   const handleVote = async (voteType: string) => {
     if (!prompt || voting) return;
     
+    console.log('Voting:', { voteType, promptId: prompt._id });
+    
     try {
       setVoting(true);
+      setError(null);
       const response = await apiFetch(`/api/prompts/${prompt._id}/vote`, {
         method: 'POST',
         body: JSON.stringify({ voteType })
       });
       
+      console.log('Vote response:', response);
+      
       if (response.success) {
         setUserVote(response.data.vote);
         setVotes(response.data.votes);
+        setSuccess('Vote recorded successfully!');
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(response.error || 'Failed to vote');
       }
     } catch (error) {
       console.error('Failed to vote:', error);
+      setError('Failed to vote');
     } finally {
       setVoting(false);
     }
@@ -88,6 +100,7 @@ export default function CodeTalks() {
     
     try {
       setSubmittingComment(true);
+      setError(null);
       const response = await apiFetch(`/api/comments`, {
         method: 'POST',
         body: JSON.stringify({
@@ -100,9 +113,14 @@ export default function CodeTalks() {
       if (response.success) {
         setComments(prev => [response.data, ...prev]);
         setCommentText('');
+        setSuccess('Comment posted successfully!');
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(response.error || 'Failed to post comment');
       }
     } catch (error) {
       console.error('Failed to post comment:', error);
+      setError('Failed to post comment');
     } finally {
       setSubmittingComment(false);
     }
@@ -155,51 +173,36 @@ export default function CodeTalks() {
     <div className="relative min-h-screen overflow-hidden">
       <NetworkBackground />
       
-      {/* Navbar */}
-      <nav className="navbar">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold gradient-text">Peve</span>
-              </div>
-              <div className="hidden md:flex items-center gap-6">
-                <a href="/codetalks" className="text-primary font-semibold">CodeTalks</a>
-                <a href="/projects" className="text-muted-foreground hover:text-foreground transition-colors">Projects</a>
-                <a href="/ideas" className="text-muted-foreground hover:text-foreground transition-colors">Ideas</a>
-                <a href="/leaderboard" className="text-muted-foreground hover:text-foreground transition-colors">Leaderboard</a>
-                <a href="/profile" className="text-muted-foreground hover:text-foreground transition-colors">Profile</a>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <SearchBar className="w-64" />
-              <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
-                <Bell className="w-5 h-5 text-muted-foreground" />
-              </button>
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="p-2 rounded-lg hover:bg-primary/10 transition-colors"
-                >
-                  <User className="w-5 h-5 text-muted-foreground" />
-                </button>
-                {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-40 rounded-xl glass border border-border p-2 z-50">
-                    <button onClick={() => { window.location.href = '/profile'; setShowProfileDropdown(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-primary/10">Profile</button>
-                    <button onClick={() => { window.location.href = '/codetalks'; setShowProfileDropdown(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-primary/10">CodeTalks</button>
-                    <button onClick={() => { localStorage.removeItem('peve_token'); window.location.href = '/login'; setShowProfileDropdown(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-primary/10">Log out</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar currentPage="codetalks" />
 
       <div className="relative z-10 container mx-auto px-6 py-12">
+        {/* Error/Success Messages */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-4xl mx-auto mb-6"
+          >
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          </motion.div>
+        )}
+        
+        {success && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="max-w-4xl mx-auto mb-6"
+          >
+            <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-lg">
+              {success}
+            </div>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -268,25 +271,91 @@ export default function CodeTalks() {
 
               {/* Voting Buttons */}
               <div className="flex items-center justify-center gap-4">
-                <GlowButton
-                  variant={userVote?.voteType === 'agree' ? 'default' : 'outline'}
-                  onClick={() => handleVote('agree')}
-                  disabled={voting}
-                  className="flex items-center gap-2"
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  animate={userVote?.voteType === 'agree' ? { 
+                    scale: [1, 1.02, 1],
+                    boxShadow: ["0 0 0 0 rgba(34, 197, 94, 0.4)", "0 0 0 10px rgba(34, 197, 94, 0)", "0 0 0 0 rgba(34, 197, 94, 0)"]
+                  } : {}}
+                  transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <ThumbsUp className="w-4 h-4" />
-                  Agree ({votes.agree || 0})
-                </GlowButton>
+                  <GlowButton
+                    variant={userVote?.voteType === 'agree' ? 'default' : 'outline'}
+                    onClick={() => handleVote('agree')}
+                    disabled={voting}
+                    className={`flex items-center gap-2 min-w-[120px] ${
+                      userVote?.voteType === 'agree' 
+                        ? 'bg-green-500 hover:bg-green-600 text-white border-green-500' 
+                        : 'hover:bg-green-500/10 hover:border-green-500/50'
+                    }`}
+                  >
+                    <motion.div
+                      animate={voting && userVote?.voteType === 'agree' ? { rotate: 360 } : {}}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <ThumbsUp className="w-4 h-4" />
+                    </motion.div>
+                    <span>Agree</span>
+                    <motion.span
+                      key={votes.agree || 0}
+                      initial={{ scale: 1.3, y: -5 }}
+                      animate={{ scale: 1, y: 0 }}
+                      transition={{ 
+                        type: "spring", 
+                        stiffness: 500, 
+                        damping: 15,
+                        duration: 0.4 
+                      }}
+                      className="font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full"
+                    >
+                      {votes.agree || 0}
+                    </motion.span>
+                  </GlowButton>
+                </motion.div>
                 
-                <GlowButton
-                  variant={userVote?.voteType === 'disagree' ? 'default' : 'outline'}
-                  onClick={() => handleVote('disagree')}
-                  disabled={voting}
-                  className="flex items-center gap-2"
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  animate={userVote?.voteType === 'disagree' ? { 
+                    scale: [1, 1.02, 1],
+                    boxShadow: ["0 0 0 0 rgba(239, 68, 68, 0.4)", "0 0 0 10px rgba(239, 68, 68, 0)", "0 0 0 0 rgba(239, 68, 68, 0)"]
+                  } : {}}
+                  transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <ThumbsDown className="w-4 h-4" />
-                  Disagree ({votes.disagree || 0})
-                </GlowButton>
+                  <GlowButton
+                    variant={userVote?.voteType === 'disagree' ? 'default' : 'outline'}
+                    onClick={() => handleVote('disagree')}
+                    disabled={voting}
+                    className={`flex items-center gap-2 min-w-[120px] ${
+                      userVote?.voteType === 'disagree' 
+                        ? 'bg-red-500 hover:bg-red-600 text-white border-red-500' 
+                        : 'hover:bg-red-500/10 hover:border-red-500/50'
+                    }`}
+                  >
+                    <motion.div
+                      animate={voting && userVote?.voteType === 'disagree' ? { rotate: 360 } : {}}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <ThumbsDown className="w-4 h-4" />
+                    </motion.div>
+                    <span>Disagree</span>
+                    <motion.span
+                      key={votes.disagree || 0}
+                      initial={{ scale: 1.3, y: -5 }}
+                      animate={{ scale: 1, y: 0 }}
+                      transition={{ 
+                        type: "spring", 
+                        stiffness: 500, 
+                        damping: 15,
+                        duration: 0.4 
+                      }}
+                      className="font-bold text-red-500 bg-red-500/10 px-2 py-1 rounded-full"
+                    >
+                      {votes.disagree || 0}
+                    </motion.span>
+                  </GlowButton>
+                </motion.div>
               </div>
 
               {/* Interaction Buttons */}
@@ -306,22 +375,42 @@ export default function CodeTalks() {
 
               {/* Vote Results */}
               {votes.total > 0 && (
-                <div className="space-y-2">
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-3"
+                >
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Agree</span>
-                    <span>{Math.round(((votes.agree || 0) / votes.total) * 100)}%</span>
+                    <motion.span
+                      key={Math.round(((votes.agree || 0) / votes.total) * 100)}
+                      initial={{ scale: 1.2, color: '#10b981' }}
+                      animate={{ scale: 1, color: 'inherit' }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {Math.round(((votes.agree || 0) / votes.total) * 100)}%
+                    </motion.span>
                   </div>
-                  <div className="w-full bg-card-secondary rounded-full h-2">
-                    <div 
-                      className="bg-primary h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${((votes.agree || 0) / votes.total) * 100}%` }}
+                  <div className="w-full bg-card-secondary rounded-full h-3 overflow-hidden">
+                    <motion.div 
+                      className="bg-gradient-to-r from-green-500 to-green-400 h-3 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${((votes.agree || 0) / votes.total) * 100}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
                     />
                   </div>
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Disagree</span>
-                    <span>{Math.round(((votes.disagree || 0) / votes.total) * 100)}%</span>
+                    <motion.span
+                      key={Math.round(((votes.disagree || 0) / votes.total) * 100)}
+                      initial={{ scale: 1.2, color: '#ef4444' }}
+                      animate={{ scale: 1, color: 'inherit' }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {Math.round(((votes.disagree || 0) / votes.total) * 100)}%
+                    </motion.span>
                   </div>
-                </div>
+                </motion.div>
               )}
             </CardContent>
           </Card>
@@ -357,51 +446,32 @@ export default function CodeTalks() {
               {/* Comments List */}
               <div className="space-y-4">
                 {Array.isArray(comments) && comments.length > 0 ? (
-                  comments.map((comment: any) => (
-                    <div key={comment._id} className="p-4 rounded-lg bg-card-secondary border border-border">
-                      <div className="flex items-start gap-3">
-                        <Avatar 
-                          username={comment.author?.username || 'user'} 
-                          avatarStyle={comment.author?.avatarStyle || 'botttsNeutral'} 
-                          size={32} 
-                        />
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm text-foreground">
-                              {comment.author?._id ? (
-                                <UsernameLink
-                                  username={comment.author.username || 'Anonymous'}
-                                  userId={comment.author._id}
-                                  className="text-sm"
-                                />
-                              ) : (
-                                comment.author?.username || 'Anonymous'
-                              )}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(comment.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{comment.content}</p>
-                          <div className="flex items-center gap-4">
-                            <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                              <Heart className="w-3 h-3" />
-                              Like
-                            </button>
-                            <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                              <MessageCircle className="w-3 h-3" />
-                              Reply
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  comments.map((comment: any, index: number) => (
+                    <motion.div 
+                      key={comment._id} 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <CommentComponent 
+                        comment={comment}
+                        targetType="prompt"
+                        targetId={prompt._id}
+                        depth={0}
+                        maxDepth={2}
+                        onUpdate={fetchTodaysPrompt}
+                      />
+                    </motion.div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>No comments yet. Be the first to share your thoughts!</p>
-                  </div>
+                  </motion.div>
                 )}
               </div>
             </CardContent>

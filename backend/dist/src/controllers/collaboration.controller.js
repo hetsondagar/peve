@@ -11,6 +11,7 @@ exports.markAllNotificationsSeen = markAllNotificationsSeen;
 const User_1 = require("../models/User");
 const Idea_1 = require("../models/Idea");
 const CollaborationRequest_1 = require("../models/CollaborationRequest");
+const Notification_1 = require("../models/Notification");
 const compatibility_1 = require("../services/compatibility");
 // Check compatibility between two users
 async function checkCompatibility(req, res) {
@@ -118,16 +119,18 @@ async function createCollaborationRequest(req, res) {
                 $push: { collabRequestsReceived: collaborationRequest._id }
             })
         ]);
-        // Create notification for receiver
+        // Create notification for receiver using the Notification model
         const requester = await User_1.User.findById(userId).select('username name');
-        await User_1.User.findByIdAndUpdate(receiverId, {
-            $push: {
-                notifications: {
-                    type: 'collaboration_request',
-                    message: `${requester?.username} wants to collaborate on your idea: ${idea.title}`,
-                    relatedId: collaborationRequest._id,
-                    seen: false
-                }
+        await Notification_1.Notification.create({
+            user: receiverId,
+            type: 'collaboration_request',
+            data: {
+                requesterId: userId,
+                requesterName: requester?.username,
+                ideaId: ideaId,
+                ideaTitle: idea.title,
+                collaborationRequestId: collaborationRequest._id,
+                message: message || ''
             }
         });
         // Populate the response

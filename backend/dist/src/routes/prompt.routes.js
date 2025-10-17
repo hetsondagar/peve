@@ -12,4 +12,6 @@ router.get('/', prompt_controller_1.getAllPrompts);
 router.post('/:promptId/vote', auth_1.requireAuth, prompt_controller_1.voteOnPrompt);
 // Create a new prompt (authenticated - could be admin only later)
 router.post('/', auth_1.requireAuth, prompt_controller_1.createPrompt);
+// Seed sample prompts (public - for testing)
+router.post('/seed', prompt_controller_1.seedPrompts);
 exports.default = router;

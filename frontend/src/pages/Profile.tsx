@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { GlowButton } from '@/components/ui/glow-button';
 import { Input } from '@/components/ui/input';
-import { Trophy, Lightbulb, Rocket, Users, Settings, X, Plus, Edit3, UserCheck, MessageCircle, Heart, Bookmark, Github, MessageSquare, Linkedin, Award } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Trophy, Lightbulb, Rocket, Users, Settings, X, Plus, Edit3, UserCheck, MessageCircle, Heart, Bookmark, Github, MessageSquare, Linkedin, Award, Eye } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { TECH_SKILLS, ALL_SKILLS } from '@/data/skills';
 import CompatibilityWizard from '@/components/CompatibilityWizard';
 import MyRequests from '@/components/MyRequests';
@@ -18,7 +18,9 @@ import { apiFetch } from '@/lib/api';
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { userId } = useParams();
   const [user, setUser] = useState<any>(null);
+  const [isOwnProfile, setIsOwnProfile] = useState(true);
   const [loading, setLoading] = useState(true);
   const [editingSkills, setEditingSkills] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -40,82 +42,101 @@ export default function Profile() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
+        // Determine if this is own profile or viewing another user's profile
+        const isViewingOtherProfile = userId && userId !== 'me';
+        setIsOwnProfile(!isViewingOtherProfile);
+        
         // Fetch user profile
-        const userResponse = await apiFetch('/api/auth/me');
-        console.log('User data received:', userResponse.data);
-        console.log('User skills:', userResponse.data.skills);
-        setUser(userResponse.data);
-        setSelectedSkills(userResponse.data.skills || []);
+        const endpoint = isViewingOtherProfile ? `/api/users/${userId}` : '/api/auth/me';
+        console.log('Fetching user data from endpoint:', endpoint);
+        const userResponse = await apiFetch(endpoint);
+        
+        const userData = userResponse.data;
+        console.log('User data received:', userData);
+        console.log('User skills:', userData.skills);
+        console.log('User response success:', userResponse.success);
+        
+        if (!userData) {
+          console.error('No user data received from API');
+          return;
+        }
+        
+        setUser(userData);
+        setSelectedSkills(userData.skills || []);
 
         // Fetch user's projects
         const projectsResponse = await apiFetch('/api/projects');
         const userProjects = projectsResponse.data.items.filter((project: any) => 
-          project.author?._id === userResponse.data._id || project.author === userResponse.data._id
+          project.author?._id === userData._id || project.author === userData._id
         );
         setUserProjects(userProjects);
 
         // Fetch user's ideas
         const ideasResponse = await apiFetch('/api/ideas');
         const userIdeas = ideasResponse.data.items.filter((idea: any) => 
-          idea.author?._id === userResponse.data._id || idea.author === userResponse.data._id
+          idea.author?._id === userData._id || idea.author === userData._id
         );
         setUserIdeas(userIdeas);
 
-        // Fetch compatibility profile
-        try {
-          const compatibilityResponse = await apiFetch('/api/compatibility/profile');
-          setCompatibilityProfile(compatibilityResponse.data.compatibilityProfile);
-        } catch (error) {
-          console.error('Failed to fetch compatibility profile:', error);
+        // Fetch compatibility profile (only for own profile)
+        if (!isViewingOtherProfile) {
+          try {
+            const compatibilityResponse = await apiFetch('/api/compatibility/profile');
+            setCompatibilityProfile(compatibilityResponse.data.compatibilityProfile);
+          } catch (error) {
+            console.error('Failed to fetch compatibility profile:', error);
+          }
+
+          // Fetch user's liked and saved items (only for own profile)
+          try {
+            const [likesResponse, savesResponse] = await Promise.all([
+              apiFetch('/api/interactions/likes'),
+              apiFetch('/api/interactions/saves')
+            ]);
+            
+            console.log('Likes response:', likesResponse);
+            console.log('Saves response:', savesResponse);
+            
+            if (likesResponse.success && likesResponse.data) {
+              setLikedItems(likesResponse.data);
+            }
+            if (savesResponse.success && savesResponse.data) {
+              setSavedItems(savesResponse.data);
+            }
+          } catch (error) {
+            console.error('Failed to fetch interactions:', error);
+          }
         }
 
-        // Fetch user's liked and saved items
-        try {
-          const [likesResponse, savesResponse] = await Promise.all([
-            apiFetch('/api/interactions/likes'),
-            apiFetch('/api/interactions/saves')
-          ]);
-          
-          console.log('Likes response:', likesResponse);
-          console.log('Saves response:', savesResponse);
-          
-          if (likesResponse.success && likesResponse.data) {
-            setLikedItems(likesResponse.data);
+        // Fetch user's rank and badges (only for own profile)
+        if (!isViewingOtherProfile) {
+          try {
+            const [rankResponse, badgesResponse, badgeStatsResponse] = await Promise.all([
+              apiFetch('/api/leaderboard/rank'),
+              apiFetch('/api/badges/user'),
+              apiFetch('/api/badges/stats')
+            ]);
+            
+            console.log('Rank response:', rankResponse);
+            console.log('Badges response:', badgesResponse);
+            console.log('Badge stats response:', badgeStatsResponse);
+            
+            if (rankResponse.success && rankResponse.data) {
+              setUserRank(rankResponse.data);
+            }
+            if (badgesResponse.success && badgesResponse.data) {
+              setUserBadges(badgesResponse.data);
+            }
+            if (badgeStatsResponse.success && badgeStatsResponse.data) {
+              setBadgeStats(badgeStatsResponse.data);
+            }
+          } catch (error) {
+            console.error('Failed to fetch rank and badges:', error);
           }
-          if (savesResponse.success && savesResponse.data) {
-            setSavedItems(savesResponse.data);
-          }
-        } catch (error) {
-          console.error('Failed to fetch interactions:', error);
-        }
-
-        // Fetch user's rank and badges
-        try {
-          const [rankResponse, badgesResponse, badgeStatsResponse] = await Promise.all([
-            apiFetch('/api/leaderboard/rank'),
-            apiFetch('/api/badges/user'),
-            apiFetch('/api/badges/stats')
-          ]);
-          
-          console.log('Rank response:', rankResponse);
-          console.log('Badges response:', badgesResponse);
-          console.log('Badge stats response:', badgeStatsResponse);
-          
-          if (rankResponse.success && rankResponse.data) {
-            setUserRank(rankResponse.data);
-          }
-          if (badgesResponse.success && badgesResponse.data) {
-            setUserBadges(badgesResponse.data);
-          }
-          if (badgeStatsResponse.success && badgeStatsResponse.data) {
-            setBadgeStats(badgeStatsResponse.data);
-          }
-        } catch (error) {
-          console.error('Failed to fetch rank and badges:', error);
         }
 
         // Generate achievements based on user stats
-        const userStats = userResponse.data.stats || {};
+        const userStats = userData.stats || {};
         const generatedAchievements = [];
         
         if (userStats.projectsUploaded > 0) {
@@ -166,13 +187,23 @@ export default function Profile() {
 
       } catch (error) {
         console.error('Failed to fetch user data:', error);
+        console.error('Error details:', error);
+        // Set a default user object to prevent the component from breaking
+        setUser({
+          username: 'Unknown User',
+          name: 'Unknown User',
+          role: 'Developer',
+          skills: [],
+          bio: 'User not found',
+          avatarStyle: 'botttsNeutral'
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserData();
-  }, []);
+  }, [userId]);
 
   const handleCompatibilityComplete = async () => {
     setShowCompatibilityWizard(false);
@@ -267,6 +298,41 @@ export default function Profile() {
       </nav>
 
       <div className="relative z-10 container mx-auto px-6 py-12">
+        {/* Profile Header - Show when viewing someone else's profile */}
+        {!isOwnProfile && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => navigate(-1)}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back
+                </button>
+                <div className="h-6 w-px bg-border"></div>
+                <div className="flex items-center gap-3">
+                  <Avatar 
+                    username={user?.username || 'user'} 
+                    avatarStyle={user?.avatarStyle || 'botttsNeutral'} 
+                    size={40} 
+                  />
+                  <div>
+                    <h1 className="text-2xl font-bold gradient-text">{user?.username || 'User'}</h1>
+                    <p className="text-sm text-muted-foreground">Viewing {user?.name || user?.role || 'Developer'}'s profile</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Left Sidebar - Profile Info */}
           <div className="lg:col-span-1 space-y-6">
@@ -316,6 +382,21 @@ export default function Profile() {
                       <span className="text-foreground font-semibold">{user?.followers?.length || 0}</span>
                     </div>
                   </div>
+
+                  {/* Logout Button - Only for own profile */}
+                  {isOwnProfile && (
+                    <div className="pt-4 border-t border-border">
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem('peve_token');
+                          navigate('/login');
+                        }}
+                        className="w-full px-4 py-2 text-sm text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
+                      >
+                        Log out
+                      </button>
+                    </div>
+                  )}
 
                   {/* Badges Section */}
                   {userBadges.length > 0 && (
@@ -390,15 +471,18 @@ export default function Profile() {
                       )}
                     </div>
                   )}
-                  <GlowButton 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => setShowEditProfile(true)}
-                  >
-                    <Settings className="w-4 h-4" />
-                    Edit Profile
-                  </GlowButton>
+                  {/* Edit Profile Button - Only for own profile */}
+                  {isOwnProfile && (
+                    <GlowButton 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => setShowEditProfile(true)}
+                    >
+                      <Settings className="w-4 h-4" />
+                      Edit Profile
+                    </GlowButton>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -413,12 +497,15 @@ export default function Profile() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm">Skills</CardTitle>
-                    <button
-                      onClick={() => setEditingSkills(!editingSkills)}
-                      className="p-1 hover:bg-primary/10 rounded transition-colors"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
+                    {/* Edit Skills Button - Only for own profile */}
+                    {isOwnProfile && (
+                      <button
+                        onClick={() => setEditingSkills(!editingSkills)}
+                        className="p-1 hover:bg-primary/10 rounded transition-colors"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -427,7 +514,7 @@ export default function Profile() {
                     {user?.skills?.map((skill: string) => (
                       <Badge key={skill} variant="teal" className="flex items-center gap-1">
                         {skill}
-                        {editingSkills && (
+                        {editingSkills && isOwnProfile && (
                           <button
                             onClick={() => removeSkill(skill)}
                             className="ml-1 hover:text-red-500"
@@ -438,12 +525,14 @@ export default function Profile() {
                       </Badge>
                     ))}
                     {(!user?.skills || user.skills.length === 0) && (
-                      <p className="text-sm text-muted-foreground">No skills added yet. Click edit to add skills!</p>
+                      <p className="text-sm text-muted-foreground">
+                        {isOwnProfile ? "No skills added yet. Click edit to add skills!" : "No skills added yet."}
+                      </p>
                     )}
                   </div>
 
-                  {/* Add Skills */}
-                  {editingSkills && (
+                  {/* Add Skills - Only for own profile */}
+                  {editingSkills && isOwnProfile && (
                     <div className="space-y-2">
                       <div className="relative" ref={dropdownRef}>
                         <Input
@@ -554,14 +643,19 @@ export default function Profile() {
                     <div className="text-center py-4">
                       <UserCheck className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                       <p className="text-sm text-muted-foreground mb-3">
-                        Complete your compatibility profile to find better matches
+                        {isOwnProfile 
+                          ? "Complete your compatibility profile to find better matches"
+                          : "Compatibility profile not set up yet"
+                        }
                       </p>
-                      <GlowButton
-                        size="sm"
-                        onClick={() => setShowCompatibilityWizard(true)}
-                      >
-                        Setup Profile
-                      </GlowButton>
+                      {isOwnProfile && (
+                        <GlowButton
+                          size="sm"
+                          onClick={() => setShowCompatibilityWizard(true)}
+                        >
+                          Setup Profile
+                        </GlowButton>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -571,17 +665,43 @@ export default function Profile() {
           </div>
 
           {/* Center - Main Content with Tabs */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className={`${isOwnProfile ? 'lg:col-span-2' : 'lg:col-span-3'} space-y-6`}>
+            {/* Page Title */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center"
+            >
+              <h1 className="text-3xl font-bold mb-2">
+                <span className="gradient-text">
+                  {isOwnProfile ? 'My Profile' : `${user?.username || 'User'}'s Profile`}
+                </span>
+              </h1>
+              <p className="text-muted-foreground">
+                {isOwnProfile 
+                  ? 'Manage your profile, view achievements, and track your progress'
+                  : `Explore ${user?.name || user?.username || 'this user'}'s projects, ideas, and achievements`
+                }
+              </p>
+            </motion.div>
+
             <Tabs defaultValue="achievements" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-3' : 'grid-cols-3'}`}>
                 <TabsTrigger value="achievements" className="flex items-center gap-2">
                   <Trophy className="w-4 h-4" />
                   Achievements
                 </TabsTrigger>
-                <TabsTrigger value="requests" className="flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4" />
-                  My Requests
-                </TabsTrigger>
+                {isOwnProfile ? (
+                  <TabsTrigger value="requests" className="flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4" />
+                    My Requests
+                  </TabsTrigger>
+                ) : (
+                  <TabsTrigger value="projects" className="flex items-center gap-2">
+                    <Rocket className="w-4 h-4" />
+                    Projects & Ideas
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="activity" className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   Activity
@@ -634,22 +754,154 @@ export default function Profile() {
                 </motion.div>
               </TabsContent>
 
-              <TabsContent value="requests" className="space-y-6">
-                <MyRequests />
-              </TabsContent>
+              {isOwnProfile && (
+                <TabsContent value="requests" className="space-y-6">
+                  <MyRequests />
+                </TabsContent>
+              )}
+
+              {!isOwnProfile && (
+                <TabsContent value="projects" className="space-y-6">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <h2 className="text-2xl font-bold mb-6">
+                      <span className="gradient-text">{user?.username || 'User'}'s</span> Projects & Ideas
+                    </h2>
+                    
+                    {/* Projects Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Rocket className="w-5 h-5 text-primary" />
+                        Projects ({userProjects.length})
+                      </h3>
+                      {userProjects.length > 0 ? (
+                        <div className="grid gap-4">
+                          {userProjects.slice(0, 3).map((project) => (
+                            <Card key={project._id} className="glass border-border hover:border-primary/20 transition-colors">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold text-foreground mb-1">{project.title}</h4>
+                                    <p className="text-sm text-muted-foreground mb-2">{project.tagline}</p>
+                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                      <span className="flex items-center gap-1">
+                                        <Heart className="w-3 h-3" />
+                                        {project.metrics?.likes || 0}
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <MessageCircle className="w-3 h-3" />
+                                        {project.metrics?.comments || 0}
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <Eye className="w-3 h-3" />
+                                        {project.metrics?.views || 0}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <GlowButton
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/project/${project._id}`)}
+                                  >
+                                    View
+                                  </GlowButton>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                          {userProjects.length > 3 && (
+                            <div className="text-center">
+                              <GlowButton variant="outline" size="sm">
+                                View All {userProjects.length} Projects
+                              </GlowButton>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Rocket className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                          <p className="text-muted-foreground">No projects yet</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Ideas Section */}
+                    <div className="space-y-4 pt-6">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Lightbulb className="w-5 h-5 text-primary" />
+                        Ideas ({userIdeas.length})
+                      </h3>
+                      {userIdeas.length > 0 ? (
+                        <div className="grid gap-4">
+                          {userIdeas.slice(0, 3).map((idea) => (
+                            <Card key={idea._id} className="glass border-border hover:border-primary/20 transition-colors">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold text-foreground mb-1">{idea.title}</h4>
+                                    <p className="text-sm text-muted-foreground mb-2">{idea.description}</p>
+                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                      <span className="flex items-center gap-1">
+                                        <Heart className="w-3 h-3" />
+                                        {idea.metrics?.likes || 0}
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <MessageCircle className="w-3 h-3" />
+                                        {idea.metrics?.comments || 0}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <GlowButton
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/ideaboard`)}
+                                  >
+                                    View
+                                  </GlowButton>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                          {userIdeas.length > 3 && (
+                            <div className="text-center">
+                              <GlowButton variant="outline" size="sm">
+                                View All {userIdeas.length} Ideas
+                              </GlowButton>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Lightbulb className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                          <p className="text-muted-foreground">No ideas yet</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                </TabsContent>
+              )}
 
               <TabsContent value="activity" className="space-y-6">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <h2 className="text-2xl font-bold mb-6"><span className="gradient-text">Recent</span> Activity</h2>
+                  <h2 className="text-2xl font-bold mb-6">
+                    <span className="gradient-text">
+                      {isOwnProfile ? 'Recent' : `${user?.username || 'User'}'s Recent`}
+                    </span> Activity
+                  </h2>
                   
                   <div className="text-center py-12">
                     <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No recent activity</h3>
                     <p className="text-muted-foreground">
-                      Your recent collaboration and project activity will appear here
+                      {isOwnProfile 
+                        ? 'Your recent collaboration and project activity will appear here'
+                        : `${user?.name || user?.username || 'This user'} hasn't been active recently`
+                      }
                     </p>
                   </div>
                 </motion.div>
@@ -657,106 +909,112 @@ export default function Profile() {
             </Tabs>
           </div>
 
-          {/* Right Sidebar - Projects & Ideas */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* My Projects */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-            >
-              <Card className="glass border-border">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Rocket className="w-4 h-4 text-accent" />
-                    My Projects
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {userProjects.map((project, i) => (
-                    <div key={i} className="p-3 rounded-xl bg-card-secondary hover:bg-primary/5 transition-colors cursor-pointer">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-sm font-semibold text-foreground">{project.title}</div>
-                        <Badge className={`text-xs ${
-                          project.status === 'completed' ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'
-                        }`}>
-                          {project.status === 'completed' ? 'Live' : project.status}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {(project.techStack || []).slice(0, 3).map((tech: string, j: number) => (
-                          <span key={j} className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary border border-primary/20">
-                            {tech}
-                          </span>
-                        ))}
-                        {(project.techStack || []).length > 3 && (
-                          <span className="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">
-                            +{(project.techStack || []).length - 3}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Trophy className="w-3 h-3" />
-                          <span>{project.metrics?.likes || 0} likes</span>
+          {/* Right Sidebar - Projects & Ideas - Only for own profile */}
+          {isOwnProfile && (
+            <div className="lg:col-span-1 space-y-6">
+            {/* My Projects - Only for own profile */}
+            {isOwnProfile && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <Card className="glass border-border">
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Rocket className="w-4 h-4 text-accent" />
+                      My Projects
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {userProjects.map((project, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-card-secondary hover:bg-primary/5 transition-colors cursor-pointer">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-sm font-semibold text-foreground">{project.title}</div>
+                          <Badge className={`text-xs ${
+                            project.status === 'completed' ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'
+                          }`}>
+                            {project.status === 'completed' ? 'Live' : project.status}
+                          </Badge>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="w-3 h-3" />
-                          <span>{project.metrics?.comments || 0} comments</span>
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {(project.techStack || []).slice(0, 3).map((tech: string, j: number) => (
+                            <span key={j} className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary border border-primary/20">
+                              {tech}
+                            </span>
+                          ))}
+                          {(project.techStack || []).length > 3 && (
+                            <span className="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">
+                              +{(project.techStack || []).length - 3}
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          <span>{project.metrics?.views || 0} views</span>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Trophy className="w-3 h-3" />
+                            <span>{project.metrics?.likes || 0} likes</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MessageCircle className="w-3 h-3" />
+                            <span>{project.metrics?.comments || 0} comments</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            <span>{project.metrics?.views || 0} views</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </motion.div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
-            {/* My Ideas */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <Card className="glass border-border">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4 text-secondary" />
-                    My Ideas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {userIdeas.map((idea, i) => (
-                    <div key={i} className="p-3 rounded-xl bg-card-secondary hover:bg-primary/5 transition-colors cursor-pointer">
-                      <div className="text-sm font-semibold text-foreground mb-1">{idea.title}</div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Trophy className="w-3 h-3" />
-                          <span>{idea.likes || 0} likes</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="w-3 h-3" />
-                          <span>{idea.commentCount || 0} comments</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          <span>{idea.views || 0} views</span>
+            {/* My Ideas - Only for own profile */}
+            {isOwnProfile && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <Card className="glass border-border">
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-secondary" />
+                      My Ideas
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {userIdeas.map((idea, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-card-secondary hover:bg-primary/5 transition-colors cursor-pointer">
+                        <div className="text-sm font-semibold text-foreground mb-1">{idea.title}</div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Trophy className="w-3 h-3" />
+                            <span>{idea.likes || 0} likes</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MessageCircle className="w-3 h-3" />
+                            <span>{idea.commentCount || 0} comments</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            <span>{idea.views || 0} views</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </motion.div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
-            {/* Liked Items */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
+            {/* Liked Items - Only for own profile */}
+            {isOwnProfile && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
               <Card className="glass border-border">
                 <CardHeader>
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -793,14 +1051,16 @@ export default function Profile() {
                   )}
                 </CardContent>
               </Card>
-            </motion.div>
+              </motion.div>
+            )}
 
-            {/* Saved Items */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
+            {/* Saved Items - Only for own profile */}
+            {isOwnProfile && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
               <Card className="glass border-border">
                 <CardHeader>
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -837,8 +1097,10 @@ export default function Profile() {
                   )}
                 </CardContent>
               </Card>
-            </motion.div>
-          </div>
+              </motion.div>
+            )}
+            </div>
+          )}
         </div>
       </div>
 

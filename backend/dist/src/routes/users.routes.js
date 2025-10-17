@@ -12,4 +12,6 @@ router.put('/profile', auth_1.requireAuth, users_controller_1.updateProfile);
 router.get('/:userId', users_controller_1.getUserById);
 // Search users (public)
 router.get('/', users_controller_1.searchUsers);
+// Validate usernames (public)
+router.post('/validate', users_controller_1.validateUsernames);
 exports.default = router;

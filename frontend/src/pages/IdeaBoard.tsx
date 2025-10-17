@@ -1,21 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { MessageCircle, Heart, Zap, Plus, Bell, User, X, Users } from 'lucide-react';
+import { MessageCircle, Heart, Zap, Plus, X, Users } from 'lucide-react';
 import { NetworkBackground } from '@/components/NetworkBackground';
 import { GlowButton } from '@/components/ui/glow-button';
 import UsernameLink from '@/components/UsernameLink';
+import UsernameWithAvatar from '@/components/UsernameWithAvatar';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import CompatibilityWizard from '@/components/CompatibilityWizard';
 import CompatibilityCheckModal from '@/components/CompatibilityCheckModal';
 import NotificationDropdown from '@/components/NotificationDropdown';
 import { CommentModal } from '@/components/CommentModal';
-import SearchBar from '@/components/SearchBar';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import Navbar from '@/components/Navbar';
 
 const mockIdeas = [
   { id: 1, username: 'Sarah Chen', avatar: '🧑‍💻', title: 'AI-Powered Code Review Tool', description: 'A collaborative platform that uses AI to provide instant code reviews and suggestions', tags: ['AI', 'DevTools', 'Python'], likes: 42, comments: 12 },
@@ -29,7 +29,6 @@ export default function IdeaBoard() {
   const [ideaType, setIdeaType] = useState<'brainstorm' | 'build'>('brainstorm');
   const [ideas, setIdeas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showCompatibilityWizard, setShowCompatibilityWizard] = useState(false);
@@ -40,7 +39,6 @@ export default function IdeaBoard() {
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [selectedIdeaForComment, setSelectedIdeaForComment] = useState<any>(null);
   const [likedIdeas, setLikedIdeas] = useState<Set<string>>(new Set());
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
   // Form state
@@ -79,17 +77,6 @@ export default function IdeaBoard() {
     checkCompatibilityAndFetchIdeas();
   }, []);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowProfileDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -223,53 +210,7 @@ export default function IdeaBoard() {
     <div className="relative min-h-screen overflow-hidden">
       <NetworkBackground />
       
-      {/* Navbar */}
-      <nav className="navbar">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo & Nav */}
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2">
-                <img src={'/final.png'} alt="peve" className="w-12 h-12" />
-                <button onClick={() => navigate('/home')} className="text-2xl font-bold brand-peve">peve</button>
-              </div>
-              <div className="hidden md:flex gap-6">
-                <button onClick={() => navigate('/home')} className="text-muted-foreground hover:text-primary transition-colors">Explore</button>
-                <button onClick={() => navigate('/ideas')} className="text-primary">Ideas</button>
-                <button onClick={() => navigate('/projects')} className="text-muted-foreground hover:text-primary transition-colors">Projects</button>
-                <button onClick={() => navigate('/codetalks')} className="text-muted-foreground hover:text-primary transition-colors">CodeTalks</button>
-                <button onClick={() => navigate('/leaderboard')} className="text-muted-foreground hover:text-primary transition-colors">Leaderboard</button>
-              </div>
-            </div>
-
-            {/* Search Bar */}
-            <div className="flex-1 max-w-2xl mx-8">
-              <SearchBar />
-            </div>
-
-            {/* User Actions */}
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <NotificationDropdown onNotificationClick={handleNotificationClick} />
-              <div className="relative" ref={dropdownRef}>
-                <button 
-                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="p-2 rounded-lg hover:bg-primary/10 transition-colors"
-                >
-                  <User className="w-5 h-5 text-muted-foreground" />
-                </button>
-                {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-40 rounded-xl glass border border-border p-2 z-50">
-                    <button onClick={() => { navigate('/profile'); setShowProfileDropdown(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-primary/10">Profile</button>
-                    <button onClick={() => { navigate('/codetalks'); setShowProfileDropdown(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-primary/10">CodeTalks</button>
-                    <button onClick={() => { localStorage.removeItem('peve_token'); navigate('/login'); setShowProfileDropdown(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-primary/10">Log out</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar currentPage="ideas" />
 
       <div className="relative z-10 container mx-auto px-6 py-12">
         <motion.div
@@ -295,22 +236,23 @@ export default function IdeaBoard() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Card className="glass border-border hover-glow cursor-pointer group h-64 flex flex-col">
+                <Card 
+                  className="glass border-border hover-glow cursor-pointer group h-64 flex flex-col"
+                  onClick={() => navigate(`/ideas/${idea._id}`)}
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="text-lg">🧑‍💻</div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm text-foreground truncate">
-                          {idea.author?._id ? (
-                            <UsernameLink
-                              username={idea.author.username || idea.author.name || 'Unknown'}
-                              userId={idea.author._id}
-                              className="text-sm"
-                            />
-                          ) : (
-                            idea.author?.username || idea.author?.name || 'Unknown'
-                          )}
-                        </div>
+                        <UsernameWithAvatar
+                          username={idea.author?.username || idea.author?.name || 'Unknown'}
+                          userId={idea.author?._id}
+                          name={idea.author?.name}
+                          avatarStyle={idea.author?.avatarStyle}
+                          avatarUrl={idea.author?.avatarUrl}
+                          size={24}
+                          variant="compact"
+                          className="font-semibold text-sm"
+                        />
                         <div className="text-xs text-muted-foreground">{new Date(idea.createdAt).toLocaleDateString()}</div>
                       </div>
                     </div>
@@ -336,7 +278,10 @@ export default function IdeaBoard() {
                       <div className="flex items-center justify-between pt-2 border-t border-border">
                         <div className="flex items-center gap-3">
                           <button 
-                            onClick={() => handleLikeIdea(idea._id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLikeIdea(idea._id);
+                            }}
                             className={`flex items-center gap-1 transition-colors ${
                               likedIdeas.has(idea._id)
                                 ? 'text-red-500 hover:text-red-600'
@@ -347,7 +292,10 @@ export default function IdeaBoard() {
                             <span className="text-xs">{idea.likes || 0}</span>
                           </button>
                           <button 
-                            onClick={() => handleOpenCommentModal(idea)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenCommentModal(idea);
+                            }}
                             className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
                           >
                             <MessageCircle className="w-3 h-3" />
@@ -364,7 +312,10 @@ export default function IdeaBoard() {
                               variant="outline" 
                               size="sm" 
                               className="text-xs px-2 py-1"
-                              onClick={() => handleWantToCollaborate(idea)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleWantToCollaborate(idea);
+                              }}
                             >
                               <Users className="w-3 h-3 mr-1" />
                               Want to Collaborate

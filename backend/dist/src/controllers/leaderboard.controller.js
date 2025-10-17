@@ -4,6 +4,7 @@ exports.getLeaderboard = getLeaderboard;
 exports.getUserRank = getUserRank;
 exports.getBadges = getBadges;
 exports.getAllBadges = getAllBadges;
+exports.testUsers = testUsers;
 const User_1 = require("../models/User");
 const Idea_1 = require("../models/Idea");
 const Project_1 = require("../models/Project");
@@ -13,9 +14,22 @@ async function getLeaderboard(req, res) {
     try {
         const { type = 'overall', limit = 50 } = req.query;
         // Get all users with their stats
-        const users = await User_1.User.find({ isActive: true })
-            .select('username name avatarUrl stats createdAt')
+        const users = await User_1.User.find({})
+            .select('username name avatarUrl avatarStyle stats createdAt')
             .lean();
+        console.log(`Found ${users.length} users for leaderboard`);
+        // If no users found, return empty array
+        if (users.length === 0) {
+            console.log('No users found in database');
+            return res.json({
+                success: true,
+                data: []
+            });
+        }
+        // Log first user for debugging
+        if (users.length > 0) {
+            console.log('Sample user data:', users[0]);
+        }
         // Calculate scores for each user
         const leaderboardData = await Promise.all(users.map(async (user) => {
             const userId = user._id;
@@ -87,6 +101,8 @@ async function getLeaderboard(req, res) {
         });
         // Apply limit
         const limitedData = leaderboardData.slice(0, Number(limit));
+        console.log(`Returning ${limitedData.length} users in leaderboard`);
+        console.log('Sample user data:', limitedData[0]);
         return res.json({
             success: true,
             data: limitedData
@@ -160,8 +176,8 @@ async function getUserRank(req, res) {
             return res.status(401).json({ success: false, error: 'Authentication required' });
         }
         // Get all users with scores
-        const users = await User_1.User.find({ isActive: true })
-            .select('username name avatarUrl stats')
+        const users = await User_1.User.find({})
+            .select('username name avatarUrl avatarStyle stats')
             .lean();
         const userScores = await Promise.all(users.map(async (user) => {
             const ideasCount = await Idea_1.Idea.countDocuments({ author: user._id });
@@ -226,5 +242,22 @@ async function getAllBadges(req, res) {
     catch (error) {
         console.error('Error fetching all badges:', error);
         res.status(500).json({ success: false, error: 'Failed to fetch badges' });
+    }
+}
+async function testUsers(req, res) {
+    try {
+        const userCount = await User_1.User.countDocuments();
+        const users = await User_1.User.find({}).select('username name').limit(5);
+        return res.json({
+            success: true,
+            data: {
+                totalUsers: userCount,
+                sampleUsers: users
+            }
+        });
+    }
+    catch (error) {
+        console.error('Error testing users:', error);
+        res.status(500).json({ success: false, error: 'Failed to test users' });
     }
 }

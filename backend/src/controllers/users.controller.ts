@@ -49,11 +49,19 @@ export async function getUserById(req: Request, res: Response) {
   const { userId } = req.params;
   
   try {
-    const user = await User.findById(userId).select('-passwordHash -email');
+    // Try to find by ObjectId first, then by username
+    let user = await User.findById(userId).select('-passwordHash -email');
+    
+    if (!user) {
+      // If not found by ObjectId, try to find by username
+      user = await User.findOne({ username: userId }).select('-passwordHash -email');
+    }
+    
     if (!user) return res.status(404).json({ success: false, error: 'User not found' });
     
     return res.json({ success: true, data: user });
   } catch (error) {
+    console.error('Get user by ID error:', error);
     return res.status(500).json({ success: false, error: 'Failed to fetch user' });
   }
 }
@@ -97,5 +105,40 @@ export async function searchUsers(req: Request, res: Response) {
     });
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Failed to search users' });
+  }
+}
+
+export async function validateUsernames(req: Request, res: Response) {
+  try {
+    const { usernames } = req.body;
+    
+    if (!Array.isArray(usernames)) {
+      return res.status(400).json({ success: false, error: 'Usernames must be an array' });
+    }
+    
+    // Check which usernames exist
+    const existingUsers = await User.find({
+      username: { $in: usernames.map((u: string) => u.toLowerCase()) }
+    }).select('username');
+    
+    const existingUsernames = existingUsers.map(user => user.username);
+    const validUsernames = usernames.filter((username: string) => 
+      existingUsernames.includes(username.toLowerCase())
+    );
+    const invalidUsernames = usernames.filter((username: string) => 
+      !existingUsernames.includes(username.toLowerCase())
+    );
+    
+    return res.json({
+      success: true,
+      data: {
+        valid: validUsernames,
+        invalid: invalidUsernames,
+        existing: existingUsernames
+      }
+    });
+  } catch (error) {
+    console.error('Username validation error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to validate usernames' });
   }
 }

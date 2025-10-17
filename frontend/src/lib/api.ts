@@ -22,7 +22,9 @@ export async function apiFetch(path: string, init?: RequestInit) {
       if (res.status === 400) {
         throw new Error(data?.error || 'Invalid request. Please check your input.');
       } else if (res.status === 401) {
-        throw new Error(data?.error || 'Authentication failed. Please check your credentials.');
+        // Clear invalid tokens
+        clearAuthTokens();
+        throw new Error('Authentication failed. Please log in again.');
       } else if (res.status === 409) {
         throw new Error(data?.error || 'This username or email is already taken.');
       } else if (res.status === 500) {

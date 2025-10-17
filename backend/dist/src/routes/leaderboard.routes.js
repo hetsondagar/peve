@@ -8,4 +8,5 @@ router.get('/', leaderboard_controller_1.getLeaderboard);
 router.get('/rank', auth_1.requireAuth, leaderboard_controller_1.getUserRank);
 router.get('/badges', auth_1.requireAuth, leaderboard_controller_1.getBadges);
 router.get('/badges/all', leaderboard_controller_1.getAllBadges);
+router.get('/test', leaderboard_controller_1.testUsers);
 exports.default = router;

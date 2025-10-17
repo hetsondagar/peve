@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
+import { requireAuth } from '@/utils/auth';
 
 interface InteractionStatus {
   targetType: string;
@@ -59,9 +60,7 @@ export function useInteractions({ targetType, targetId, initialLikeCount = 0 }: 
     if (isLoading) return;
     
     // Check if user is authenticated
-    const token = localStorage.getItem('peve_token');
-    if (!token) {
-      alert('Please log in to like items');
+    if (!requireAuth()) {
       return;
     }
     
@@ -77,9 +76,9 @@ export function useInteractions({ targetType, targetId, initialLikeCount = 0 }: 
       }
     } catch (error) {
       if (error.message?.includes('Authentication failed') || error.message?.includes('Invalid token')) {
-        alert('Please log in to like items');
-        localStorage.removeItem('peve_token');
-        window.location.href = '/login';
+        // Don't show alert, just log the error and let the user continue
+        console.warn('Authentication required for liking items');
+        return;
       } else {
         console.error('Failed to toggle like:', error);
       }
@@ -92,9 +91,7 @@ export function useInteractions({ targetType, targetId, initialLikeCount = 0 }: 
     if (isLoading) return;
     
     // Check if user is authenticated
-    const token = localStorage.getItem('peve_token');
-    if (!token) {
-      alert('Please log in to save items');
+    if (!requireAuth()) {
       return;
     }
     
@@ -112,9 +109,9 @@ export function useInteractions({ targetType, targetId, initialLikeCount = 0 }: 
       }
     } catch (error) {
       if (error.message?.includes('Authentication failed') || error.message?.includes('Invalid token')) {
-        alert('Please log in to save items');
-        localStorage.removeItem('peve_token');
-        window.location.href = '/login';
+        // Don't show alert, just log the error and let the user continue
+        console.warn('Authentication required for saving items');
+        return;
       } else {
         console.error('Failed to toggle save:', error);
       }
