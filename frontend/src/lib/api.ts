@@ -1,4 +1,5 @@
-export const API_BASE = import.meta?.env?.VITE_API_URL || 'http://localhost:4000';
+// Temporary hardcode for debugging - replace with your actual Render URL
+export const API_BASE = import.meta?.env?.VITE_API_URL || 'https://peve-qn93.onrender.com';
 
 // Debug logging
 console.log('🔍 API Configuration Debug:');
