@@ -114,48 +114,53 @@ async function start() {
     res.json({ status: 'ok', db: dbState === 1 ? 'connected' : 'disconnected' });
   });
 
-  // Load routes synchronously for better reliability
+  // Load routes asynchronously
   console.log('📦 Loading routes...');
 
-  // Import and mount routes directly
-  const authRoutes = require('./routes/auth.routes');
-  const usersRoutes = require('./routes/users.routes');
-  const projectsRoutes = require('./routes/projects.routes');
-  const ideasRoutes = require('./routes/ideas.routes');
-  const commentsRoutes = require('./routes/comments.routes');
-  const notificationsRoutes = require('./routes/notifications.routes');
-  const searchRoutes = require('./routes/search.routes');
-  const likesRoutes = require('./routes/likes.routes');
-  const uploadsRoutes = require('./routes/uploads.routes');
-  const collaborationsRoutes = require('./routes/collaborations.routes');
-  const chatRoutes = require('./routes/chat.routes');
-  const compatibilityRoutes = require('./routes/compatibility.routes');
-  const collaborationRoutes = require('./routes/collaboration-requests.routes');
-  const dashboardRoutes = require('./routes/dashboard.routes');
-  const leaderboardRoutes = require('./routes/leaderboard.routes');
-  const promptRoutes = require('./routes/prompt.routes');
-  const interactionRoutes = require('./routes/interaction.routes');
-  const badgeRoutes = require('./routes/badge.routes');
+  try {
+    // Import and mount routes
+    const authRoutes = await import('./routes/auth.routes');
+    const usersRoutes = await import('./routes/users.routes');
+    const projectsRoutes = await import('./routes/projects.routes');
+    const ideasRoutes = await import('./routes/ideas.routes');
+    const commentsRoutes = await import('./routes/comments.routes');
+    const notificationsRoutes = await import('./routes/notifications.routes');
+    const searchRoutes = await import('./routes/search.routes');
+    const likesRoutes = await import('./routes/likes.routes');
+    const uploadsRoutes = await import('./routes/uploads.routes');
+    const collaborationsRoutes = await import('./routes/collaborations.routes');
+    const chatRoutes = await import('./routes/chat.routes');
+    const compatibilityRoutes = await import('./routes/compatibility.routes');
+    const collaborationRoutes = await import('./routes/collaboration-requests.routes');
+    const dashboardRoutes = await import('./routes/dashboard.routes');
+    const leaderboardRoutes = await import('./routes/leaderboard.routes');
+    const promptRoutes = await import('./routes/prompt.routes');
+    const interactionRoutes = await import('./routes/interaction.routes');
+    const badgeRoutes = await import('./routes/badge.routes');
 
-  // Mount routes
-  app.use('/api/auth', authLimiter, authRoutes.default);
-  app.use('/api/users', usersRoutes.default);
-  app.use('/api/projects', projectsRoutes.default);
-  app.use('/api/ideas', ideasRoutes.default);
-  app.use('/api/comments', commentsRoutes.default);
-  app.use('/api/notifications', notificationsRoutes.default);
-  app.use('/api/search', searchRoutes.default);
-  app.use('/api/likes', likesRoutes.default);
-  app.use('/api/uploads', uploadsRoutes.default);
-  app.use('/api/collaborations', collaborationsRoutes.default);
-  app.use('/api/chat', chatRoutes.default);
-  app.use('/api/compatibility', compatibilityRoutes.default);
-  app.use('/api/collaboration', collaborationRoutes.default);
-  app.use('/api/dashboard', dashboardRoutes.default);
-  app.use('/api/leaderboard', leaderboardRoutes.default);
-  app.use('/api/prompts', promptRoutes.default);
-  app.use('/api/interactions', interactionRoutes.default);
-  app.use('/api/badges', badgeRoutes.default);
+    // Mount routes
+    app.use('/api/auth', authLimiter, authRoutes.default);
+    app.use('/api/users', usersRoutes.default);
+    app.use('/api/projects', projectsRoutes.default);
+    app.use('/api/ideas', ideasRoutes.default);
+    app.use('/api/comments', commentsRoutes.default);
+    app.use('/api/notifications', notificationsRoutes.default);
+    app.use('/api/search', searchRoutes.default);
+    app.use('/api/likes', likesRoutes.default);
+    app.use('/api/uploads', uploadsRoutes.default);
+    app.use('/api/collaborations', collaborationsRoutes.default);
+    app.use('/api/chat', chatRoutes.default);
+    app.use('/api/compatibility', compatibilityRoutes.default);
+    app.use('/api/collaboration', collaborationRoutes.default);
+    app.use('/api/dashboard', dashboardRoutes.default);
+    app.use('/api/leaderboard', leaderboardRoutes.default);
+    app.use('/api/prompts', promptRoutes.default);
+    app.use('/api/interactions', interactionRoutes.default);
+    app.use('/api/badges', badgeRoutes.default);
+  } catch (error) {
+    console.error('❌ Error loading routes:', error);
+    throw error;
+  }
 
   console.log('✅ Routes loaded successfully');
 
