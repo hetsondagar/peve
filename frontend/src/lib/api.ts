@@ -1,16 +1,4 @@
-// Temporary hardcode for debugging - replace with your actual Render URL
 export const API_BASE = import.meta?.env?.VITE_API_URL || 'https://peve-qn93.onrender.com';
-
-// Debug logging
-console.log('🔍 API Configuration Debug:');
-console.log('VITE_API_URL from env:', import.meta?.env?.VITE_API_URL);
-console.log('Final API_BASE:', API_BASE);
-console.log('All env vars:', import.meta?.env);
-
-// Force check - if still localhost, something is wrong
-if (API_BASE.includes('localhost')) {
-  console.error('❌ CRITICAL: Frontend is using localhost! Check VITE_API_URL environment variable in Vercel!');
-}
 
 export async function apiFetch(path: string, init?: RequestInit) {
   const token = localStorage.getItem('peve_token');
