@@ -176,12 +176,14 @@ async function start() {
   registerSocketHandlers(io);
   console.log('✅ Socket.IO initialized');
 
-  server.listen(PORT, () => {
-    // eslint-disable-next-line no-console
-    console.log(`API listening on http://localhost:${PORT}`);
-    // eslint-disable-next-line no-console
-    console.log(`CORS/Socket allowed origin: ${FRONTEND_URL}`);
-  });
+      server.listen(PORT, () => {
+        // eslint-disable-next-line no-console
+        console.log(`🚀 peve-backend API server started successfully!`);
+        // eslint-disable-next-line no-console
+        console.log(`📡 CORS/Socket allowed origin: ${FRONTEND_URL}`);
+        // eslint-disable-next-line no-console
+        console.log(`🌐 Server running on port: ${PORT}`);
+      });
 }
 
 // Memory monitoring
