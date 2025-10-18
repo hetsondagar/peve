@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -11,41 +44,26 @@ const helmet_1 = __importDefault(require("helmet"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const morgan_1 = __importDefault(require("morgan"));
-const socket_io_1 = require("socket.io");
-const sockets_1 = require("./sockets");
-const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
-const ideas_routes_1 = __importDefault(require("./routes/ideas.routes"));
-const projects_routes_1 = __importDefault(require("./routes/projects.routes"));
-const comments_routes_1 = __importDefault(require("./routes/comments.routes"));
-const notifications_routes_1 = __importDefault(require("./routes/notifications.routes"));
-const uploads_routes_1 = __importDefault(require("./routes/uploads.routes"));
-const search_routes_1 = __importDefault(require("./routes/search.routes"));
-const users_routes_1 = __importDefault(require("./routes/users.routes"));
-const collaborations_routes_1 = __importDefault(require("./routes/collaborations.routes"));
-const chat_routes_1 = __importDefault(require("./routes/chat.routes"));
-const compatibility_routes_1 = __importDefault(require("./routes/compatibility.routes"));
-const collaboration_requests_routes_1 = __importDefault(require("./routes/collaboration-requests.routes"));
-const likes_routes_1 = __importDefault(require("./routes/likes.routes"));
-const dashboard_routes_1 = __importDefault(require("./routes/dashboard.routes"));
-const leaderboard_routes_1 = __importDefault(require("./routes/leaderboard.routes"));
-const prompt_routes_1 = __importDefault(require("./routes/prompt.routes"));
-const interaction_routes_1 = __importDefault(require("./routes/interaction.routes"));
-const badge_routes_1 = __importDefault(require("./routes/badge.routes"));
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const MONGO_URI = process.env.MONGO_URI || '';
+// Memory optimization
+process.setMaxListeners(0);
+if (process.env.NODE_ENV === 'production') {
+    // Increase memory limit for production
+    process.env.NODE_OPTIONS = '--max-old-space-size=512';
+}
 async function start() {
     if (!MONGO_URI) {
         // eslint-disable-next-line no-console
         console.error('MONGO_URI is not set');
         process.exit(1);
     }
+    // Connect to MongoDB first
     await mongoose_1.default.connect(MONGO_URI);
+    console.log('✅ Connected to MongoDB');
     const app = (0, express_1.default)();
     const server = http_1.default.createServer(app);
-    const io = new socket_io_1.Server(server, {
-        cors: { origin: FRONTEND_URL, credentials: true },
-    });
     // Enhanced security middleware
     app.use((0, helmet_1.default)({
         contentSecurityPolicy: {
@@ -121,26 +139,57 @@ async function start() {
         const dbState = mongoose_1.default.connection.readyState; // 1 connected
         res.json({ status: 'ok', db: dbState === 1 ? 'connected' : 'disconnected' });
     });
-    // routes
-    app.use('/api/auth', authLimiter, auth_routes_1.default);
-    app.use('/api/ideas', ideas_routes_1.default);
-    app.use('/api/projects', projects_routes_1.default);
-    app.use('/api/comments', comments_routes_1.default);
-    app.use('/api/notifications', notifications_routes_1.default);
-    app.use('/api/uploads', uploads_routes_1.default);
-    app.use('/api/search', search_routes_1.default);
-    app.use('/api/users', users_routes_1.default);
-    app.use('/api/collaborations', collaborations_routes_1.default);
-    app.use('/api/chat', chat_routes_1.default);
-    app.use('/api/compatibility', compatibility_routes_1.default);
-    app.use('/api/collaboration', collaboration_requests_routes_1.default);
-    app.use('/api/likes', likes_routes_1.default);
-    app.use('/api/dashboard', dashboard_routes_1.default);
-    app.use('/api/leaderboard', leaderboard_routes_1.default);
-    app.use('/api/prompts', prompt_routes_1.default);
-    app.use('/api/interactions', interaction_routes_1.default);
-    app.use('/api/badges', badge_routes_1.default);
-    (0, sockets_1.registerSocketHandlers)(io);
+    // Lazy load routes to reduce memory usage
+    console.log('📦 Loading routes...');
+    // Core routes (load first)
+    const authRoutes = await Promise.resolve().then(() => __importStar(require('./routes/auth.routes')));
+    const usersRoutes = await Promise.resolve().then(() => __importStar(require('./routes/users.routes')));
+    const projectsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/projects.routes')));
+    const ideasRoutes = await Promise.resolve().then(() => __importStar(require('./routes/ideas.routes')));
+    app.use('/api/auth', authLimiter, authRoutes.default);
+    app.use('/api/users', usersRoutes.default);
+    app.use('/api/projects', projectsRoutes.default);
+    app.use('/api/ideas', ideasRoutes.default);
+    // Secondary routes (load after core)
+    const commentsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/comments.routes')));
+    const notificationsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/notifications.routes')));
+    const searchRoutes = await Promise.resolve().then(() => __importStar(require('./routes/search.routes')));
+    const likesRoutes = await Promise.resolve().then(() => __importStar(require('./routes/likes.routes')));
+    app.use('/api/comments', commentsRoutes.default);
+    app.use('/api/notifications', notificationsRoutes.default);
+    app.use('/api/search', searchRoutes.default);
+    app.use('/api/likes', likesRoutes.default);
+    // Additional routes (load last)
+    const uploadsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/uploads.routes')));
+    const collaborationsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/collaborations.routes')));
+    const chatRoutes = await Promise.resolve().then(() => __importStar(require('./routes/chat.routes')));
+    const compatibilityRoutes = await Promise.resolve().then(() => __importStar(require('./routes/compatibility.routes')));
+    const collaborationRoutes = await Promise.resolve().then(() => __importStar(require('./routes/collaboration-requests.routes')));
+    const dashboardRoutes = await Promise.resolve().then(() => __importStar(require('./routes/dashboard.routes')));
+    const leaderboardRoutes = await Promise.resolve().then(() => __importStar(require('./routes/leaderboard.routes')));
+    const promptRoutes = await Promise.resolve().then(() => __importStar(require('./routes/prompt.routes')));
+    const interactionRoutes = await Promise.resolve().then(() => __importStar(require('./routes/interaction.routes')));
+    const badgeRoutes = await Promise.resolve().then(() => __importStar(require('./routes/badge.routes')));
+    app.use('/api/uploads', uploadsRoutes.default);
+    app.use('/api/collaborations', collaborationsRoutes.default);
+    app.use('/api/chat', chatRoutes.default);
+    app.use('/api/compatibility', compatibilityRoutes.default);
+    app.use('/api/collaboration', collaborationRoutes.default);
+    app.use('/api/dashboard', dashboardRoutes.default);
+    app.use('/api/leaderboard', leaderboardRoutes.default);
+    app.use('/api/prompts', promptRoutes.default);
+    app.use('/api/interactions', interactionRoutes.default);
+    app.use('/api/badges', badgeRoutes.default);
+    console.log('✅ Routes loaded successfully');
+    // Initialize Socket.IO (lazy load)
+    console.log('🔌 Initializing Socket.IO...');
+    const { Server: SocketIOServer } = await Promise.resolve().then(() => __importStar(require('socket.io')));
+    const { registerSocketHandlers } = await Promise.resolve().then(() => __importStar(require('./sockets')));
+    const io = new SocketIOServer(server, {
+        cors: { origin: FRONTEND_URL, credentials: true },
+    });
+    registerSocketHandlers(io);
+    console.log('✅ Socket.IO initialized');
     server.listen(PORT, () => {
         // eslint-disable-next-line no-console
         console.log(`API listening on http://localhost:${PORT}`);
@@ -148,8 +197,24 @@ async function start() {
         console.log(`CORS/Socket allowed origin: ${FRONTEND_URL}`);
     });
 }
+// Memory monitoring
+if (process.env.NODE_ENV === 'production') {
+    setInterval(() => {
+        const used = process.memoryUsage();
+        console.log(`Memory Usage: RSS=${Math.round(used.rss / 1024 / 1024)}MB, Heap=${Math.round(used.heapUsed / 1024 / 1024)}MB`);
+    }, 30000); // Log every 30 seconds
+}
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    process.exit(0);
+});
+process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down gracefully');
+    process.exit(0);
+});
 start().catch((err) => {
     // eslint-disable-next-line no-console
-    console.error(err);
+    console.error('Failed to start server:', err);
     process.exit(1);
 });

@@ -6,30 +6,17 @@ import helmet from 'helmet';
 import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
-import { Server as SocketIOServer } from 'socket.io';
-import { registerSocketHandlers } from './sockets';
-import authRoutes from './routes/auth.routes';
-import ideasRoutes from './routes/ideas.routes';
-import projectsRoutes from './routes/projects.routes';
-import commentsRoutes from './routes/comments.routes';
-import notificationsRoutes from './routes/notifications.routes';
-import uploadsRoutes from './routes/uploads.routes';
-import searchRoutes from './routes/search.routes';
-import usersRoutes from './routes/users.routes';
-import collaborationsRoutes from './routes/collaborations.routes';
-import chatRoutes from './routes/chat.routes';
-import compatibilityRoutes from './routes/compatibility.routes';
-import collaborationRoutes from './routes/collaboration-requests.routes';
-import likesRoutes from './routes/likes.routes';
-import dashboardRoutes from './routes/dashboard.routes';
-import leaderboardRoutes from './routes/leaderboard.routes';
-import promptRoutes from './routes/prompt.routes';
-import interactionRoutes from './routes/interaction.routes';
-import badgeRoutes from './routes/badge.routes';
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const MONGO_URI = process.env.MONGO_URI || '';
+
+// Memory optimization
+process.setMaxListeners(0);
+if (process.env.NODE_ENV === 'production') {
+  // Increase memory limit for production
+  process.env.NODE_OPTIONS = '--max-old-space-size=512';
+}
 
 async function start() {
   if (!MONGO_URI) {
@@ -38,13 +25,12 @@ async function start() {
     process.exit(1);
   }
 
+  // Connect to MongoDB first
   await mongoose.connect(MONGO_URI);
+  console.log('✅ Connected to MongoDB');
 
   const app = express();
   const server = http.createServer(app);
-  const io = new SocketIOServer(server, {
-    cors: { origin: FRONTEND_URL, credentials: true },
-  });
 
   // Enhanced security middleware
   app.use(helmet({
@@ -128,27 +114,67 @@ async function start() {
     res.json({ status: 'ok', db: dbState === 1 ? 'connected' : 'disconnected' });
   });
 
-  // routes
-  app.use('/api/auth', authLimiter, authRoutes);
-  app.use('/api/ideas', ideasRoutes);
-  app.use('/api/projects', projectsRoutes);
-  app.use('/api/comments', commentsRoutes);
-  app.use('/api/notifications', notificationsRoutes);
-  app.use('/api/uploads', uploadsRoutes);
-  app.use('/api/search', searchRoutes);
-  app.use('/api/users', usersRoutes);
-  app.use('/api/collaborations', collaborationsRoutes);
-  app.use('/api/chat', chatRoutes);
-  app.use('/api/compatibility', compatibilityRoutes);
-  app.use('/api/collaboration', collaborationRoutes);
-  app.use('/api/likes', likesRoutes);
-  app.use('/api/dashboard', dashboardRoutes);
-  app.use('/api/leaderboard', leaderboardRoutes);
-  app.use('/api/prompts', promptRoutes);
-  app.use('/api/interactions', interactionRoutes);
-  app.use('/api/badges', badgeRoutes);
+  // Lazy load routes to reduce memory usage
+  console.log('📦 Loading routes...');
+  
+  // Core routes (load first)
+  const authRoutes = await import('./routes/auth.routes');
+  const usersRoutes = await import('./routes/users.routes');
+  const projectsRoutes = await import('./routes/projects.routes');
+  const ideasRoutes = await import('./routes/ideas.routes');
+  
+  app.use('/api/auth', authLimiter, authRoutes.default);
+  app.use('/api/users', usersRoutes.default);
+  app.use('/api/projects', projectsRoutes.default);
+  app.use('/api/ideas', ideasRoutes.default);
+  
+  // Secondary routes (load after core)
+  const commentsRoutes = await import('./routes/comments.routes');
+  const notificationsRoutes = await import('./routes/notifications.routes');
+  const searchRoutes = await import('./routes/search.routes');
+  const likesRoutes = await import('./routes/likes.routes');
+  
+  app.use('/api/comments', commentsRoutes.default);
+  app.use('/api/notifications', notificationsRoutes.default);
+  app.use('/api/search', searchRoutes.default);
+  app.use('/api/likes', likesRoutes.default);
+  
+  // Additional routes (load last)
+  const uploadsRoutes = await import('./routes/uploads.routes');
+  const collaborationsRoutes = await import('./routes/collaborations.routes');
+  const chatRoutes = await import('./routes/chat.routes');
+  const compatibilityRoutes = await import('./routes/compatibility.routes');
+  const collaborationRoutes = await import('./routes/collaboration-requests.routes');
+  const dashboardRoutes = await import('./routes/dashboard.routes');
+  const leaderboardRoutes = await import('./routes/leaderboard.routes');
+  const promptRoutes = await import('./routes/prompt.routes');
+  const interactionRoutes = await import('./routes/interaction.routes');
+  const badgeRoutes = await import('./routes/badge.routes');
+  
+  app.use('/api/uploads', uploadsRoutes.default);
+  app.use('/api/collaborations', collaborationsRoutes.default);
+  app.use('/api/chat', chatRoutes.default);
+  app.use('/api/compatibility', compatibilityRoutes.default);
+  app.use('/api/collaboration', collaborationRoutes.default);
+  app.use('/api/dashboard', dashboardRoutes.default);
+  app.use('/api/leaderboard', leaderboardRoutes.default);
+  app.use('/api/prompts', promptRoutes.default);
+  app.use('/api/interactions', interactionRoutes.default);
+  app.use('/api/badges', badgeRoutes.default);
 
+  console.log('✅ Routes loaded successfully');
+
+  // Initialize Socket.IO (lazy load)
+  console.log('🔌 Initializing Socket.IO...');
+  const { Server: SocketIOServer } = await import('socket.io');
+  const { registerSocketHandlers } = await import('./sockets');
+  
+  const io = new SocketIOServer(server, {
+    cors: { origin: FRONTEND_URL, credentials: true },
+  });
+  
   registerSocketHandlers(io);
+  console.log('✅ Socket.IO initialized');
 
   server.listen(PORT, () => {
     // eslint-disable-next-line no-console
@@ -158,9 +184,28 @@ async function start() {
   });
 }
 
+// Memory monitoring
+if (process.env.NODE_ENV === 'production') {
+  setInterval(() => {
+    const used = process.memoryUsage();
+    console.log(`Memory Usage: RSS=${Math.round(used.rss / 1024 / 1024)}MB, Heap=${Math.round(used.heapUsed / 1024 / 1024)}MB`);
+  }, 30000); // Log every 30 seconds
+}
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
+});
+
 start().catch((err) => {
   // eslint-disable-next-line no-console
-  console.error(err);
+  console.error('Failed to start server:', err);
   process.exit(1);
 });
 

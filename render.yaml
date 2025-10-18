@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: peve-backend
+    env: node
+    plan: free
+    buildCommand: npm run build:prod
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=512
+    autoDeploy: true

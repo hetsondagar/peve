@@ -69,6 +69,7 @@ mongodb+srv://<username>:<password>@<cluster-url>/<database-name>?retryWrites=tr
    Root Directory: backend
    Build Command: npm run build:prod
    Start Command: npm run start:prod
+   Health Check Path: /health
    ```
 
 3. **Set Environment Variables**:
@@ -199,6 +200,12 @@ VITE_SOCKET_URL=https://your-actual-render-url.onrender.com
    - Check build logs for specific errors
    - Ensure all dependencies are in package.json
    - Verify Node.js version compatibility
+
+5. **Memory Issues (JavaScript heap out of memory)**:
+   - The application is optimized for Render's free tier
+   - Memory usage is monitored and logged every 30 seconds
+   - Routes are lazy-loaded to reduce startup memory
+   - If issues persist, consider upgrading to a paid Render plan
 
 ### Debug Commands
 
