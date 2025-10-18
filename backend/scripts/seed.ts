@@ -25,31 +25,59 @@ async function seedDatabase() {
     const badges = await Badge.create([
       {
         key: 'first_project',
-        label: 'First Project',
+        name: 'First Project',
         description: 'Uploaded your first project',
-        iconUrl: '🏆',
-        criteria: { projectsUploaded: 1 }
+        icon: '🏆',
+        category: 'milestone',
+        rarity: 'common',
+        criteria: { 
+          type: 'count',
+          target: 'projects',
+          threshold: 1
+        },
+        points: 10
       },
       {
         key: 'idea_master',
-        label: 'Idea Master',
+        name: 'Idea Master',
         description: 'Posted 5 creative ideas',
-        iconUrl: '💡',
-        criteria: { ideasPosted: 5 }
+        icon: '💡',
+        category: 'achievement',
+        rarity: 'rare',
+        criteria: { 
+          type: 'count',
+          target: 'ideas',
+          threshold: 5
+        },
+        points: 25
       },
       {
         key: 'collaborator',
-        label: 'Team Player',
+        name: 'Team Player',
         description: 'Joined 3 collaborations',
-        iconUrl: '🤝',
-        criteria: { collaborationsJoined: 3 }
+        icon: '🤝',
+        category: 'social',
+        rarity: 'rare',
+        criteria: { 
+          type: 'count',
+          target: 'collaborations',
+          threshold: 3
+        },
+        points: 30
       },
       {
         key: 'popular',
-        label: 'Popular',
+        name: 'Popular',
         description: 'Received 50+ likes',
-        iconUrl: '⭐',
-        criteria: { likesReceived: 50 }
+        icon: '⭐',
+        category: 'social',
+        rarity: 'epic',
+        criteria: { 
+          type: 'count',
+          target: 'likes',
+          threshold: 50
+        },
+        points: 50
       }
     ]);
     console.log('Created badges');
