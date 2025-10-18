@@ -61,20 +61,20 @@ async function start() {
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
   app.use(morgan('combined'));
   
-  // Relaxed rate limiting for production
+  // Very relaxed rate limiting for production
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // limit each IP to 1000 requests per windowMs (increased from 100)
+    max: 5000, // limit each IP to 5000 requests per windowMs (very generous)
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
   });
   app.use(limiter);
   
-  // More lenient rate limiting for auth endpoints
+  // Very lenient rate limiting for auth endpoints
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 50, // limit each IP to 50 requests per windowMs (increased from 5)
+    max: 200, // limit each IP to 200 requests per windowMs (very generous)
     message: 'Too many authentication attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
