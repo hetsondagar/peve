@@ -71,6 +71,27 @@ export async function logout(req: Request, res: Response) {
   return res.json({ success: true, message: 'Logged out successfully' });
 }
 
+export async function checkUsername(req: Request, res: Response) {
+  const { username } = req.params;
+  
+  if (!username) {
+    return res.status(400).json({ success: false, error: 'Username is required' });
+  }
+  
+  try {
+    const existingUser = await User.findOne({ username: username.toLowerCase() });
+    return res.json({ 
+      success: true, 
+      data: { 
+        available: !existingUser,
+        username: username
+      } 
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to check username availability' });
+  }
+}
+
 export async function me(req: Request, res: Response) {
   const userId = (req as any).user?.id;
   if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });

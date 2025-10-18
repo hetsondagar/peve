@@ -45,10 +45,39 @@ export default function Login() {
     return '';
   };
 
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username || validateUsername(username)) return;
+    
+    try {
+      const response = await apiFetch(`/api/auth/check-username/${username}`);
+      if (!response.data.available) {
+        setUsernameError('Username is already taken');
+      } else {
+        setUsernameError('');
+      }
+    } catch (error) {
+      console.error('Failed to check username availability:', error);
+    }
+  };
+
   const handleUsernameChange = (value: string) => {
     setUsername(value);
-    setUsernameError(validateUsername(value));
+    const validationError = validateUsername(value);
+    setUsernameError(validationError);
   };
+
+  // Debounced username availability check
+  useEffect(() => {
+    if (!username || validateUsername(username)) return;
+    
+    const timeoutId = setTimeout(() => {
+      if (username.length >= 3) {
+        checkUsernameAvailability(username);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, [username]);
 
   const handleFullNameChange = (value: string) => {
     setFullName(value);

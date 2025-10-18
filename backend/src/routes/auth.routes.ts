@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, logout, me, refresh, signup, updateProfile, completeOnboarding } from '../controllers/auth.controller';
+import { login, logout, me, refresh, signup, updateProfile, completeOnboarding, checkUsername } from '../controllers/auth.controller';
 import { completeProfile } from '../controllers/profile-completion.controller';
 import { requireAuth } from '../middlewares/auth';
 
@@ -13,6 +13,7 @@ router.post('/logout', requireAuth, logout);
 router.put('/profile', requireAuth, updateProfile);
 router.post('/onboarding', requireAuth, completeOnboarding);
 router.post('/profile-completion', requireAuth, completeProfile);
+router.get('/check-username/:username', checkUsername);
 
 export default router;
 
