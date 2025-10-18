@@ -33,61 +33,24 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Badge = void 0;
+exports.Collaboration = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const badgeSchema = new mongoose_1.Schema({
-    key: {
+const collaborationSchema = new mongoose_1.Schema({
+    ideaId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Idea', required: true },
+    projectId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Project' },
+    requester: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    owner: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    status: {
         type: String,
-        required: true,
-        unique: true,
-        index: true
+        enum: ['pending', 'accepted', 'rejected'],
+        default: 'pending'
     },
-    name: {
-        type: String,
-        required: true
-    },
-    description: {
-        type: String,
-        required: true
-    },
-    icon: {
-        type: String,
-        required: true
-    },
-    category: {
-        type: String,
-        enum: ['achievement', 'milestone', 'special', 'social', 'technical'],
-        required: true,
-        index: true
-    },
-    rarity: {
-        type: String,
-        enum: ['common', 'rare', 'epic', 'legendary'],
-        required: true,
-        index: true
-    },
-    criteria: {
-        type: {
-            type: String,
-            enum: ['count', 'streak', 'rank', 'interaction', 'custom'],
-            required: true
-        },
-        target: String,
-        threshold: Number,
-        timeframe: String,
-        customLogic: String
-    },
-    points: {
-        type: Number,
-        required: true,
-        default: 0
-    },
-    isActive: {
-        type: Boolean,
-        default: true
-    }
+    message: { type: String },
+    skills: [{ type: String }],
+    experience: { type: String },
+    availability: { type: String },
 }, { timestamps: true });
-// Indexes for efficient queries
-badgeSchema.index({ category: 1, rarity: 1 });
-badgeSchema.index({ isActive: 1 });
-exports.Badge = mongoose_1.default.model('Badge', badgeSchema);
+collaborationSchema.index({ ideaId: 1, requester: 1 }, { unique: true });
+collaborationSchema.index({ owner: 1, status: 1 });
+collaborationSchema.index({ requester: 1, status: 1 });
+exports.Collaboration = mongoose_1.default.model('Collaboration', collaborationSchema);

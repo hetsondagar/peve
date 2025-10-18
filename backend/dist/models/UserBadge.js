@@ -33,61 +33,39 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Badge = void 0;
+exports.UserBadge = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const badgeSchema = new mongoose_1.Schema({
-    key: {
-        type: String,
-        required: true,
-        unique: true,
-        index: true
-    },
-    name: {
-        type: String,
-        required: true
-    },
-    description: {
-        type: String,
-        required: true
-    },
-    icon: {
-        type: String,
-        required: true
-    },
-    category: {
-        type: String,
-        enum: ['achievement', 'milestone', 'special', 'social', 'technical'],
+const userBadgeSchema = new mongoose_1.Schema({
+    userId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
         required: true,
         index: true
     },
-    rarity: {
-        type: String,
-        enum: ['common', 'rare', 'epic', 'legendary'],
+    badgeId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Badge',
         required: true,
         index: true
     },
-    criteria: {
-        type: {
-            type: String,
-            enum: ['count', 'streak', 'rank', 'interaction', 'custom'],
-            required: true
-        },
-        target: String,
-        threshold: Number,
-        timeframe: String,
-        customLogic: String
+    earnedAt: {
+        type: Date,
+        required: true,
+        default: Date.now
     },
-    points: {
+    pointsAwarded: {
         type: Number,
         required: true,
         default: 0
     },
-    isActive: {
+    isDisplayed: {
         type: Boolean,
         default: true
     }
 }, { timestamps: true });
+// Ensure one badge per user (unique constraint)
+userBadgeSchema.index({ userId: 1, badgeId: 1 }, { unique: true });
 // Indexes for efficient queries
-badgeSchema.index({ category: 1, rarity: 1 });
-badgeSchema.index({ isActive: 1 });
-exports.Badge = mongoose_1.default.model('Badge', badgeSchema);
+userBadgeSchema.index({ userId: 1, earnedAt: -1 });
+userBadgeSchema.index({ badgeId: 1 });
+exports.UserBadge = mongoose_1.default.model('UserBadge', userBadgeSchema);

@@ -33,61 +33,26 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Badge = void 0;
+exports.CollabRoom = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const badgeSchema = new mongoose_1.Schema({
-    key: {
-        type: String,
-        required: true,
-        unique: true,
-        index: true
+const collabRoomSchema = new mongoose_1.Schema({
+    ideaId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Idea' },
+    projectId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Project' },
+    name: { type: String, required: true },
+    description: { type: String },
+    members: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'User' }],
+    admins: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'User' }],
+    isActive: { type: Boolean, default: true },
+    settings: {
+        allowFileSharing: { type: Boolean, default: true },
+        allowVoiceChat: { type: Boolean, default: false },
+        maxMembers: { type: Number, default: 10 }
     },
-    name: {
-        type: String,
-        required: true
-    },
-    description: {
-        type: String,
-        required: true
-    },
-    icon: {
-        type: String,
-        required: true
-    },
-    category: {
-        type: String,
-        enum: ['achievement', 'milestone', 'special', 'social', 'technical'],
-        required: true,
-        index: true
-    },
-    rarity: {
-        type: String,
-        enum: ['common', 'rare', 'epic', 'legendary'],
-        required: true,
-        index: true
-    },
-    criteria: {
-        type: {
-            type: String,
-            enum: ['count', 'streak', 'rank', 'interaction', 'custom'],
-            required: true
-        },
-        target: String,
-        threshold: Number,
-        timeframe: String,
-        customLogic: String
-    },
-    points: {
-        type: Number,
-        required: true,
-        default: 0
-    },
-    isActive: {
-        type: Boolean,
-        default: true
-    }
+    pinnedMessages: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'ChatMessage' }],
+    lastActivity: { type: Date, default: Date.now },
 }, { timestamps: true });
-// Indexes for efficient queries
-badgeSchema.index({ category: 1, rarity: 1 });
-badgeSchema.index({ isActive: 1 });
-exports.Badge = mongoose_1.default.model('Badge', badgeSchema);
+collabRoomSchema.index({ ideaId: 1 }, { unique: true, sparse: true });
+collabRoomSchema.index({ projectId: 1 }, { unique: true, sparse: true });
+collabRoomSchema.index({ members: 1 });
+collabRoomSchema.index({ lastActivity: -1 });
+exports.CollabRoom = mongoose_1.default.model('CollabRoom', collabRoomSchema);

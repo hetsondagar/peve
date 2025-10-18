@@ -33,61 +33,27 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Badge = void 0;
+exports.Vote = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const badgeSchema = new mongoose_1.Schema({
-    key: {
-        type: String,
-        required: true,
-        unique: true,
-        index: true
-    },
-    name: {
-        type: String,
+const voteSchema = new mongoose_1.Schema({
+    userId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
         required: true
     },
-    description: {
-        type: String,
+    promptId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Prompt',
         required: true
     },
-    icon: {
+    voteType: {
         type: String,
+        enum: ['agree', 'disagree', 'yes', 'no', 'option'],
         required: true
     },
-    category: {
-        type: String,
-        enum: ['achievement', 'milestone', 'special', 'social', 'technical'],
-        required: true,
-        index: true
-    },
-    rarity: {
-        type: String,
-        enum: ['common', 'rare', 'epic', 'legendary'],
-        required: true,
-        index: true
-    },
-    criteria: {
-        type: {
-            type: String,
-            enum: ['count', 'streak', 'rank', 'interaction', 'custom'],
-            required: true
-        },
-        target: String,
-        threshold: Number,
-        timeframe: String,
-        customLogic: String
-    },
-    points: {
-        type: Number,
-        required: true,
-        default: 0
-    },
-    isActive: {
-        type: Boolean,
-        default: true
-    }
-}, { timestamps: true });
-// Indexes for efficient queries
-badgeSchema.index({ category: 1, rarity: 1 });
-badgeSchema.index({ isActive: 1 });
-exports.Badge = mongoose_1.default.model('Badge', badgeSchema);
+    optionValue: { type: String } // For poll-type prompts
+}, { timestamps: { createdAt: true, updatedAt: false } });
+// Ensure one vote per user per prompt
+voteSchema.index({ userId: 1, promptId: 1 }, { unique: true });
+voteSchema.index({ promptId: 1, voteType: 1 });
+exports.Vote = mongoose_1.default.model('Vote', voteSchema);

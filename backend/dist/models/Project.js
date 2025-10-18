@@ -39,16 +39,28 @@ const imageSchema = new mongoose_1.Schema({
     url: String,
     publicId: String,
 }, { _id: false });
-const collaboratorSchema = new mongoose_1.Schema({
-    user: { type: mongoose_1.Types.ObjectId, ref: 'User' },
+const contributorSchema = new mongoose_1.Schema({
+    user: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
     role: String,
     contributions: String,
+}, { _id: false });
+const linksSchema = new mongoose_1.Schema({
+    liveDemo: String,
+    githubRepo: { type: String, required: true },
+    documentation: String,
+    videoDemo: String,
+}, { _id: false });
+const collaborationSchema = new mongoose_1.Schema({
+    openToCollaboration: { type: Boolean, default: false },
+    lookingForRoles: [String],
+    teammates: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'User' }],
 }, { _id: false });
 const metricSchema = new mongoose_1.Schema({
     views: { type: Number, default: 0 },
     likes: { type: Number, default: 0 },
-    forks: { type: Number, default: 0 },
     comments: { type: Number, default: 0 },
+    saves: { type: Number, default: 0 },
+    shares: { type: Number, default: 0 },
 }, { _id: false });
 const timelineSchema = new mongoose_1.Schema({
     title: String,
@@ -56,19 +68,59 @@ const timelineSchema = new mongoose_1.Schema({
     date: Date,
 }, { _id: false });
 const projectSchema = new mongoose_1.Schema({
-    title: String,
-    description: String,
-    author: { type: mongoose_1.Types.ObjectId, ref: 'User' },
-    collaborators: [collaboratorSchema],
-    techStack: { type: [String], index: true },
+    title: { type: String, required: true },
+    tagline: { type: String, required: true },
+    description: { type: String, required: true },
+    author: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    contributors: [contributorSchema],
+    techStack: { type: [String], default: [] },
+    category: { type: String, required: true },
+    difficultyLevel: {
+        type: String,
+        enum: ['beginner', 'intermediate', 'advanced'],
+        default: 'beginner'
+    },
+    developmentStage: {
+        type: String,
+        enum: ['idea', 'prototype', 'ongoing', 'completed'],
+        default: 'idea'
+    },
     coverImage: imageSchema,
     screenshots: [imageSchema],
-    repoUrl: String,
-    liveUrl: String,
+    keyFeatures: { type: [String], default: [] },
+    links: { type: linksSchema, required: true },
+    collaboration: { type: collaborationSchema, default: {} },
+    badges: { type: [String], default: [] },
+    visibility: {
+        type: String,
+        enum: ['public', 'private', 'friends-only'],
+        default: 'public'
+    },
+    isDraft: { type: Boolean, default: false },
     healthScore: { type: Number, default: 0 },
+    likedBy: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'User' }],
     metrics: { type: metricSchema, default: {} },
-    docs: String,
     timeline: [timelineSchema],
+    tags: { type: [String], default: [] },
+    status: {
+        type: String,
+        enum: ['planning', 'in-progress', 'completed', 'on-hold'],
+        default: 'planning'
+    },
+    featured: { type: Boolean, default: false },
 }, { timestamps: true });
 projectSchema.index({ author: 1 });
+projectSchema.index({ techStack: 1 });
+projectSchema.index({ tags: 1 });
+projectSchema.index({ status: 1 });
+projectSchema.index({ category: 1 });
+projectSchema.index({ difficultyLevel: 1 });
+projectSchema.index({ developmentStage: 1 });
+projectSchema.index({ visibility: 1 });
+projectSchema.index({ isDraft: 1 });
+projectSchema.index({ featured: 1 });
+projectSchema.index({ 'metrics.likes': -1 });
+projectSchema.index({ 'metrics.views': -1 });
+projectSchema.index({ 'metrics.saves': -1 });
+projectSchema.index({ createdAt: -1 });
 exports.Project = mongoose_1.default.model('Project', projectSchema);

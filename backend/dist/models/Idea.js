@@ -41,31 +41,70 @@ const attachmentSchema = new mongoose_1.Schema({
     type: String,
 }, { _id: false });
 const collaboratorSchema = new mongoose_1.Schema({
-    user: { type: mongoose_1.Types.ObjectId, ref: 'User' },
+    user: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
     role: String,
     joinedAt: Date,
     accepted: { type: Boolean, default: false },
 }, { _id: false });
 const requestSchema = new mongoose_1.Schema({
-    user: { type: mongoose_1.Types.ObjectId, ref: 'User' },
+    user: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
     role: String,
     message: String,
     status: { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
     createdAt: { type: Date, default: Date.now },
 }, { _id: true });
+const collabRequestSchema = new mongoose_1.Schema({
+    requesterId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    status: { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
+    score: { type: Number, min: 0, max: 100 },
+    message: String,
+}, { _id: false });
 const ideaSchema = new mongoose_1.Schema({
     title: { type: String, required: true },
-    description: String,
-    author: { type: mongoose_1.Types.ObjectId, ref: 'User', required: true },
-    tags: { type: [String], index: true },
+    description: { type: String, required: true },
+    author: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    tags: { type: [String] },
     brand: String,
-    status: { type: String, default: 'brainstorm' },
+    mode: {
+        type: String,
+        enum: ['brainstorm', 'want_to_build'],
+        default: 'brainstorm'
+    },
+    status: {
+        type: String,
+        enum: ['brainstorm', 'planning', 'in-progress', 'completed', 'on-hold'],
+        default: 'brainstorm'
+    },
     attachments: [attachmentSchema],
     collaborators: [collaboratorSchema],
     requests: [requestSchema],
+    collabRequests: [collabRequestSchema],
+    teamMembers: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'User' }],
     likes: { type: Number, default: 0 },
+    likedBy: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'User' }],
     views: { type: Number, default: 0 },
     comments: { type: Number, default: 0 },
+    commentCount: { type: Number, default: 0 },
+    saveCount: { type: Number, default: 0 },
+    skillsNeeded: { type: [String] },
+    difficulty: {
+        type: String,
+        enum: ['beginner', 'intermediate', 'advanced'],
+        default: 'beginner'
+    },
+    estimatedTime: String,
+    isPublic: { type: Boolean, default: true },
+    featured: { type: Boolean, default: false },
 }, { timestamps: true });
 ideaSchema.index({ author: 1 });
+ideaSchema.index({ tags: 1 });
+ideaSchema.index({ skillsNeeded: 1 });
+ideaSchema.index({ status: 1 });
+ideaSchema.index({ mode: 1 });
+ideaSchema.index({ difficulty: 1 });
+ideaSchema.index({ featured: 1 });
+ideaSchema.index({ likes: -1 });
+ideaSchema.index({ views: -1 });
+ideaSchema.index({ createdAt: -1 });
+ideaSchema.index({ teamMembers: 1 });
 exports.Idea = mongoose_1.default.model('Idea', ideaSchema);

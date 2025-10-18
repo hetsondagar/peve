@@ -33,61 +33,31 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Badge = void 0;
+exports.ChatMessage = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const badgeSchema = new mongoose_1.Schema({
-    key: {
+const chatMessageSchema = new mongoose_1.Schema({
+    roomId: { type: String, required: true, index: true },
+    sender: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    message: { type: String, required: true },
+    messageType: {
         type: String,
-        required: true,
-        unique: true,
-        index: true
+        enum: ['text', 'file', 'system'],
+        default: 'text'
     },
-    name: {
-        type: String,
-        required: true
-    },
-    description: {
-        type: String,
-        required: true
-    },
-    icon: {
-        type: String,
-        required: true
-    },
-    category: {
-        type: String,
-        enum: ['achievement', 'milestone', 'special', 'social', 'technical'],
-        required: true,
-        index: true
-    },
-    rarity: {
-        type: String,
-        enum: ['common', 'rare', 'epic', 'legendary'],
-        required: true,
-        index: true
-    },
-    criteria: {
-        type: {
-            type: String,
-            enum: ['count', 'streak', 'rank', 'interaction', 'custom'],
-            required: true
-        },
-        target: String,
-        threshold: Number,
-        timeframe: String,
-        customLogic: String
-    },
-    points: {
-        type: Number,
-        required: true,
-        default: 0
-    },
-    isActive: {
-        type: Boolean,
-        default: true
-    }
+    attachments: [{
+            filename: { type: String },
+            url: { type: String },
+            type: { type: String },
+            size: { type: Number }
+        }],
+    replyTo: { type: mongoose_1.Schema.Types.ObjectId, ref: 'ChatMessage' },
+    isPinned: { type: Boolean, default: false },
+    reactions: [{
+            emoji: { type: String },
+            users: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'User' }]
+        }],
 }, { timestamps: true });
-// Indexes for efficient queries
-badgeSchema.index({ category: 1, rarity: 1 });
-badgeSchema.index({ isActive: 1 });
-exports.Badge = mongoose_1.default.model('Badge', badgeSchema);
+chatMessageSchema.index({ roomId: 1, createdAt: -1 });
+chatMessageSchema.index({ sender: 1 });
+chatMessageSchema.index({ isPinned: 1 });
+exports.ChatMessage = mongoose_1.default.model('ChatMessage', chatMessageSchema);

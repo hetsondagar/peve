@@ -33,61 +33,29 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Badge = void 0;
+exports.Prompt = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const badgeSchema = new mongoose_1.Schema({
-    key: {
+const promptSchema = new mongoose_1.Schema({
+    question: {
         type: String,
         required: true,
-        unique: true,
-        index: true
+        maxlength: [500, 'Question cannot exceed 500 characters']
     },
-    name: {
+    type: {
         type: String,
-        required: true
-    },
-    description: {
-        type: String,
-        required: true
-    },
-    icon: {
-        type: String,
+        enum: ['open', 'poll', 'debate', 'hypothetical', 'humor', 'philosophy'],
         required: true
     },
     category: {
         type: String,
-        enum: ['achievement', 'milestone', 'special', 'social', 'technical'],
-        required: true,
-        index: true
+        enum: ['tech', 'community', 'future', 'culture', 'personal', 'philosophy'],
+        required: true
     },
-    rarity: {
-        type: String,
-        enum: ['common', 'rare', 'epic', 'legendary'],
-        required: true,
-        index: true
-    },
-    criteria: {
-        type: {
-            type: String,
-            enum: ['count', 'streak', 'rank', 'interaction', 'custom'],
-            required: true
-        },
-        target: String,
-        threshold: Number,
-        timeframe: String,
-        customLogic: String
-    },
-    points: {
-        type: Number,
-        required: true,
-        default: 0
-    },
-    isActive: {
-        type: Boolean,
-        default: true
-    }
+    options: [{ type: String }], // For poll-type prompts
+    tags: [{ type: String }],
+    saveCount: { type: Number, default: 0 },
+    isActive: { type: Boolean, default: true }
 }, { timestamps: true });
-// Indexes for efficient queries
-badgeSchema.index({ category: 1, rarity: 1 });
-badgeSchema.index({ isActive: 1 });
-exports.Badge = mongoose_1.default.model('Badge', badgeSchema);
+promptSchema.index({ category: 1, type: 1 });
+promptSchema.index({ isActive: 1 });
+exports.Prompt = mongoose_1.default.model('Prompt', promptSchema);

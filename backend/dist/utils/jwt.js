@@ -13,14 +13,28 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 const REFRESH_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
 function signAccessToken(payload) {
-    return jsonwebtoken_1.default.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    return jsonwebtoken_1.default.sign(payload, JWT_SECRET, {
+        expiresIn: JWT_EXPIRES_IN,
+        issuer: 'peve-api',
+        audience: 'peve-client'
+    });
 }
 function signRefreshToken(payload) {
-    return jsonwebtoken_1.default.sign(payload, JWT_REFRESH_SECRET, { expiresIn: REFRESH_EXPIRES_IN });
+    return jsonwebtoken_1.default.sign(payload, JWT_REFRESH_SECRET, {
+        expiresIn: REFRESH_EXPIRES_IN,
+        issuer: 'peve-api',
+        audience: 'peve-client'
+    });
 }
 function verifyAccessToken(token) {
-    return jsonwebtoken_1.default.verify(token, JWT_SECRET);
+    return jsonwebtoken_1.default.verify(token, JWT_SECRET, {
+        issuer: 'peve-api',
+        audience: 'peve-client'
+    });
 }
 function verifyRefreshToken(token) {
-    return jsonwebtoken_1.default.verify(token, JWT_REFRESH_SECRET);
+    return jsonwebtoken_1.default.verify(token, JWT_REFRESH_SECRET, {
+        issuer: 'peve-api',
+        audience: 'peve-client'
+    });
 }

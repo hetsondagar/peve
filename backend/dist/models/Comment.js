@@ -36,11 +36,63 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Comment = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const commentSchema = new mongoose_1.Schema({
-    author: { type: mongoose_1.Types.ObjectId, ref: 'User', required: true },
-    parentType: { type: String, enum: ['idea', 'project'], required: true },
-    parentId: { type: mongoose_1.Types.ObjectId, required: true },
-    body: { type: String, required: true },
-    attachments: [{ url: String }],
-}, { timestamps: true });
-commentSchema.index({ parentType: 1, parentId: 1 });
+    content: {
+        type: String,
+        required: true,
+        maxlength: 1000,
+        trim: true
+    },
+    author: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    targetType: {
+        type: String,
+        enum: ['idea', 'project', 'prompt'],
+        required: true
+    },
+    targetId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        required: true
+    },
+    parentComment: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Comment'
+    },
+    likes: {
+        type: Number,
+        default: 0
+    },
+    likedBy: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+    saveCount: {
+        type: Number,
+        default: 0
+    },
+    isEdited: {
+        type: Boolean,
+        default: false
+    },
+    editedAt: {
+        type: Date
+    },
+}, {
+    timestamps: true
+});
+// Indexes for efficient queries
+commentSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
+commentSchema.index({ author: 1, createdAt: -1 });
+commentSchema.index({ parentComment: 1 });
+// Virtual for nested comments count
+commentSchema.virtual('repliesCount', {
+    ref: 'Comment',
+    localField: '_id',
+    foreignField: 'parentComment',
+    count: true
+});
+// Ensure virtual fields are serialized
+commentSchema.set('toJSON', { virtuals: true });
 exports.Comment = mongoose_1.default.model('Comment', commentSchema);
