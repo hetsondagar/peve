@@ -8,11 +8,11 @@ console.log('🚀 Starting frontend build...');
 try {
   // Install dependencies
   console.log('📦 Installing dependencies...');
-  execSync('npm install', { stdio: 'inherit' });
+  execSync('npm ci', { stdio: 'inherit' });
 
   // Build the application
   console.log('🔨 Building application...');
-  execSync('npx vite build', { stdio: 'inherit' });
+  execSync('npx vite build --mode production', { stdio: 'inherit' });
 
   console.log('✅ Frontend build completed successfully!');
 } catch (error) {
