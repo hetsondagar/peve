@@ -61,24 +61,24 @@ async function start() {
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
   app.use(morgan('combined'));
   
-  // Very relaxed rate limiting for production
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5000, // limit each IP to 5000 requests per windowMs (very generous)
-    message: 'Too many requests from this IP, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-  app.use(limiter);
+  // Temporarily disable rate limiting for debugging
+  // const limiter = rateLimit({
+  //   windowMs: 15 * 60 * 1000, // 15 minutes
+  //   max: 5000, // limit each IP to 5000 requests per windowMs (very generous)
+  //   message: 'Too many requests from this IP, please try again later.',
+  //   standardHeaders: true,
+  //   legacyHeaders: false,
+  // });
+  // app.use(limiter);
   
-  // Very lenient rate limiting for auth endpoints
-  const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 200, // limit each IP to 200 requests per windowMs (very generous)
-    message: 'Too many authentication attempts, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
+  // Temporarily disable auth rate limiting for debugging
+  // const authLimiter = rateLimit({
+  //   windowMs: 15 * 60 * 1000, // 15 minutes
+  //   max: 200, // limit each IP to 200 requests per windowMs (very generous)
+  //   message: 'Too many authentication attempts, please try again later.',
+  //   standardHeaders: true,
+  //   legacyHeaders: false,
+  // });
 
   // Root route
   app.get('/', (_req, res) => {
@@ -139,7 +139,7 @@ async function start() {
     const badgeRoutes = await import('./routes/badge.routes');
 
     // Mount routes
-    app.use('/api/auth', authLimiter, authRoutes.default);
+    app.use('/api/auth', authRoutes.default);
     app.use('/api/users', usersRoutes.default);
     app.use('/api/projects', projectsRoutes.default);
     app.use('/api/ideas', ideasRoutes.default);
