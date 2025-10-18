@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getTodaysPrompt = getTodaysPrompt;
 exports.voteOnPrompt = voteOnPrompt;
@@ -12,7 +45,21 @@ const badgeService_1 = require("../services/badgeService");
 // Get today's prompt (same prompt for all users on the same day)
 async function getTodaysPrompt(req, res) {
     try {
-        const userId = req.user?.id;
+        // Try to get user ID from token if available
+        let userId = null;
+        try {
+            const header = req.headers.authorization || '';
+            const token = header.startsWith('Bearer ') ? header.slice(7) : undefined;
+            if (token) {
+                const { verifyAccessToken } = await Promise.resolve().then(() => __importStar(require('../utils/jwt')));
+                const payload = verifyAccessToken(token);
+                userId = payload.sub || payload.id;
+            }
+        }
+        catch (authError) {
+            // User not authenticated or invalid token, continue without userId
+            console.log('User not authenticated for prompt fetch');
+        }
         // Get today's date as a seed for consistent daily prompts
         const today = new Date();
         const dateString = today.toISOString().split('T')[0]; // YYYY-MM-DD format

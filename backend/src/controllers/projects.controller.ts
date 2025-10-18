@@ -450,7 +450,7 @@ export async function requestCollaboration(req: Request, res: Response) {
       data: { 
         message: 'Collaboration request sent successfully',
         projectTitle: project.title,
-        authorUsername: project.author.username,
+        authorUsername: (project.author as any).username,
         collaborationRequestId: collaborationRequest._id
       } 
     });

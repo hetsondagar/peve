@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p tsconfig.json",
+    "build:src": "tsc -p tsconfig.production.json",
     "start": "node dist/index.js",
     "start:prod": "NODE_ENV=production node dist/index.js",
     "test": "jest --passWithNoTests",
@@ -13,7 +14,7 @@
     "lint": "eslint .",
     "seed": "ts-node scripts/seed.ts",
     "clear-db": "ts-node scripts/clear-database.ts",
-    "build:prod": "npm run build && npm prune --production"
+    "build:prod": "npm run build:src"
   },
   "dependencies": {
     "@dicebear/collection": "^9.2.4",

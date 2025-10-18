@@ -14,6 +14,8 @@ exports.requestCollaboration = requestCollaboration;
 const Project_1 = require("../models/Project");
 const User_1 = require("../models/User");
 const Comment_1 = require("../models/Comment");
+const CollaborationRequest_1 = require("../models/CollaborationRequest");
+const Notification_1 = require("../models/Notification");
 const badgeService_1 = require("../services/badgeService");
 async function listProjects(req, res) {
     try {
@@ -347,7 +349,7 @@ async function requestCollaboration(req, res) {
         const userId = req.user?.id;
         const { projectId } = req.params;
         const { message, role } = req.body;
-        const project = await Project_1.Project.findById(projectId);
+        const project = await Project_1.Project.findById(projectId).populate('author', 'username name');
         if (!project) {
             return res.status(404).json({ success: false, error: 'Project not found' });
         }
@@ -357,14 +359,64 @@ async function requestCollaboration(req, res) {
                 error: 'This project is not open to collaboration'
             });
         }
-        // In a real app, you'd create a collaboration request record
-        // For now, we'll just return success
+        // Check if user is trying to collaborate on their own project
+        if (project.author._id.toString() === userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Cannot send collaboration request to yourself'
+            });
+        }
+        // Check if request already exists
+        const existingRequest = await CollaborationRequest_1.CollaborationRequest.findOne({
+            projectId,
+            requesterId: userId
+        });
+        if (existingRequest) {
+            return res.status(400).json({
+                success: false,
+                error: 'Request already sent for this project'
+            });
+        }
+        // Create collaboration request
+        const collaborationRequest = await CollaborationRequest_1.CollaborationRequest.create({
+            projectId,
+            requesterId: userId,
+            receiverId: project.author._id,
+            compatibilityScore: 0, // Default score for project collaboration
+            message: message || '',
+            role: role || ''
+        });
+        // Create notification for project owner
+        const requester = await User_1.User.findById(userId).select('username name');
+        await Notification_1.Notification.create({
+            user: project.author._id,
+            type: 'collaboration_request',
+            data: {
+                requesterId: userId,
+                requesterName: requester?.username,
+                projectId: projectId,
+                projectTitle: project.title,
+                collaborationRequestId: collaborationRequest._id,
+                message: message || '',
+                role: role || ''
+            }
+        });
+        // Add to users' tracking arrays
+        await Promise.all([
+            User_1.User.findByIdAndUpdate(userId, {
+                $push: { collabRequestsSent: collaborationRequest._id }
+            }),
+            User_1.User.findByIdAndUpdate(project.author._id, {
+                $push: { collabRequestsReceived: collaborationRequest._id }
+            })
+        ]);
         res.json({
             success: true,
             data: {
                 message: 'Collaboration request sent successfully',
                 projectTitle: project.title,
-                authorUsername: project.author
+                authorUsername: project.author.username,
+                collaborationRequestId: collaborationRequest._id
             }
         });
     }

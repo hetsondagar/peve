@@ -87,7 +87,7 @@ export async function createCollaborationRequest(req: Request, res: Response) {
       return res.status(400).json({ success: false, error: 'This idea is not open for collaboration' });
     }
 
-    if (idea.author._id.toString() !== receiverId) {
+    if ((idea.author as any)._id.toString() !== receiverId) {
       return res.status(400).json({ success: false, error: 'Invalid receiver for this idea' });
     }
 
