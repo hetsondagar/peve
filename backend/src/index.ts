@@ -46,11 +46,53 @@ async function start() {
     cors: { origin: FRONTEND_URL, credentials: true },
   });
 
-  app.use(helmet());
-  app.use(cors({ origin: FRONTEND_URL, credentials: true }));
+  // Enhanced security middleware
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  }));
+  
+  app.use(cors({ 
+    origin: FRONTEND_URL, 
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+  
   app.use(express.json({ limit: '2mb' }));
-  app.use(morgan('dev'));
-  app.use(rateLimit({ windowMs: 60_000, max: 100 }));
+  app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+  app.use(morgan('combined'));
+  
+  // Enhanced rate limiting
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(limiter);
+  
+  // Stricter rate limiting for auth endpoints
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // limit each IP to 5 requests per windowMs
+    message: 'Too many authentication attempts, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
 
   // Root route
   app.get('/', (_req, res) => {
@@ -87,7 +129,7 @@ async function start() {
   });
 
   // routes
-  app.use('/api/auth', authRoutes);
+  app.use('/api/auth', authLimiter, authRoutes);
   app.use('/api/ideas', ideasRoutes);
   app.use('/api/projects', projectsRoutes);
   app.use('/api/comments', commentsRoutes);

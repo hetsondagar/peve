@@ -7,7 +7,20 @@ import { BadgeService } from '../services/badgeService';
 // Get today's prompt (same prompt for all users on the same day)
 export async function getTodaysPrompt(req: Request, res: Response) {
   try {
-    const userId = (req as any).user?.id;
+    // Try to get user ID from token if available
+    let userId = null;
+    try {
+      const header = req.headers.authorization || '';
+      const token = header.startsWith('Bearer ') ? header.slice(7) : undefined;
+      if (token) {
+        const { verifyAccessToken } = await import('../utils/jwt');
+        const payload = verifyAccessToken(token);
+        userId = payload.sub || payload.id;
+      }
+    } catch (authError) {
+      // User not authenticated or invalid token, continue without userId
+      console.log('User not authenticated for prompt fetch');
+    }
     
     // Get today's date as a seed for consistent daily prompts
     const today = new Date();

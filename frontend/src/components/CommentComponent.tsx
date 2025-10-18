@@ -185,7 +185,11 @@ export function CommentComponent({
     }
   };
 
-  const handleReply = async () => {
+  const handleReply = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
     if (!replyContent.trim()) return;
     
     if (!requireAuth()) {
@@ -241,7 +245,7 @@ export function CommentComponent({
   const fetchReplies = async () => {
     try {
       console.log('Fetching replies for comment:', comment._id);
-      const response = await apiFetch(`/api/comments/${comment._id}/replies`);
+      const response = await apiFetch(`/api/comments/replies/${comment._id}`);
       console.log('Replies response:', response);
       if (response.success) {
         setReplies(response.data.replies || []);
@@ -455,31 +459,34 @@ export function CommentComponent({
                   exit={{ opacity: 0, height: 0 }}
                   className="space-y-2 pt-2"
                 >
-                  <Textarea
-                    value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
-                    className="min-h-[80px] bg-card border-primary/20 focus:border-primary"
-                    placeholder="Write a reply..."
-                  />
-                  <div className="flex gap-2">
-                    <GlowButton
-                      onClick={handleReply}
-                      disabled={loading || !replyContent.trim()}
-                      size="sm"
-                    >
-                      {loading ? 'Posting...' : 'Post Reply'}
-                    </GlowButton>
-                    <GlowButton
-                      onClick={() => {
-                        setIsReplying(false);
-                        setReplyContent('');
-                      }}
-                      variant="outline"
-                      size="sm"
-                    >
-                      Cancel
-                    </GlowButton>
-                  </div>
+                  <form onSubmit={handleReply} className="space-y-2">
+                    <Textarea
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
+                      className="min-h-[80px] bg-card border-primary/20 focus:border-primary"
+                      placeholder="Write a reply..."
+                    />
+                    <div className="flex gap-2">
+                      <GlowButton
+                        type="submit"
+                        disabled={loading || !replyContent.trim()}
+                        size="sm"
+                      >
+                        {loading ? 'Posting...' : 'Post Reply'}
+                      </GlowButton>
+                      <GlowButton
+                        type="button"
+                        onClick={() => {
+                          setIsReplying(false);
+                          setReplyContent('');
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Cancel
+                      </GlowButton>
+                    </div>
+                  </form>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -504,6 +511,8 @@ export function CommentComponent({
                 onUpdate={onUpdate}
                 depth={depth + 1}
                 maxDepth={maxDepth}
+                targetType={targetType}
+                targetId={targetId}
               />
             ))}
           </motion.div>

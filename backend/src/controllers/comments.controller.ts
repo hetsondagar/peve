@@ -189,6 +189,19 @@ export async function getCommentReplies(req: Request, res: Response) {
       .skip(skip)
       .limit(Number(limit));
 
+    // Add replies count to each reply
+    const repliesWithRepliesCount = await Promise.all(
+      replies.map(async (reply) => {
+        const repliesCount = await Comment.countDocuments({
+          parentComment: reply._id
+        });
+        return {
+          ...reply.toObject(),
+          repliesCount
+        };
+      })
+    );
+
     const totalReplies = await Comment.countDocuments({
       parentComment: commentId
     });
@@ -196,7 +209,7 @@ export async function getCommentReplies(req: Request, res: Response) {
     return res.json({
       success: true,
       data: {
-        replies,
+        replies: repliesWithRepliesCount,
         pagination: {
           current: Number(page),
           total: Math.ceil(totalReplies / Number(limit)),

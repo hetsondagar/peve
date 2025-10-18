@@ -269,18 +269,32 @@ export async function getIdeaWithComments(req: Request, res: Response) {
     
     // Get comments for this idea
     const comments = await Comment.find({
-      parentType: 'Idea',
-      parentId: req.params.id
+      targetType: 'idea',
+      targetId: req.params.id,
+      parentComment: { $exists: false } // Only top-level comments
     })
-      .populate('author', 'username name avatarUrl')
+      .populate('author', 'username name avatarUrl avatarStyle')
       .sort({ createdAt: -1 })
       .limit(20);
+    
+    // Add replies count to each comment
+    const commentsWithRepliesCount = await Promise.all(
+      comments.map(async (comment) => {
+        const repliesCount = await Comment.countDocuments({
+          parentComment: comment._id
+        });
+        return {
+          ...comment.toObject(),
+          repliesCount
+        };
+      })
+    );
     
     return res.json({ 
       success: true, 
       data: { 
         idea, 
-        comments 
+        comments: commentsWithRepliesCount
       } 
     });
   } catch (error) {

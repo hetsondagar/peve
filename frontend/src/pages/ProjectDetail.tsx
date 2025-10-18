@@ -664,7 +664,10 @@ export default function ProjectDetail() {
                         <CommentComponent
                           key={comment._id}
                           comment={comment}
-                          currentUserId={project?.author?._id}
+                          targetType="project"
+                          targetId={project._id}
+                          depth={0}
+                          maxDepth={2}
                           onUpdate={() => {
                             // Refresh comments
                             const fetchComments = async () => {

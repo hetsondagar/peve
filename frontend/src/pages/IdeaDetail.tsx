@@ -113,7 +113,11 @@ export default function IdeaDetail() {
     }
   };
 
-  const handleCommentSubmit = async () => {
+  const handleCommentSubmit = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
     if (!newComment.trim() || !id || submittingComment) return;
     
     try {
@@ -129,8 +133,11 @@ export default function IdeaDetail() {
       
       if (response.success) {
         setNewComment('');
-        // Refresh comments
-        fetchIdea();
+        // Refresh comments without full page refresh
+        const commentsResponse = await apiFetch(`/api/comments/idea/${id}`);
+        if (commentsResponse.success) {
+          setComments(commentsResponse.data.comments || []);
+        }
         toast({
           title: "Comment posted!",
           description: "Your comment has been added successfully.",
@@ -270,7 +277,7 @@ export default function IdeaDetail() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Add Comment */}
-                  <div className="space-y-3">
+                  <form onSubmit={handleCommentSubmit} className="space-y-3">
                     <Textarea
                       placeholder="Share your thoughts on this idea..."
                       value={newComment}
@@ -279,14 +286,14 @@ export default function IdeaDetail() {
                     />
                     <div className="flex justify-end">
                       <Button
-                        onClick={handleCommentSubmit}
+                        type="submit"
                         disabled={!newComment.trim() || submittingComment}
                         className="px-6"
                       >
                         {submittingComment ? 'Posting...' : 'Post Comment'}
                       </Button>
                     </div>
-                  </div>
+                  </form>
 
                   {/* Comments List */}
                   <div className="space-y-4">
