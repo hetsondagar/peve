@@ -1,13 +1,13 @@
 {
   "version": 2,
-  "buildCommand": "npm install && npm run build",
+  "buildCommand": "node build-simple.js",
   "outputDirectory": "dist",
-  "installCommand": "npm install",
+  "installCommand": "npm ci",
   "framework": "vite",
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://your-backend-app.onrender.com/api/$1"
+      "destination": "https://peve-qn93.onrender.com/api/$1"
     }
   ],
   "headers": [
