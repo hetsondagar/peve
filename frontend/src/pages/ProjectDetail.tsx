@@ -324,7 +324,7 @@ export default function ProjectDetail() {
             >
               {/* Cover Image */}
               {project.coverImage?.url && (
-                <div className="aspect-video rounded-2xl overflow-hidden bg-gradient-primary opacity-20">
+                <div className="aspect-video rounded-2xl overflow-hidden bg-gradient-primary">
                   <img 
                     src={project.coverImage.url} 
                     alt={project.title}
