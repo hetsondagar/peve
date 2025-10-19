@@ -12,6 +12,8 @@ router.put('/profile', auth_1.requireAuth, users_controller_1.updateProfile);
 router.get('/:userId', users_controller_1.getUserById);
 // Search users (public)
 router.get('/', users_controller_1.searchUsers);
+// Search usernames for autocomplete (public)
+router.get('/search-usernames', users_controller_1.searchUsernames);
 // Validate usernames (public)
 router.post('/validate', users_controller_1.validateUsernames);
 exports.default = router;

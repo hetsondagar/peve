@@ -142,3 +142,46 @@ export async function validateUsernames(req: Request, res: Response) {
     return res.status(500).json({ success: false, error: 'Failed to validate usernames' });
   }
 }
+
+export async function searchUsernames(req: Request, res: Response) {
+  try {
+    const { q, limit = 10 } = req.query;
+    const query = q as string;
+    
+    if (!query || query.length < 2) {
+      return res.json({
+        success: true,
+        data: {
+          usernames: [],
+          total: 0
+        }
+      });
+    }
+    
+    // Search for usernames that start with the query
+    const users = await User.find({
+      username: { $regex: `^${query}`, $options: 'i' }
+    })
+    .select('username name')
+    .limit(Number(limit))
+    .sort({ username: 1 });
+    
+    const usernames = users.map(user => ({
+      username: user.username,
+      name: user.name,
+      displayName: user.name ? `${user.name} (@${user.username})` : `@${user.username}`
+    }));
+    
+    return res.json({
+      success: true,
+      data: {
+        usernames,
+        total: usernames.length,
+        query: query
+      }
+    });
+  } catch (error) {
+    console.error('Username search error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to search usernames' });
+  }
+}

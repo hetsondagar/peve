@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { apiFetch } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import UsernameTag from '@/components/UsernameTag';
+import UsernameAutocomplete from '@/components/UsernameAutocomplete';
 
 interface ProjectSubmissionFormProps {
   isOpen: boolean;
@@ -94,42 +95,9 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
   const [newFeature, setNewFeature] = useState('');
   const [newTech, setNewTech] = useState('');
   const [newTag, setNewTag] = useState('');
-  const [newTeammate, setNewTeammate] = useState('');
-  const [usernameValidation, setUsernameValidation] = useState<{
-    isValidating: boolean;
-    invalidUsernames: string[];
-    validUsernames: string[];
-  }>({
-    isValidating: false,
-    invalidUsernames: [],
-    validUsernames: []
-  });
 
   const totalSteps = 5;
 
-  const validateUsernames = async (usernames: string[]) => {
-    if (usernames.length === 0) return;
-    
-    setUsernameValidation(prev => ({ ...prev, isValidating: true }));
-    
-    try {
-      const response = await apiFetch('/api/users/validate', {
-        method: 'POST',
-        body: JSON.stringify({ usernames })
-      });
-      
-      if (response.success) {
-        setUsernameValidation({
-          isValidating: false,
-          invalidUsernames: response.data.invalid,
-          validUsernames: response.data.valid
-        });
-      }
-    } catch (error) {
-      console.error('Failed to validate usernames:', error);
-      setUsernameValidation(prev => ({ ...prev, isValidating: false }));
-    }
-  };
 
   const handleFileUpload = async (file: File) => {
     try {
@@ -204,55 +172,6 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
     }
   };
 
-  const addTeammate = async (username: string) => {
-    const trimmedUsername = username.trim();
-    if (!trimmedUsername) return;
-    
-    const currentTeammates = formData.collaboration.teammates;
-    if (currentTeammates.includes(trimmedUsername)) return;
-    
-    // Validate the username first
-    setUsernameValidation(prev => ({ ...prev, isValidating: true }));
-    
-    try {
-      const response = await apiFetch('/api/users/validate', {
-        method: 'POST',
-        body: JSON.stringify({ usernames: [trimmedUsername] })
-      });
-      
-      if (response.success && response.data.validUsernames.includes(trimmedUsername)) {
-        // Only add if username is valid
-        setFormData(prev => ({
-          ...prev,
-          collaboration: {
-            ...prev.collaboration,
-            teammates: [...prev.collaboration.teammates, trimmedUsername]
-          }
-        }));
-        
-        setUsernameValidation(prev => ({
-          ...prev,
-          isValidating: false,
-          invalidUsernames: prev.invalidUsernames.filter(u => u !== trimmedUsername),
-          validUsernames: [...prev.validUsernames, trimmedUsername]
-        }));
-      } else {
-        // Username is invalid, don't add it
-        setUsernameValidation(prev => ({
-          ...prev,
-          isValidating: false,
-          invalidUsernames: [...prev.invalidUsernames, trimmedUsername]
-        }));
-      }
-    } catch (error) {
-      console.error('Error validating username:', error);
-      setUsernameValidation(prev => ({
-        ...prev,
-        isValidating: false,
-        invalidUsernames: [...prev.invalidUsernames, trimmedUsername]
-      }));
-    }
-  };
 
   const removeArrayItem = (field: string, index: number) => {
     setFormData(prev => {
@@ -772,52 +691,38 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                       Add Teammates (Peve usernames)
                     </label>
                     <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Enter username"
-                          value={newTeammate}
-                          onChange={(e) => setNewTeammate(e.target.value)}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              addTeammate(newTeammate);
-                              setNewTeammate('');
-                            }
-                          }}
-                          className="bg-card-secondary border-primary/20 focus:border-primary focus:glow-subtle rounded-xl h-10"
-                        />
-                        <GlowButton
-                          size="sm"
-                          onClick={() => {
-                            addTeammate(newTeammate);
-                            setNewTeammate('');
-                          }}
-                          disabled={usernameValidation.isValidating}
-                        >
-                          {usernameValidation.isValidating ? (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Plus className="w-4 h-4" />
-                          )}
-                        </GlowButton>
-                      </div>
+                      <UsernameAutocomplete
+                        onSelect={(username) => {
+                          if (!formData.collaboration.teammates.includes(username)) {
+                            setFormData(prev => ({
+                              ...prev,
+                              collaboration: {
+                                ...prev.collaboration,
+                                teammates: [...prev.collaboration.teammates, username]
+                              }
+                            }));
+                          }
+                        }}
+                        selectedUsernames={formData.collaboration.teammates}
+                        placeholder="Search for Peve usernames..."
+                        disabled={loading}
+                      />
                       
-                      {/* Validation feedback */}
-                      {usernameValidation.invalidUsernames.length > 0 && (
-                        <div className="flex items-center gap-2 text-red-500 text-sm">
-                          <AlertCircle className="w-4 h-4" />
-                          <span>Invalid usernames: {usernameValidation.invalidUsernames.join(', ')}</span>
+                      {/* Selected teammates */}
+                      {formData.collaboration.teammates.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {formData.collaboration.teammates.map((teammate, index) => (
+                            <UsernameTag
+                              key={index}
+                              username={teammate}
+                              onRemove={() => removeArrayItem('collaboration.teammates', index)}
+                            />
+                          ))}
                         </div>
                       )}
                       
-                      <div className="flex flex-wrap gap-2">
-                        {formData.collaboration.teammates.map((teammate, index) => (
-                          <UsernameTag
-                            key={index}
-                            username={teammate}
-                            onRemove={() => removeArrayItem('collaboration.teammates', index)}
-                            variant={usernameValidation.invalidUsernames.includes(teammate) ? 'destructive' : 'outline'}
-                          />
-                        ))}
+                      <div className="text-xs text-muted-foreground">
+                        💡 Only existing Peve usernames can be selected. Start typing to search.
                       </div>
                     </div>
                   </div>

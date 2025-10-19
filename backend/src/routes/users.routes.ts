@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middlewares/auth';
-import { getCurrentUser, updateProfile, getUserById, searchUsers, validateUsernames } from '../controllers/users.controller';
+import { getCurrentUser, updateProfile, getUserById, searchUsers, validateUsernames, searchUsernames } from '../controllers/users.controller';
 
 const router = Router();
 
@@ -15,6 +15,9 @@ router.get('/:userId', getUserById);
 
 // Search users (public)
 router.get('/', searchUsers);
+
+// Search usernames for autocomplete (public)
+router.get('/search-usernames', searchUsernames);
 
 // Validate usernames (public)
 router.post('/validate', validateUsernames);
