@@ -4,7 +4,8 @@ import http from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import mongoose from 'mongoose';
-import rateLimit from 'express-rate-limit';
+// Rate limiting removed for production stability
+// import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
