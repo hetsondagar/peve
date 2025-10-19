@@ -41,6 +41,7 @@ export default function IdeaDetail() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const fetchIdea = useCallback(async () => {
     if (!id) return;
@@ -163,8 +164,8 @@ export default function IdeaDetail() {
   };
 
   const handleEditIdea = () => {
-    // Navigate to edit idea page or open edit modal
-    navigate(`/ideas/${id}/edit`);
+    // Open edit modal instead of navigating
+    setShowEditModal(true);
   };
 
   const handleDeleteIdea = async () => {
@@ -601,6 +602,29 @@ export default function IdeaDetail() {
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white"
               >
                 Delete
+              </GlowButton>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Idea Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="glass border-primary/20 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Idea</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              Edit functionality is coming soon! For now, you can delete and recreate your idea with the updated information.
+            </p>
+            <div className="flex gap-2">
+              <GlowButton 
+                variant="outline" 
+                onClick={() => setShowEditModal(false)}
+                className="flex-1"
+              >
+                Close
               </GlowButton>
             </div>
           </div>

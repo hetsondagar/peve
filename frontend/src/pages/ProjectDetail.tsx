@@ -41,6 +41,7 @@ export default function ProjectDetail() {
   const [commentText, setCommentText] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchProject = useCallback(async () => {
@@ -189,8 +190,8 @@ export default function ProjectDetail() {
   };
 
   const handleEditProject = () => {
-    // Navigate to edit project page or open edit modal
-    navigate(`/projects/${id}/edit`);
+    // Open edit modal instead of navigating
+    setShowEditModal(true);
   };
 
   const handleDeleteProject = async () => {
@@ -968,6 +969,29 @@ export default function ProjectDetail() {
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white"
               >
                 Delete
+              </GlowButton>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Project Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="glass border-primary/20 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              Edit functionality is coming soon! For now, you can delete and recreate your project with the updated information.
+            </p>
+            <div className="flex gap-2">
+              <GlowButton 
+                variant="outline" 
+                onClick={() => setShowEditModal(false)}
+                className="flex-1"
+              >
+                Close
               </GlowButton>
             </div>
           </div>

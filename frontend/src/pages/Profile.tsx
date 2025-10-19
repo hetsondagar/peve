@@ -805,7 +805,7 @@ export default function Profile() {
                                   <GlowButton
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => navigate(`/project/${project._id}`)}
+                                    onClick={() => navigate(`/projects/${project._id}`)}
                                   >
                                     View
                                   </GlowButton>
