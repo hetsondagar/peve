@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.signup = signup;
 exports.login = login;
 exports.logout = logout;
+exports.checkUsername = checkUsername;
 exports.me = me;
 exports.refresh = refresh;
 exports.updateProfile = updateProfile;
@@ -79,6 +80,25 @@ async function logout(req, res) {
     // In a stateless JWT system, logout is handled client-side by removing the token
     // You could implement a token blacklist here if needed
     return res.json({ success: true, message: 'Logged out successfully' });
+}
+async function checkUsername(req, res) {
+    const { username } = req.params;
+    if (!username) {
+        return res.status(400).json({ success: false, error: 'Username is required' });
+    }
+    try {
+        const existingUser = await User_1.User.findOne({ username: username.toLowerCase() });
+        return res.json({
+            success: true,
+            data: {
+                available: !existingUser,
+                username: username
+            }
+        });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, error: 'Failed to check username availability' });
+    }
 }
 async function me(req, res) {
     const userId = req.user?.id;

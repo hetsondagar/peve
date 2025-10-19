@@ -42,7 +42,6 @@ const http_1 = __importDefault(require("http"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const mongoose_1 = __importDefault(require("mongoose"));
-const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const morgan_1 = __importDefault(require("morgan"));
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -90,23 +89,23 @@ async function start() {
     app.use(express_1.default.json({ limit: '2mb' }));
     app.use(express_1.default.urlencoded({ extended: true, limit: '2mb' }));
     app.use((0, morgan_1.default)('combined'));
-    // Enhanced rate limiting
-    const limiter = (0, express_rate_limit_1.default)({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 100, // limit each IP to 100 requests per windowMs
-        message: 'Too many requests from this IP, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
-    app.use(limiter);
-    // Stricter rate limiting for auth endpoints
-    const authLimiter = (0, express_rate_limit_1.default)({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 5, // limit each IP to 5 requests per windowMs
-        message: 'Too many authentication attempts, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    // Temporarily disable rate limiting for debugging
+    // const limiter = rateLimit({
+    //   windowMs: 15 * 60 * 1000, // 15 minutes
+    //   max: 5000, // limit each IP to 5000 requests per windowMs (very generous)
+    //   message: 'Too many requests from this IP, please try again later.',
+    //   standardHeaders: true,
+    //   legacyHeaders: false,
+    // });
+    // app.use(limiter);
+    // Temporarily disable auth rate limiting for debugging
+    // const authLimiter = rateLimit({
+    //   windowMs: 15 * 60 * 1000, // 15 minutes
+    //   max: 200, // limit each IP to 200 requests per windowMs (very generous)
+    //   message: 'Too many authentication attempts, please try again later.',
+    //   standardHeaders: true,
+    //   legacyHeaders: false,
+    // });
     // Root route
     app.get('/', (_req, res) => {
         res.json({
@@ -139,47 +138,52 @@ async function start() {
         const dbState = mongoose_1.default.connection.readyState; // 1 connected
         res.json({ status: 'ok', db: dbState === 1 ? 'connected' : 'disconnected' });
     });
-    // Lazy load routes to reduce memory usage
+    // Load routes asynchronously
     console.log('📦 Loading routes...');
-    // Core routes (load first)
-    const authRoutes = await Promise.resolve().then(() => __importStar(require('./routes/auth.routes')));
-    const usersRoutes = await Promise.resolve().then(() => __importStar(require('./routes/users.routes')));
-    const projectsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/projects.routes')));
-    const ideasRoutes = await Promise.resolve().then(() => __importStar(require('./routes/ideas.routes')));
-    app.use('/api/auth', authLimiter, authRoutes.default);
-    app.use('/api/users', usersRoutes.default);
-    app.use('/api/projects', projectsRoutes.default);
-    app.use('/api/ideas', ideasRoutes.default);
-    // Secondary routes (load after core)
-    const commentsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/comments.routes')));
-    const notificationsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/notifications.routes')));
-    const searchRoutes = await Promise.resolve().then(() => __importStar(require('./routes/search.routes')));
-    const likesRoutes = await Promise.resolve().then(() => __importStar(require('./routes/likes.routes')));
-    app.use('/api/comments', commentsRoutes.default);
-    app.use('/api/notifications', notificationsRoutes.default);
-    app.use('/api/search', searchRoutes.default);
-    app.use('/api/likes', likesRoutes.default);
-    // Additional routes (load last)
-    const uploadsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/uploads.routes')));
-    const collaborationsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/collaborations.routes')));
-    const chatRoutes = await Promise.resolve().then(() => __importStar(require('./routes/chat.routes')));
-    const compatibilityRoutes = await Promise.resolve().then(() => __importStar(require('./routes/compatibility.routes')));
-    const collaborationRoutes = await Promise.resolve().then(() => __importStar(require('./routes/collaboration-requests.routes')));
-    const dashboardRoutes = await Promise.resolve().then(() => __importStar(require('./routes/dashboard.routes')));
-    const leaderboardRoutes = await Promise.resolve().then(() => __importStar(require('./routes/leaderboard.routes')));
-    const promptRoutes = await Promise.resolve().then(() => __importStar(require('./routes/prompt.routes')));
-    const interactionRoutes = await Promise.resolve().then(() => __importStar(require('./routes/interaction.routes')));
-    const badgeRoutes = await Promise.resolve().then(() => __importStar(require('./routes/badge.routes')));
-    app.use('/api/uploads', uploadsRoutes.default);
-    app.use('/api/collaborations', collaborationsRoutes.default);
-    app.use('/api/chat', chatRoutes.default);
-    app.use('/api/compatibility', compatibilityRoutes.default);
-    app.use('/api/collaboration', collaborationRoutes.default);
-    app.use('/api/dashboard', dashboardRoutes.default);
-    app.use('/api/leaderboard', leaderboardRoutes.default);
-    app.use('/api/prompts', promptRoutes.default);
-    app.use('/api/interactions', interactionRoutes.default);
-    app.use('/api/badges', badgeRoutes.default);
+    try {
+        // Import and mount routes
+        const authRoutes = await Promise.resolve().then(() => __importStar(require('./routes/auth.routes')));
+        const usersRoutes = await Promise.resolve().then(() => __importStar(require('./routes/users.routes')));
+        const projectsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/projects.routes')));
+        const ideasRoutes = await Promise.resolve().then(() => __importStar(require('./routes/ideas.routes')));
+        const commentsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/comments.routes')));
+        const notificationsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/notifications.routes')));
+        const searchRoutes = await Promise.resolve().then(() => __importStar(require('./routes/search.routes')));
+        const likesRoutes = await Promise.resolve().then(() => __importStar(require('./routes/likes.routes')));
+        const uploadsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/uploads.routes')));
+        const collaborationsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/collaborations.routes')));
+        const chatRoutes = await Promise.resolve().then(() => __importStar(require('./routes/chat.routes')));
+        const compatibilityRoutes = await Promise.resolve().then(() => __importStar(require('./routes/compatibility.routes')));
+        const collaborationRoutes = await Promise.resolve().then(() => __importStar(require('./routes/collaboration-requests.routes')));
+        const dashboardRoutes = await Promise.resolve().then(() => __importStar(require('./routes/dashboard.routes')));
+        const leaderboardRoutes = await Promise.resolve().then(() => __importStar(require('./routes/leaderboard.routes')));
+        const promptRoutes = await Promise.resolve().then(() => __importStar(require('./routes/prompt.routes')));
+        const interactionRoutes = await Promise.resolve().then(() => __importStar(require('./routes/interaction.routes')));
+        const badgeRoutes = await Promise.resolve().then(() => __importStar(require('./routes/badge.routes')));
+        // Mount routes
+        app.use('/api/auth', authRoutes.default);
+        app.use('/api/users', usersRoutes.default);
+        app.use('/api/projects', projectsRoutes.default);
+        app.use('/api/ideas', ideasRoutes.default);
+        app.use('/api/comments', commentsRoutes.default);
+        app.use('/api/notifications', notificationsRoutes.default);
+        app.use('/api/search', searchRoutes.default);
+        app.use('/api/likes', likesRoutes.default);
+        app.use('/api/uploads', uploadsRoutes.default);
+        app.use('/api/collaborations', collaborationsRoutes.default);
+        app.use('/api/chat', chatRoutes.default);
+        app.use('/api/compatibility', compatibilityRoutes.default);
+        app.use('/api/collaboration', collaborationRoutes.default);
+        app.use('/api/dashboard', dashboardRoutes.default);
+        app.use('/api/leaderboard', leaderboardRoutes.default);
+        app.use('/api/prompts', promptRoutes.default);
+        app.use('/api/interactions', interactionRoutes.default);
+        app.use('/api/badges', badgeRoutes.default);
+    }
+    catch (error) {
+        console.error('❌ Error loading routes:', error);
+        throw error;
+    }
     console.log('✅ Routes loaded successfully');
     // Initialize Socket.IO (lazy load)
     console.log('🔌 Initializing Socket.IO...');
@@ -192,9 +196,11 @@ async function start() {
     console.log('✅ Socket.IO initialized');
     server.listen(PORT, () => {
         // eslint-disable-next-line no-console
-        console.log(`API listening on http://localhost:${PORT}`);
+        console.log(`🚀 peve-backend API server started successfully!`);
         // eslint-disable-next-line no-console
-        console.log(`CORS/Socket allowed origin: ${FRONTEND_URL}`);
+        console.log(`📡 CORS/Socket allowed origin: ${FRONTEND_URL}`);
+        // eslint-disable-next-line no-console
+        console.log(`🌐 Server running on port: ${PORT}`);
     });
 }
 // Memory monitoring

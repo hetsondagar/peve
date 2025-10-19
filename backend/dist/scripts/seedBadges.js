@@ -4,505 +4,488 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seedBadges = seedBadges;
-const mongoose_1 = __importDefault(require("mongoose"));
-const Badge_1 = require("../models/Badge");
 require("dotenv/config");
-const MONGO_URI = process.env.MONGO_URI;
-const badges = [
-    // Achievement Badges - Project Related
-    {
-        key: 'first_project',
-        name: 'First Steps',
-        description: 'Created your first project',
-        icon: '🚀',
-        category: 'achievement',
-        rarity: 'common',
-        criteria: {
-            type: 'count',
-            target: 'projects',
-            threshold: 1
-        },
-        points: 50
-    },
-    {
-        key: 'project_master',
-        name: 'Project Master',
-        description: 'Created 5 projects',
-        icon: '🏗️',
-        category: 'achievement',
-        rarity: 'rare',
-        criteria: {
-            type: 'count',
-            target: 'projects',
-            threshold: 5
-        },
-        points: 200
-    },
-    {
-        key: 'project_legend',
-        name: 'Project Legend',
-        description: 'Created 20 projects',
-        icon: '👑',
-        category: 'achievement',
-        rarity: 'epic',
-        criteria: {
-            type: 'count',
-            target: 'projects',
-            threshold: 20
-        },
-        points: 500
-    },
-    {
-        key: 'project_god',
-        name: 'Project God',
-        description: 'Created 50 projects',
-        icon: '⚡',
-        category: 'achievement',
-        rarity: 'legendary',
-        criteria: {
-            type: 'count',
-            target: 'projects',
-            threshold: 50
-        },
-        points: 1000
-    },
-    // Achievement Badges - Idea Related
-    {
-        key: 'first_idea',
-        name: 'Idea Spark',
-        description: 'Shared your first idea',
-        icon: '💡',
-        category: 'achievement',
-        rarity: 'common',
-        criteria: {
-            type: 'count',
-            target: 'ideas',
-            threshold: 1
-        },
-        points: 25
-    },
-    {
-        key: 'idea_bee',
-        name: 'Idea Bee',
-        description: 'Shared 10 ideas',
-        icon: '🐝',
-        category: 'achievement',
-        rarity: 'rare',
-        criteria: {
-            type: 'count',
-            target: 'ideas',
-            threshold: 10
-        },
-        points: 150
-    },
-    {
-        key: 'idea_maestro',
-        name: 'Idea Maestro',
-        description: 'Shared 50 ideas',
-        icon: '🎭',
-        category: 'achievement',
-        rarity: 'epic',
-        criteria: {
-            type: 'count',
-            target: 'ideas',
-            threshold: 50
-        },
-        points: 400
-    },
-    {
-        key: 'idea_genius',
-        name: 'Idea Genius',
-        description: 'Shared 100 ideas',
-        icon: '🧠',
-        category: 'achievement',
-        rarity: 'legendary',
-        criteria: {
-            type: 'count',
-            target: 'ideas',
-            threshold: 100
-        },
-        points: 800
-    },
-    // Social Badges - Interaction Related
-    {
-        key: 'first_like',
-        name: 'First Like',
-        description: 'Received your first like',
-        icon: '❤️',
-        category: 'social',
-        rarity: 'common',
-        criteria: {
-            type: 'count',
-            target: 'likes_received',
-            threshold: 1
-        },
-        points: 10
-    },
-    {
-        key: 'popular_creator',
-        name: 'Popular Creator',
-        description: 'Received 100 likes',
-        icon: '⭐',
-        category: 'social',
-        rarity: 'rare',
-        criteria: {
-            type: 'count',
-            target: 'likes_received',
-            threshold: 100
-        },
-        points: 300
-    },
-    {
-        key: 'viral_sensation',
-        name: 'Viral Sensation',
-        description: 'Received 1000 likes',
-        icon: '🔥',
-        category: 'social',
-        rarity: 'epic',
-        criteria: {
-            type: 'count',
-            target: 'likes_received',
-            threshold: 1000
-        },
-        points: 600
-    },
-    {
-        key: 'legendary_creator',
-        name: 'Legendary Creator',
-        description: 'Received 5000 likes',
-        icon: '🌟',
-        category: 'social',
-        rarity: 'legendary',
-        criteria: {
-            type: 'count',
-            target: 'likes_received',
-            threshold: 5000
-        },
-        points: 1200
-    },
-    // Collaboration Badges
-    {
-        key: 'first_collab',
-        name: 'Team Player',
-        description: 'Joined your first collaboration',
-        icon: '🤝',
-        category: 'social',
-        rarity: 'common',
-        criteria: {
-            type: 'count',
-            target: 'collaborations',
-            threshold: 1
-        },
-        points: 75
-    },
-    {
-        key: 'collaboration_expert',
-        name: 'Collaboration Expert',
-        description: 'Joined 10 collaborations',
-        icon: '👥',
-        category: 'social',
-        rarity: 'rare',
-        criteria: {
-            type: 'count',
-            target: 'collaborations',
-            threshold: 10
-        },
-        points: 250
-    },
-    {
-        key: 'collaboration_master',
-        name: 'Collaboration Master',
-        description: 'Joined 25 collaborations',
-        icon: '🎯',
-        category: 'social',
-        rarity: 'epic',
-        criteria: {
-            type: 'count',
-            target: 'collaborations',
-            threshold: 25
-        },
-        points: 500
-    },
-    // Comment Badges
-    {
-        key: 'first_comment',
-        name: 'Voice Heard',
-        description: 'Made your first comment',
-        icon: '💬',
-        category: 'social',
-        rarity: 'common',
-        criteria: {
-            type: 'count',
-            target: 'comments',
-            threshold: 1
-        },
-        points: 15
-    },
-    {
-        key: 'active_commenter',
-        name: 'Active Commenter',
-        description: 'Made 50 comments',
-        icon: '🗣️',
-        category: 'social',
-        rarity: 'rare',
-        criteria: {
-            type: 'count',
-            target: 'comments',
-            threshold: 50
-        },
-        points: 200
-    },
-    {
-        key: 'discussion_leader',
-        name: 'Discussion Leader',
-        description: 'Made 200 comments',
-        icon: '🎤',
-        category: 'social',
-        rarity: 'epic',
-        criteria: {
-            type: 'count',
-            target: 'comments',
-            threshold: 200
-        },
-        points: 450
-    },
-    // CodeTalks Badges
-    {
-        key: 'first_vote',
-        name: 'Opinionated',
-        description: 'Voted on your first CodeTalks prompt',
-        icon: '🗳️',
-        category: 'social',
-        rarity: 'common',
-        criteria: {
-            type: 'count',
-            target: 'votes',
-            threshold: 1
-        },
-        points: 20
-    },
-    {
-        key: 'active_voter',
-        name: 'Active Voter',
-        description: 'Voted on 20 CodeTalks prompts',
-        icon: '📊',
-        category: 'social',
-        rarity: 'rare',
-        criteria: {
-            type: 'count',
-            target: 'votes',
-            threshold: 20
-        },
-        points: 150
-    },
-    {
-        key: 'codetalks_champion',
-        name: 'CodeTalks Champion',
-        description: 'Voted on 100 CodeTalks prompts',
-        icon: '🏆',
-        category: 'social',
-        rarity: 'epic',
-        criteria: {
-            type: 'count',
-            target: 'votes',
-            threshold: 100
-        },
-        points: 400
-    },
-    // Milestone Badges - Time Based
-    {
-        key: 'week_old',
-        name: 'Week Warrior',
-        description: 'Been active for 1 week',
-        icon: '📅',
-        category: 'milestone',
-        rarity: 'common',
-        criteria: {
-            type: 'custom',
-            customLogic: 'account_age_weeks >= 1'
-        },
-        points: 100
-    },
-    {
-        key: 'month_old',
-        name: 'Monthly Member',
-        description: 'Been active for 1 month',
-        icon: '🗓️',
-        category: 'milestone',
-        rarity: 'rare',
-        criteria: {
-            type: 'custom',
-            customLogic: 'account_age_weeks >= 4'
-        },
-        points: 300
-    },
-    {
-        key: 'year_old',
-        name: 'Year Veteran',
-        description: 'Been active for 1 year',
-        icon: '🎂',
-        category: 'milestone',
-        rarity: 'epic',
-        criteria: {
-            type: 'custom',
-            customLogic: 'account_age_weeks >= 52'
-        },
-        points: 1000
-    },
-    // Leaderboard Badges
-    {
-        key: 'top_100',
-        name: 'Top 100',
-        description: 'Ranked in top 100 on leaderboard',
-        icon: '🥉',
-        category: 'special',
-        rarity: 'rare',
-        criteria: {
-            type: 'rank',
-            threshold: 100
-        },
-        points: 200
-    },
-    {
-        key: 'top_50',
-        name: 'Top 50',
-        description: 'Ranked in top 50 on leaderboard',
-        icon: '🥈',
-        category: 'special',
-        rarity: 'epic',
-        criteria: {
-            type: 'rank',
-            threshold: 50
-        },
-        points: 400
-    },
-    {
-        key: 'top_10',
-        name: 'Top 10',
-        description: 'Ranked in top 10 on leaderboard',
-        icon: '🥇',
-        category: 'special',
-        rarity: 'legendary',
-        criteria: {
-            type: 'rank',
-            threshold: 10
-        },
-        points: 800
-    },
-    {
-        key: 'number_one',
-        name: 'Number One',
-        description: 'Ranked #1 on leaderboard',
-        icon: '👑',
-        category: 'special',
-        rarity: 'legendary',
-        criteria: {
-            type: 'rank',
-            threshold: 1
-        },
-        points: 1500
-    },
-    // Technical Badges
-    {
-        key: 'profile_complete',
-        name: 'Profile Complete',
-        description: 'Completed your profile setup',
-        icon: '✅',
-        category: 'technical',
-        rarity: 'common',
-        criteria: {
-            type: 'custom',
-            customLogic: 'profile_completion >= 100'
-        },
-        points: 50
-    },
-    {
-        key: 'skill_master',
-        name: 'Skill Master',
-        description: 'Added 10+ skills to your profile',
-        icon: '🛠️',
-        category: 'technical',
-        rarity: 'rare',
-        criteria: {
-            type: 'count',
-            target: 'skills',
-            threshold: 10
-        },
-        points: 150
-    },
-    {
-        key: 'skill_expert',
-        name: 'Skill Expert',
-        description: 'Added 20+ skills to your profile',
-        icon: '🎯',
-        category: 'technical',
-        rarity: 'epic',
-        criteria: {
-            type: 'count',
-            target: 'skills',
-            threshold: 20
-        },
-        points: 300
-    },
-    // Special Badges
-    {
-        key: 'early_adopter',
-        name: 'Early Adopter',
-        description: 'Joined in the first month of launch',
-        icon: '🚀',
-        category: 'special',
-        rarity: 'legendary',
-        criteria: {
-            type: 'custom',
-            customLogic: 'early_adopter'
-        },
-        points: 2000
-    },
-    {
-        key: 'beta_tester',
-        name: 'Beta Tester',
-        description: 'Helped test the platform during development',
-        icon: '🧪',
-        category: 'special',
-        rarity: 'legendary',
-        criteria: {
-            type: 'custom',
-            customLogic: 'beta_tester'
-        },
-        points: 1500
-    }
-];
+const mongoose_1 = __importDefault(require("mongoose"));
+const Badge_1 = require("../src/models/Badge");
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/peve';
 async function seedBadges() {
     try {
-        if (!MONGO_URI) {
-            console.error('MONGO_URI is not set');
-            process.exit(1);
-        }
         await mongoose_1.default.connect(MONGO_URI);
         console.log('Connected to MongoDB');
         // Clear existing badges
         await Badge_1.Badge.deleteMany({});
         console.log('Cleared existing badges');
-        // Insert new badges
-        const createdBadges = await Badge_1.Badge.insertMany(badges);
-        console.log(`Created ${createdBadges.length} badges`);
-        // Log badge categories
-        const categories = [...new Set(badges.map(b => b.category))];
-        console.log('Badge categories:', categories);
-        // Log badge rarities
-        const rarities = [...new Set(badges.map(b => b.rarity))];
-        console.log('Badge rarities:', rarities);
-        console.log('Badge seeding completed successfully!');
+        // Create comprehensive badge system (33 badges)
+        const badges = await Badge_1.Badge.create([
+            // Milestone Badges (1-10)
+            {
+                key: 'first_project',
+                name: 'First Project',
+                description: 'Uploaded your first project',
+                icon: '🏆',
+                category: 'milestone',
+                rarity: 'common',
+                criteria: {
+                    type: 'count',
+                    target: 'projects',
+                    threshold: 1
+                },
+                points: 10
+            },
+            {
+                key: 'first_idea',
+                name: 'First Idea',
+                description: 'Posted your first idea',
+                icon: '💡',
+                category: 'milestone',
+                rarity: 'common',
+                criteria: {
+                    type: 'count',
+                    target: 'ideas',
+                    threshold: 1
+                },
+                points: 10
+            },
+            {
+                key: 'first_comment',
+                name: 'First Comment',
+                description: 'Posted your first comment',
+                icon: '💬',
+                category: 'milestone',
+                rarity: 'common',
+                criteria: {
+                    type: 'count',
+                    target: 'comments',
+                    threshold: 1
+                },
+                points: 5
+            },
+            {
+                key: 'first_collaboration',
+                name: 'First Collaboration',
+                description: 'Joined your first collaboration',
+                icon: '🤝',
+                category: 'milestone',
+                rarity: 'common',
+                criteria: {
+                    type: 'count',
+                    target: 'collaborations',
+                    threshold: 1
+                },
+                points: 15
+            },
+            {
+                key: 'first_like',
+                name: 'First Like',
+                description: 'Received your first like',
+                icon: '❤️',
+                category: 'milestone',
+                rarity: 'common',
+                criteria: {
+                    type: 'count',
+                    target: 'likes_received',
+                    threshold: 1
+                },
+                points: 5
+            },
+            {
+                key: 'first_save',
+                name: 'First Save',
+                description: 'Someone saved your content',
+                icon: '🔖',
+                category: 'milestone',
+                rarity: 'common',
+                criteria: {
+                    type: 'count',
+                    target: 'saves_received',
+                    threshold: 1
+                },
+                points: 8
+            },
+            {
+                key: 'first_vote',
+                name: 'First Vote',
+                description: 'Voted on your first CodeTalk',
+                icon: '🗳️',
+                category: 'milestone',
+                rarity: 'common',
+                criteria: {
+                    type: 'count',
+                    target: 'votes_cast',
+                    threshold: 1
+                },
+                points: 5
+            },
+            {
+                key: 'profile_complete',
+                name: 'Profile Complete',
+                description: 'Completed your profile setup',
+                icon: '✅',
+                category: 'milestone',
+                rarity: 'common',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'profile_complete'
+                },
+                points: 20
+            },
+            {
+                key: 'skills_added',
+                name: 'Skills Added',
+                description: 'Added skills to your profile',
+                icon: '🛠️',
+                category: 'milestone',
+                rarity: 'common',
+                criteria: {
+                    type: 'count',
+                    target: 'skills',
+                    threshold: 3
+                },
+                points: 15
+            },
+            {
+                key: 'avatar_set',
+                name: 'Avatar Set',
+                description: 'Set your profile avatar',
+                icon: '👤',
+                category: 'milestone',
+                rarity: 'common',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'avatar_set'
+                },
+                points: 10
+            },
+            // Achievement Badges (11-20)
+            {
+                key: 'project_master',
+                name: 'Project Master',
+                description: 'Uploaded 10 projects',
+                icon: '🚀',
+                category: 'achievement',
+                rarity: 'rare',
+                criteria: {
+                    type: 'count',
+                    target: 'projects',
+                    threshold: 10
+                },
+                points: 50
+            },
+            {
+                key: 'idea_master',
+                name: 'Idea Master',
+                description: 'Posted 10 creative ideas',
+                icon: '💡',
+                category: 'achievement',
+                rarity: 'rare',
+                criteria: {
+                    type: 'count',
+                    target: 'ideas',
+                    threshold: 10
+                },
+                points: 40
+            },
+            {
+                key: 'commenter',
+                name: 'Active Commenter',
+                description: 'Posted 50 comments',
+                icon: '💬',
+                category: 'achievement',
+                rarity: 'rare',
+                criteria: {
+                    type: 'count',
+                    target: 'comments',
+                    threshold: 50
+                },
+                points: 30
+            },
+            {
+                key: 'collaborator',
+                name: 'Team Player',
+                description: 'Joined 5 collaborations',
+                icon: '🤝',
+                category: 'achievement',
+                rarity: 'rare',
+                criteria: {
+                    type: 'count',
+                    target: 'collaborations',
+                    threshold: 5
+                },
+                points: 40
+            },
+            {
+                key: 'popular',
+                name: 'Popular',
+                description: 'Received 100+ likes',
+                icon: '⭐',
+                category: 'achievement',
+                rarity: 'epic',
+                criteria: {
+                    type: 'count',
+                    target: 'likes_received',
+                    threshold: 100
+                },
+                points: 75
+            },
+            {
+                key: 'bookmark_worthy',
+                name: 'Bookmark Worthy',
+                description: 'Your content was saved 25 times',
+                icon: '🔖',
+                category: 'achievement',
+                rarity: 'epic',
+                criteria: {
+                    type: 'count',
+                    target: 'saves_received',
+                    threshold: 25
+                },
+                points: 60
+            },
+            {
+                key: 'voter',
+                name: 'Active Voter',
+                description: 'Voted on 20 CodeTalks',
+                icon: '🗳️',
+                category: 'achievement',
+                rarity: 'rare',
+                criteria: {
+                    type: 'count',
+                    target: 'votes_cast',
+                    threshold: 20
+                },
+                points: 25
+            },
+            {
+                key: 'skill_expert',
+                name: 'Skill Expert',
+                description: 'Added 10+ skills to your profile',
+                icon: '🛠️',
+                category: 'achievement',
+                rarity: 'rare',
+                criteria: {
+                    type: 'count',
+                    target: 'skills',
+                    threshold: 10
+                },
+                points: 35
+            },
+            {
+                key: 'view_magnet',
+                name: 'View Magnet',
+                description: 'Your content received 500+ views',
+                icon: '👀',
+                category: 'achievement',
+                rarity: 'epic',
+                criteria: {
+                    type: 'count',
+                    target: 'total_views',
+                    threshold: 500
+                },
+                points: 70
+            },
+            {
+                key: 'early_adopter',
+                name: 'Early Adopter',
+                description: 'Joined in the first week',
+                icon: '🚀',
+                category: 'achievement',
+                rarity: 'legendary',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'joined_in_first_week'
+                },
+                points: 100
+            },
+            // Social Badges (21-25)
+            {
+                key: 'social_butterfly',
+                name: 'Social Butterfly',
+                description: 'Very active in the community',
+                icon: '🦋',
+                category: 'social',
+                rarity: 'epic',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'high_social_activity'
+                },
+                points: 80
+            },
+            {
+                key: 'mentor',
+                name: 'Mentor',
+                description: 'Helped others in the community',
+                icon: '👨‍🏫',
+                category: 'social',
+                rarity: 'epic',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'mentor_activity'
+                },
+                points: 90
+            },
+            {
+                key: 'networker',
+                name: 'Networker',
+                description: 'Connected with many users',
+                icon: '🌐',
+                category: 'social',
+                rarity: 'rare',
+                criteria: {
+                    type: 'count',
+                    target: 'connections',
+                    threshold: 20
+                },
+                points: 45
+            },
+            {
+                key: 'helper',
+                name: 'Helper',
+                description: 'Always ready to help others',
+                icon: '🤲',
+                category: 'social',
+                rarity: 'rare',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'helpful_activity'
+                },
+                points: 40
+            },
+            {
+                key: 'community_champion',
+                name: 'Community Champion',
+                description: 'Top contributor to the community',
+                icon: '🏆',
+                category: 'social',
+                rarity: 'legendary',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'top_contributor'
+                },
+                points: 150
+            },
+            // Technical Badges (26-30)
+            {
+                key: 'tech_expert',
+                name: 'Tech Expert',
+                description: 'Expert in multiple technologies',
+                icon: '⚡',
+                category: 'technical',
+                rarity: 'epic',
+                criteria: {
+                    type: 'count',
+                    target: 'skills',
+                    threshold: 15
+                },
+                points: 85
+            },
+            {
+                key: 'fullstack',
+                name: 'Full Stack',
+                description: 'Proficient in both frontend and backend',
+                icon: '🔧',
+                category: 'technical',
+                rarity: 'rare',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'fullstack_skills'
+                },
+                points: 60
+            },
+            {
+                key: 'innovator',
+                name: 'Innovator',
+                description: 'Created innovative projects',
+                icon: '💡',
+                category: 'technical',
+                rarity: 'epic',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'innovative_projects'
+                },
+                points: 75
+            },
+            {
+                key: 'code_reviewer',
+                name: 'Code Reviewer',
+                description: 'Active in code reviews',
+                icon: '🔍',
+                category: 'technical',
+                rarity: 'rare',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'code_review_activity'
+                },
+                points: 50
+            },
+            {
+                key: 'open_source',
+                name: 'Open Source',
+                description: 'Contributed to open source projects',
+                icon: '📂',
+                category: 'technical',
+                rarity: 'epic',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'open_source_contributor'
+                },
+                points: 80
+            },
+            // Special Badges (31-33)
+            {
+                key: 'legend',
+                name: 'Legend',
+                description: 'Achieved legendary status',
+                icon: '👑',
+                category: 'special',
+                rarity: 'legendary',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'legendary_status'
+                },
+                points: 200
+            },
+            {
+                key: 'founder',
+                name: 'Founder',
+                description: 'One of the first users',
+                icon: '🌟',
+                category: 'special',
+                rarity: 'legendary',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'founder_status'
+                },
+                points: 300
+            },
+            {
+                key: 'perfect_score',
+                name: 'Perfect Score',
+                description: 'Achieved perfect compatibility score',
+                icon: '💯',
+                category: 'special',
+                rarity: 'legendary',
+                criteria: {
+                    type: 'custom',
+                    customLogic: 'perfect_compatibility'
+                },
+                points: 250
+            }
+        ]);
+        console.log(`✅ Created ${badges.length} badges successfully!`);
+        return badges.length;
     }
     catch (error) {
-        console.error('Error seeding badges:', error);
+        console.error('❌ Error seeding badges:', error);
+        throw error;
     }
     finally {
         await mongoose_1.default.disconnect();
         console.log('Disconnected from MongoDB');
     }
 }
-// Run the seeder if this file is executed directly
+// Run seeding if this file is executed directly
 if (require.main === module) {
-    seedBadges();
+    seedBadges()
+        .then(() => process.exit(0))
+        .catch(() => process.exit(1));
 }
