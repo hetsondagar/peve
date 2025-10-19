@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { 
   Bell, User, X, Heart, Bookmark, Share2, MessageCircle, 
   ExternalLink, Github, Users, Eye, Calendar,
-  Award, Tag, Code, Zap, Globe, FileText, Play, BarChart3
+  Award, Tag, Code, Zap, Globe, FileText, Play, BarChart3,
+  Edit3, Trash2
 } from 'lucide-react';
 import { NetworkBackground } from '@/components/NetworkBackground';
 import UsernameLink from '@/components/UsernameLink';
@@ -38,13 +39,16 @@ export default function ProjectDetail() {
   const [saveCount, setSaveCount] = useState(0);
   const [newComment, setNewComment] = useState('');
   const [commentText, setCommentText] = useState('');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchProject = useCallback(async () => {
     try {
-      const [projectResponse, commentsResponse] = await Promise.all([
+      const [projectResponse, commentsResponse, userResponse] = await Promise.all([
         apiFetch(`/api/projects/${id}`),
-        apiFetch(`/api/comments/project/${id}`)
+        apiFetch(`/api/comments/project/${id}`),
+        apiFetch('/api/auth/me').catch(() => ({ data: null }))
       ]);
       
       const projectData = projectResponse.data.project;
@@ -54,6 +58,7 @@ export default function ProjectDetail() {
       setComments(commentsResponse.data?.comments || []);
       setLikeCount(projectData.metrics?.likes || 0);
       setSaveCount(projectData.metrics?.saves || 0);
+      setCurrentUser(userResponse.data);
       
       // Fetch interaction status
       try {
@@ -180,6 +185,24 @@ export default function ProjectDetail() {
       }
     } catch (error) {
       console.error('Failed to share project:', error);
+    }
+  };
+
+  const handleEditProject = () => {
+    // Navigate to edit project page or open edit modal
+    navigate(`/projects/${id}/edit`);
+  };
+
+  const handleDeleteProject = async () => {
+    try {
+      await apiFetch(`/api/projects/${id}`, {
+        method: 'DELETE'
+      });
+      
+      // Redirect to projects page after successful deletion
+      navigate('/projects');
+    } catch (error) {
+      console.error('Failed to delete project:', error);
     }
   };
 
@@ -368,6 +391,30 @@ export default function ProjectDetail() {
                       <Share2 className="w-4 h-4" />
                       {project.metrics?.shares || 0}
                     </GlowButton>
+                    
+                    {/* Edit and Delete buttons for project author */}
+                    {currentUser && project.author && currentUser._id === project.author._id && (
+                      <>
+                        <GlowButton
+                          variant="outline"
+                          size="sm"
+                          onClick={handleEditProject}
+                          className="flex items-center gap-2"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                          Edit
+                        </GlowButton>
+                        <GlowButton
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowDeleteConfirm(true)}
+                          className="flex items-center gap-2 text-red-500 hover:text-red-400"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </GlowButton>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -892,6 +939,35 @@ export default function ProjectDetail() {
               </GlowButton>
               <GlowButton onClick={handleCollaborationRequest} className="flex-1">
                 Send Request
+              </GlowButton>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="glass border-red-500/20 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-500">Delete Project</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              Are you sure you want to delete this project? This action cannot be undone and will also delete all associated comments.
+            </p>
+            <div className="flex gap-2">
+              <GlowButton 
+                variant="outline" 
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1"
+              >
+                Cancel
+              </GlowButton>
+              <GlowButton 
+                onClick={handleDeleteProject}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+              >
+                Delete
               </GlowButton>
             </div>
           </div>

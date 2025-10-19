@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { 
   Heart, Bookmark, Share2, MessageCircle, 
   ExternalLink, Users, Eye, Calendar,
-  Award, Tag, Code, Zap, Globe, FileText, Play, BarChart3
+  Award, Tag, Code, Zap, Globe, FileText, Play, BarChart3,
+  Edit3, Trash2
 } from 'lucide-react';
 import { NetworkBackground } from '@/components/NetworkBackground';
 import UsernameLink from '@/components/UsernameLink';
@@ -38,19 +39,25 @@ export default function IdeaDetail() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const fetchIdea = useCallback(async () => {
     if (!id) return;
     
     try {
       setLoading(true);
-      const response = await apiFetch(`/api/ideas/${id}/detailed`);
+      const [ideaResponse, userResponse] = await Promise.all([
+        apiFetch(`/api/ideas/${id}/detailed`),
+        apiFetch('/api/auth/me').catch(() => ({ data: null }))
+      ]);
       
-      if (response.success) {
-        setIdea(response.data.idea);
-        setComments(response.data.comments || []);
-        setLikeCount(response.data.idea.likes || 0);
-        setSaveCount(response.data.idea.saveCount || 0);
+      if (ideaResponse.success) {
+        setIdea(ideaResponse.data.idea);
+        setCurrentUser(userResponse.data);
+        setComments(ideaResponse.data.comments || []);
+        setLikeCount(ideaResponse.data.idea.likes || 0);
+        setSaveCount(ideaResponse.data.idea.saveCount || 0);
         
         // Check if user has liked/saved this idea
         try {
@@ -152,6 +159,24 @@ export default function IdeaDetail() {
       });
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  const handleEditIdea = () => {
+    // Navigate to edit idea page or open edit modal
+    navigate(`/ideas/${id}/edit`);
+  };
+
+  const handleDeleteIdea = async () => {
+    try {
+      await apiFetch(`/api/ideas/${id}`, {
+        method: 'DELETE'
+      });
+      
+      // Redirect to ideas page after successful deletion
+      navigate('/ideas');
+    } catch (error) {
+      console.error('Failed to delete idea:', error);
     }
   };
 
@@ -445,6 +470,28 @@ export default function IdeaDetail() {
                     <Share2 className="w-4 h-4" />
                     Share
                   </GlowButton>
+                  
+                  {/* Edit and Delete buttons for idea author */}
+                  {currentUser && idea.author && currentUser._id === idea.author._id && (
+                    <>
+                      <GlowButton
+                        variant="outline"
+                        onClick={handleEditIdea}
+                        className="w-full flex items-center gap-2"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                        Edit Idea
+                      </GlowButton>
+                      <GlowButton
+                        variant="outline"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="w-full flex items-center gap-2 text-red-500 hover:text-red-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Idea
+                      </GlowButton>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -530,6 +577,35 @@ export default function IdeaDetail() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="glass border-red-500/20 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-500">Delete Idea</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              Are you sure you want to delete this idea? This action cannot be undone and will also delete all associated comments.
+            </p>
+            <div className="flex gap-2">
+              <GlowButton 
+                variant="outline" 
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1"
+              >
+                Cancel
+              </GlowButton>
+              <GlowButton 
+                onClick={handleDeleteIdea}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+              >
+                Delete
+              </GlowButton>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
