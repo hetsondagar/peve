@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
 import OnboardingModal from '@/components/OnboardingModal';
 import ProfileCompletionModal from '@/components/ProfileCompletionModal';
+import { startTokenRefresh } from '@/lib/tokenRefresh';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -143,6 +144,7 @@ export default function Login() {
         console.log('Login attempt:', { emailOrUsername, password: '***' });
         const res = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ emailOrUsername, password }) });
         setAuthTokens(res.data.token, res.data.refreshToken);
+        startTokenRefresh(); // Start automatic token refresh
         
         // Check if onboarding is completed
         if (!res.data.user.onboardingCompleted) {
@@ -162,6 +164,7 @@ export default function Login() {
         console.log('Signup attempt:', { ...signupData, password: '***' });
         const res = await apiFetch('/api/auth/signup', { method: 'POST', body: JSON.stringify(signupData) });
         setAuthTokens(res.data.token, res.data.refreshToken);
+        startTokenRefresh(); // Start automatic token refresh
         
         // New users always need to complete onboarding
         setCurrentUser(res.data.user);

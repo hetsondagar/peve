@@ -18,15 +18,36 @@ export async function apiFetch(path: string, init?: RequestInit) {
     const data = await res.json().catch(() => ({}));
     
     if (!res.ok) {
-      // Provide more specific error messages based on status code
-      if (res.status === 400) {
-        throw new Error(data?.error || 'Invalid request. Please check your input.');
-      } else if (res.status === 401) {
-        // Clear invalid tokens
+      // Handle 401 errors with automatic token refresh
+      if (res.status === 401 && token && path !== '/api/auth/refresh') {
+        try {
+          const refreshed = await refreshToken();
+          if (refreshed) {
+            // Retry the original request with new token
+            const newToken = localStorage.getItem('peve_token');
+            if (newToken) {
+              (headers as any).Authorization = `Bearer ${newToken}`;
+              const retryRes = await fetch(`${API_BASE}${path}`, { ...init, headers });
+              const retryData = await retryRes.json().catch(() => ({}));
+              
+              if (retryRes.ok) {
+                return retryData;
+              }
+            }
+          }
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+        }
+        
+        // If refresh failed or retry failed, clear tokens and throw error
         clearAuthTokens();
         throw new Error('Authentication failed. Please log in again.');
+      } else if (res.status === 400) {
+        throw new Error(data?.error || 'Invalid request. Please check your input.');
       } else if (res.status === 409) {
         throw new Error(data?.error || 'This username or email is already taken.');
+      } else if (res.status === 429) {
+        throw new Error('Too many requests. Please wait a moment and try again.');
       } else if (res.status === 500) {
         throw new Error('Server error. Please try again later.');
       } else {
@@ -51,6 +72,34 @@ export function setAuthTokens(token: string, refreshToken?: string) {
 export function clearAuthTokens() {
   localStorage.removeItem('peve_token');
   localStorage.removeItem('peve_refresh');
+}
+
+export async function refreshToken(): Promise<boolean> {
+  const refreshToken = localStorage.getItem('peve_refresh');
+  if (!refreshToken) return false;
+  
+  try {
+    const response = await fetch(`${API_BASE}/api/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      setAuthTokens(data.data.token, data.data.refreshToken);
+      return true;
+    } else {
+      clearAuthTokens();
+      return false;
+    }
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    clearAuthTokens();
+    return false;
+  }
 }
 
 

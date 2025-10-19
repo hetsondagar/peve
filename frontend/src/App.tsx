@@ -18,6 +18,7 @@ import DevCards from "./pages/DevCards";
 import SearchResults from "./pages/SearchResults";
 import NotFound from "./pages/NotFound";
 import Footer from "./components/Footer";
+import { startTokenRefresh } from "./lib/tokenRefresh";
 
 const queryClient = new QueryClient();
 
@@ -33,7 +34,13 @@ const App = () => {
     };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    
+    // Start token refresh if user is logged in
+    startTokenRefresh();
+    
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+    };
   }, []);
 
   return (
