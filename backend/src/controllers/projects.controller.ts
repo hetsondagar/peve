@@ -162,6 +162,8 @@ export async function createProject(req: Request, res: Response) {
     return res.status(201).json({ success: true, data: populatedProject });
   } catch (error) {
     console.error('Create project error:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({ success: false, error: 'Failed to create project' });
   }
 }

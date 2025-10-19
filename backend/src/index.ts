@@ -195,6 +195,17 @@ async function start() {
   registerSocketHandlers(io);
   console.log('✅ Socket.IO initialized');
 
+  // Global error handler
+  app.use((error: any, req: any, res: any, next: any) => {
+    console.error('Global error handler:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+    });
+  });
+
   server.listen(PORT, () => {
     // eslint-disable-next-line no-console
         console.log(`🚀 peve-backend API server started successfully!`);
@@ -204,6 +215,16 @@ async function start() {
         console.log(`🌐 Server running on port: ${PORT}`);
       });
 }
+
+// Process error handlers
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  console.error('Stack:', error.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 // Memory monitoring
 if (process.env.NODE_ENV === 'production') {
