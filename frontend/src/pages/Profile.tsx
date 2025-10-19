@@ -597,13 +597,15 @@ export default function Profile() {
                       <UserCheck className="w-4 h-4" />
                       Compatibility Settings
                     </CardTitle>
-                    <GlowButton
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowCompatibilityWizard(true)}
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </GlowButton>
+                    {isOwnProfile && (
+                      <GlowButton
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowCompatibilityWizard(true)}
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </GlowButton>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1104,20 +1106,24 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Compatibility Setup Wizard */}
-      <CompatibilityWizard
-        isOpen={showCompatibilityWizard}
-        onClose={() => setShowCompatibilityWizard(false)}
-        onComplete={handleCompatibilityComplete}
-      />
+      {/* Compatibility Setup Wizard - Only for own profile */}
+      {isOwnProfile && (
+        <CompatibilityWizard
+          isOpen={showCompatibilityWizard}
+          onClose={() => setShowCompatibilityWizard(false)}
+          onComplete={handleCompatibilityComplete}
+        />
+      )}
 
-      {/* Edit Profile Modal */}
-      <EditProfileModal
-        isOpen={showEditProfile}
-        onClose={() => setShowEditProfile(false)}
-        currentUser={user}
-        onUpdate={handleProfileUpdate}
-      />
+      {/* Edit Profile Modal - Only for own profile */}
+      {isOwnProfile && (
+        <EditProfileModal
+          isOpen={showEditProfile}
+          onClose={() => setShowEditProfile(false)}
+          currentUser={user}
+          onUpdate={handleProfileUpdate}
+        />
+      )}
     </div>
   );
 }
