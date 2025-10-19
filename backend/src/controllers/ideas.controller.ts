@@ -123,8 +123,8 @@ export async function createIdea(req: Request, res: Response) {
       console.log('Badge check completed successfully');
     } catch (badgeError) {
       console.error('Error checking badges for idea creation:', badgeError);
-      console.error('Badge error details:', badgeError.message);
-      console.error('Badge error stack:', badgeError.stack);
+      console.error('Badge error details:', (badgeError as Error).message);
+      console.error('Badge error stack:', (badgeError as Error).stack);
     }
     
     return res.status(201).json({ success: true, data: populatedIdea });

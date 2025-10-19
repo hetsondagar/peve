@@ -122,8 +122,8 @@ async function validateUsernames(req, res) {
         return res.json({
             success: true,
             data: {
-                valid: validUsernames,
-                invalid: invalidUsernames,
+                validUsernames: validUsernames,
+                invalidUsernames: invalidUsernames,
                 existing: existingUsernames
             }
         });

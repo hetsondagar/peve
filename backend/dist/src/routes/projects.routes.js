@@ -9,6 +9,7 @@ router.get('/trending', projects_controller_1.getTrendingProjects);
 router.get('/:id', projects_controller_1.getProject);
 router.post('/', auth_1.requireAuth, projects_controller_1.createProject);
 router.put('/:id', auth_1.requireAuth, projects_controller_1.updateProject);
+router.delete('/:id', auth_1.requireAuth, projects_controller_1.deleteProject);
 router.post('/:id/health', auth_1.requireAuth, projects_controller_1.recalcHealth);
 router.post('/:id/fork', auth_1.requireAuth, projects_controller_1.forkProject);
 router.post('/:projectId/like', auth_1.requireAuth, projects_controller_1.likeProject);

@@ -177,15 +177,15 @@ export async function createProject(req: Request, res: Response) {
       console.log('Badge check completed successfully');
     } catch (badgeError) {
       console.error('Error checking badges for project creation:', badgeError);
-      console.error('Badge error details:', badgeError.message);
-      console.error('Badge error stack:', badgeError.stack);
+      console.error('Badge error details:', (badgeError as Error).message);
+      console.error('Badge error stack:', (badgeError as Error).stack);
     }
 
     return res.status(201).json({ success: true, data: populatedProject });
   } catch (error) {
     console.error('Create project error:', error);
-    console.error('Error details:', error.message);
-    console.error('Stack trace:', error.stack);
+    console.error('Error details:', (error as Error).message);
+    console.error('Stack trace:', (error as Error).stack);
     res.status(500).json({ success: false, error: 'Failed to create project' });
   }
 }

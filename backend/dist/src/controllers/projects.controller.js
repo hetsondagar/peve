@@ -4,6 +4,7 @@ exports.listProjects = listProjects;
 exports.getProject = getProject;
 exports.createProject = createProject;
 exports.updateProject = updateProject;
+exports.deleteProject = deleteProject;
 exports.recalcHealth = recalcHealth;
 exports.forkProject = forkProject;
 exports.getTrendingProjects = getTrendingProjects;
@@ -109,12 +110,29 @@ async function createProject(req, res) {
                 error: 'Missing required fields: title, tagline, description, category, and githubRepo are required'
             });
         }
-        // Add teammates as tags if they exist
+        // Add teammates as tags if they exist and are valid usernames
         const projectData = { ...req.body };
         if (projectData.collaboration?.teammates && projectData.collaboration.teammates.length > 0) {
-            // Add teammates as tags with @ prefix
-            const teammateTags = projectData.collaboration.teammates.map((teammate) => `@${teammate}`);
-            projectData.tags = [...(projectData.tags || []), ...teammateTags];
+            // Validate that all teammates exist as users
+            const validTeammates = [];
+            for (const teammate of projectData.collaboration.teammates) {
+                if (teammate && teammate.trim()) {
+                    const user = await User_1.User.findOne({ username: teammate.trim().toLowerCase() });
+                    if (user) {
+                        validTeammates.push(teammate.trim());
+                    }
+                    else {
+                        console.log(`Teammate username not found: ${teammate}`);
+                    }
+                }
+            }
+            // Only add valid teammates as tags with @ prefix
+            if (validTeammates.length > 0) {
+                const teammateTags = validTeammates.map((teammate) => `@${teammate}`);
+                projectData.tags = [...(projectData.tags || []), ...teammateTags];
+            }
+            // Update the teammates array to only include valid ones
+            projectData.collaboration.teammates = validTeammates;
         }
         const project = await Project_1.Project.create({
             ...projectData,
@@ -145,15 +163,21 @@ async function createProject(req, res) {
             .populate('contributors.user', 'username name avatarUrl');
         // Check for badge awards
         try {
+            console.log('Checking badges for project creation...');
             await badgeService_1.BadgeService.checkAndAwardBadges(userId, 'project_created', project._id.toString());
+            console.log('Badge check completed successfully');
         }
         catch (badgeError) {
             console.error('Error checking badges for project creation:', badgeError);
+            console.error('Badge error details:', badgeError.message);
+            console.error('Badge error stack:', badgeError.stack);
         }
         return res.status(201).json({ success: true, data: populatedProject });
     }
     catch (error) {
         console.error('Create project error:', error);
+        console.error('Error details:', error.message);
+        console.error('Stack trace:', error.stack);
         res.status(500).json({ success: false, error: 'Failed to create project' });
     }
 }
@@ -167,6 +191,30 @@ async function updateProject(req, res) {
     Object.assign(project, req.body);
     await project.save();
     return res.json({ success: true, data: project });
+}
+async function deleteProject(req, res) {
+    try {
+        const userId = req.user?.id;
+        const project = await Project_1.Project.findById(req.params.id);
+        if (!project) {
+            return res.status(404).json({ success: false, error: 'Project not found' });
+        }
+        // Check if user is the author
+        if (String(project.author) !== String(userId)) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+        // Delete associated comments
+        await Comment_1.Comment.deleteMany({ targetType: 'project', targetId: project._id });
+        // Delete associated collaboration requests
+        await CollaborationRequest_1.CollaborationRequest.deleteMany({ project: project._id });
+        // Delete the project
+        await Project_1.Project.findByIdAndDelete(req.params.id);
+        return res.json({ success: true, message: 'Project deleted successfully' });
+    }
+    catch (error) {
+        console.error('Error deleting project:', error);
+        return res.status(500).json({ success: false, error: 'Failed to delete project' });
+    }
 }
 async function recalcHealth(req, res) {
     const project = await Project_1.Project.findById(req.params.id);

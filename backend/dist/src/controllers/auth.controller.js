@@ -105,12 +105,17 @@ async function me(req, res) {
     if (!userId)
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     try {
+        console.log('Fetching user with ID:', userId);
         const user = await User_1.User.findById(userId).select('-passwordHash');
-        if (!user)
+        if (!user) {
+            console.log('User not found for ID:', userId);
             return res.status(404).json({ success: false, error: 'User not found' });
+        }
+        console.log('User found:', user.username);
         return res.json({ success: true, data: user });
     }
     catch (error) {
+        console.error('Error in me function:', error);
         return res.status(500).json({ success: false, error: 'Failed to fetch user' });
     }
 }

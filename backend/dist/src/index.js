@@ -42,6 +42,8 @@ const http_1 = __importDefault(require("http"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const mongoose_1 = __importDefault(require("mongoose"));
+// Rate limiting removed for production stability
+// import rateLimit from 'express-rate-limit';
 const morgan_1 = __importDefault(require("morgan"));
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -138,28 +140,44 @@ async function start() {
         const dbState = mongoose_1.default.connection.readyState; // 1 connected
         res.json({ status: 'ok', db: dbState === 1 ? 'connected' : 'disconnected' });
     });
-    // Load routes asynchronously
+    // Test endpoint to verify no rate limiting
+    app.get('/test', (_req, res) => {
+        res.json({
+            message: 'Rate limiting test endpoint',
+            timestamp: new Date().toISOString(),
+            status: 'success'
+        });
+    });
+    // Simple auth test endpoint
+    app.get('/auth-test', (_req, res) => {
+        res.json({
+            message: 'Auth test endpoint - no rate limiting',
+            timestamp: new Date().toISOString(),
+            status: 'success'
+        });
+    });
+    // Load routes synchronously
     console.log('📦 Loading routes...');
     try {
-        // Import and mount routes
-        const authRoutes = await Promise.resolve().then(() => __importStar(require('./routes/auth.routes')));
-        const usersRoutes = await Promise.resolve().then(() => __importStar(require('./routes/users.routes')));
-        const projectsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/projects.routes')));
-        const ideasRoutes = await Promise.resolve().then(() => __importStar(require('./routes/ideas.routes')));
-        const commentsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/comments.routes')));
-        const notificationsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/notifications.routes')));
-        const searchRoutes = await Promise.resolve().then(() => __importStar(require('./routes/search.routes')));
-        const likesRoutes = await Promise.resolve().then(() => __importStar(require('./routes/likes.routes')));
-        const uploadsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/uploads.routes')));
-        const collaborationsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/collaborations.routes')));
-        const chatRoutes = await Promise.resolve().then(() => __importStar(require('./routes/chat.routes')));
-        const compatibilityRoutes = await Promise.resolve().then(() => __importStar(require('./routes/compatibility.routes')));
-        const collaborationRoutes = await Promise.resolve().then(() => __importStar(require('./routes/collaboration-requests.routes')));
-        const dashboardRoutes = await Promise.resolve().then(() => __importStar(require('./routes/dashboard.routes')));
-        const leaderboardRoutes = await Promise.resolve().then(() => __importStar(require('./routes/leaderboard.routes')));
-        const promptRoutes = await Promise.resolve().then(() => __importStar(require('./routes/prompt.routes')));
-        const interactionRoutes = await Promise.resolve().then(() => __importStar(require('./routes/interaction.routes')));
-        const badgeRoutes = await Promise.resolve().then(() => __importStar(require('./routes/badge.routes')));
+        // Import and mount routes synchronously
+        const authRoutes = require('./routes/auth.routes');
+        const usersRoutes = require('./routes/users.routes');
+        const projectsRoutes = require('./routes/projects.routes');
+        const ideasRoutes = require('./routes/ideas.routes');
+        const commentsRoutes = require('./routes/comments.routes');
+        const notificationsRoutes = require('./routes/notifications.routes');
+        const searchRoutes = require('./routes/search.routes');
+        const likesRoutes = require('./routes/likes.routes');
+        const uploadsRoutes = require('./routes/uploads.routes');
+        const collaborationsRoutes = require('./routes/collaborations.routes');
+        const chatRoutes = require('./routes/chat.routes');
+        const compatibilityRoutes = require('./routes/compatibility.routes');
+        const collaborationRoutes = require('./routes/collaboration-requests.routes');
+        const dashboardRoutes = require('./routes/dashboard.routes');
+        const leaderboardRoutes = require('./routes/leaderboard.routes');
+        const promptRoutes = require('./routes/prompt.routes');
+        const interactionRoutes = require('./routes/interaction.routes');
+        const badgeRoutes = require('./routes/badge.routes');
         // Mount routes
         app.use('/api/auth', authRoutes.default);
         app.use('/api/users', usersRoutes.default);
@@ -194,6 +212,16 @@ async function start() {
     });
     registerSocketHandlers(io);
     console.log('✅ Socket.IO initialized');
+    // Global error handler
+    app.use((error, req, res, next) => {
+        console.error('Global error handler:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+        });
+    });
     server.listen(PORT, () => {
         // eslint-disable-next-line no-console
         console.log(`🚀 peve-backend API server started successfully!`);
@@ -203,6 +231,14 @@ async function start() {
         console.log(`🌐 Server running on port: ${PORT}`);
     });
 }
+// Process error handlers
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    console.error('Stack:', error.stack);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
 // Memory monitoring
 if (process.env.NODE_ENV === 'production') {
     setInterval(() => {

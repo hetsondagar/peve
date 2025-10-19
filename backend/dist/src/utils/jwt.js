@@ -10,8 +10,17 @@ exports.verifyRefreshToken = verifyRefreshToken;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h'; // Extended to 24 hours
 const REFRESH_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
+// Validate JWT secrets
+if (!JWT_SECRET) {
+    console.error('❌ JWT_SECRET is not set in environment variables');
+    throw new Error('JWT_SECRET is required');
+}
+if (!JWT_REFRESH_SECRET) {
+    console.error('❌ JWT_REFRESH_SECRET is not set in environment variables');
+    throw new Error('JWT_REFRESH_SECRET is required');
+}
 function signAccessToken(payload) {
     return jsonwebtoken_1.default.sign(payload, JWT_SECRET, {
         expiresIn: JWT_EXPIRES_IN,
