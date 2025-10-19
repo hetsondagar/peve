@@ -6,6 +6,7 @@ import {
   listProjects, 
   recalcHealth, 
   updateProject,
+  deleteProject,
   getTrendingProjects,
   likeProject,
   bookmarkProject,
@@ -21,6 +22,7 @@ router.get('/trending', getTrendingProjects);
 router.get('/:id', getProject);
 router.post('/', requireAuth, createProject);
 router.put('/:id', requireAuth, updateProject);
+router.delete('/:id', requireAuth, deleteProject);
 router.post('/:id/health', requireAuth, recalcHealth);
 router.post('/:id/fork', requireAuth, forkProject);
 router.post('/:projectId/like', requireAuth, likeProject);

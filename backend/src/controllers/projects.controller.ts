@@ -176,6 +176,36 @@ export async function updateProject(req: Request, res: Response) {
   return res.json({ success: true, data: project });
 }
 
+export async function deleteProject(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+    const project = await Project.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+    
+    // Check if user is the author
+    if (String(project.author) !== String(userId)) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+    
+    // Delete associated comments
+    await Comment.deleteMany({ targetType: 'project', targetId: project._id });
+    
+    // Delete associated collaboration requests
+    await CollaborationRequest.deleteMany({ project: project._id });
+    
+    // Delete the project
+    await Project.findByIdAndDelete(req.params.id);
+    
+    return res.json({ success: true, message: 'Project deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    return res.status(500).json({ success: false, error: 'Failed to delete project' });
+  }
+}
+
 export async function recalcHealth(req: Request, res: Response) {
   const project = await Project.findById(req.params.id);
   if (!project) return res.status(404).json({ success: false, error: 'Not found' });

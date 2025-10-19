@@ -130,6 +130,66 @@ export async function createIdea(req: Request, res: Response) {
   }
 }
 
+export async function updateIdea(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+    const idea = await Idea.findById(req.params.id);
+    
+    if (!idea) {
+      return res.status(404).json({ success: false, error: 'Idea not found' });
+    }
+    
+    // Check if user is the author
+    if (String(idea.author) !== String(userId)) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+    
+    // Update the idea
+    Object.assign(idea, req.body);
+    await idea.save();
+    
+    const populatedIdea = await Idea.findById(idea._id)
+      .populate('author', 'username name avatarUrl skills');
+    
+    return res.json({ success: true, data: populatedIdea });
+  } catch (error) {
+    console.error('Update idea error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update idea' });
+  }
+}
+
+export async function deleteIdea(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+    const idea = await Idea.findById(req.params.id);
+    
+    if (!idea) {
+      return res.status(404).json({ success: false, error: 'Idea not found' });
+    }
+    
+    // Check if user is the author
+    if (String(idea.author) !== String(userId)) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+    
+    // Delete associated comments
+    await Comment.deleteMany({ targetType: 'idea', targetId: idea._id });
+    
+    // Update user's stats
+    await User.findByIdAndUpdate(userId, {
+      $inc: { 'stats.ideasPosted': -1 }
+    });
+    
+    // Delete the idea
+    await Idea.findByIdAndDelete(req.params.id);
+    
+    return res.json({ success: true, message: 'Idea deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting idea:', error);
+    return res.status(500).json({ success: false, error: 'Failed to delete idea' });
+  }
+}
+
 export async function joinIdea(req: Request, res: Response) {
   const userId = (req as any).user?.id;
   const { role, message } = req.body;
