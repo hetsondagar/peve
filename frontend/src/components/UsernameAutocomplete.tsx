@@ -49,17 +49,22 @@ export default function UsernameAutocomplete({
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
       try {
+        console.log('Searching usernames for query:', query);
         const response = await apiFetch(`/api/users/search-usernames?q=${encodeURIComponent(query)}&limit=10`);
+        
+        console.log('Username search response:', response);
         
         if (response.success) {
           // Filter out already selected usernames
           const filteredSuggestions = response.data.usernames.filter(
             (user: UsernameOption) => !selectedUsernames.includes(user.username)
           );
+          console.log('Filtered suggestions:', filteredSuggestions);
           setSuggestions(filteredSuggestions);
           setIsOpen(filteredSuggestions.length > 0);
           setError('');
         } else {
+          console.error('Username search failed:', response);
           setError('Failed to search usernames');
           setSuggestions([]);
           setIsOpen(false);

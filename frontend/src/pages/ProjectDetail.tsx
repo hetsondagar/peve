@@ -349,11 +349,11 @@ export default function ProjectDetail() {
             >
               {/* Cover Image */}
               {project.coverImage?.url && (
-                <div className="aspect-video rounded-2xl overflow-hidden bg-gradient-primary">
+                <div className="w-full rounded-2xl overflow-hidden bg-gradient-primary">
                   <img 
                     src={project.coverImage.url} 
                     alt={project.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto max-h-96 object-contain"
                   />
                 </div>
               )}

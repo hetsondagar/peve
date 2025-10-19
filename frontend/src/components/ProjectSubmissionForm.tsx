@@ -389,7 +389,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                             <img
                               src={URL.createObjectURL(formData.thumbnail)}
                               alt="Thumbnail preview"
-                              className="w-20 h-20 object-cover rounded-lg mx-auto"
+                              className="w-20 h-20 object-contain rounded-lg mx-auto bg-card-secondary"
                             />
                             <p className="text-sm text-foreground">{formData.thumbnail.name}</p>
                             <p className="text-xs text-muted-foreground">Click to change</p>
