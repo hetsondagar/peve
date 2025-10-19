@@ -10,14 +10,14 @@ router.get('/me', requireAuth, getCurrentUser);
 // Update current user profile
 router.put('/profile', requireAuth, updateProfile);
 
-// Get user by ID (public)
-router.get('/:userId', getUserById);
+// Search usernames for autocomplete (public)
+router.get('/search-usernames', searchUsernames);
 
 // Search users (public)
 router.get('/', searchUsers);
 
-// Search usernames for autocomplete (public)
-router.get('/search-usernames', searchUsernames);
+// Get user by ID (public) - must be after other specific routes
+router.get('/:userId', getUserById);
 
 // Validate usernames (public)
 router.post('/validate', validateUsernames);

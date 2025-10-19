@@ -21,6 +21,7 @@ import { CommentComponent } from '@/components/CommentComponent';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
+import EditIdeaForm from '@/components/EditIdeaForm';
 
 export default function IdeaDetail() {
   const { id } = useParams<{ id: string }>();
@@ -615,18 +616,16 @@ export default function IdeaDetail() {
             <DialogTitle>Edit Idea</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-muted-foreground">
-              Edit functionality is coming soon! For now, you can delete and recreate your idea with the updated information.
-            </p>
-            <div className="flex gap-2">
-              <GlowButton 
-                variant="outline" 
-                onClick={() => setShowEditModal(false)}
-                className="flex-1"
-              >
-                Close
-              </GlowButton>
-            </div>
+            {idea && (
+              <EditIdeaForm 
+                idea={idea} 
+                onSave={(updatedIdea) => {
+                  setIdea(updatedIdea);
+                  setShowEditModal(false);
+                }}
+                onCancel={() => setShowEditModal(false)}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>

@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { apiFetch } from '@/lib/api';
 import SearchBar from '@/components/SearchBar';
+import EditProjectForm from '@/components/EditProjectForm';
 import { requireAuth } from '@/utils/auth';
 import { CommentComponent } from '@/components/CommentComponent';
 import UsernameTag from '@/components/UsernameTag';
@@ -982,18 +983,16 @@ export default function ProjectDetail() {
             <DialogTitle>Edit Project</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-muted-foreground">
-              Edit functionality is coming soon! For now, you can delete and recreate your project with the updated information.
-            </p>
-            <div className="flex gap-2">
-              <GlowButton 
-                variant="outline" 
-                onClick={() => setShowEditModal(false)}
-                className="flex-1"
-              >
-                Close
-              </GlowButton>
-            </div>
+            {project && (
+              <EditProjectForm 
+                project={project} 
+                onSave={(updatedProject) => {
+                  setProject(updatedProject);
+                  setShowEditModal(false);
+                }}
+                onCancel={() => setShowEditModal(false)}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
