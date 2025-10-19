@@ -115,12 +115,30 @@ export async function createProject(req: Request, res: Response) {
       });
     }
 
-    // Add teammates as tags if they exist
+    // Add teammates as tags if they exist and are valid usernames
     const projectData = { ...req.body };
     if (projectData.collaboration?.teammates && projectData.collaboration.teammates.length > 0) {
-      // Add teammates as tags with @ prefix
-      const teammateTags = projectData.collaboration.teammates.map((teammate: string) => `@${teammate}`);
-      projectData.tags = [...(projectData.tags || []), ...teammateTags];
+      // Validate that all teammates exist as users
+      const validTeammates = [];
+      for (const teammate of projectData.collaboration.teammates) {
+        if (teammate && teammate.trim()) {
+          const user = await User.findOne({ username: teammate.trim().toLowerCase() });
+          if (user) {
+            validTeammates.push(teammate.trim());
+          } else {
+            console.log(`Teammate username not found: ${teammate}`);
+          }
+        }
+      }
+      
+      // Only add valid teammates as tags with @ prefix
+      if (validTeammates.length > 0) {
+        const teammateTags = validTeammates.map((teammate: string) => `@${teammate}`);
+        projectData.tags = [...(projectData.tags || []), ...teammateTags];
+      }
+      
+      // Update the teammates array to only include valid ones
+      projectData.collaboration.teammates = validTeammates;
     }
 
     const project = await Project.create({ 

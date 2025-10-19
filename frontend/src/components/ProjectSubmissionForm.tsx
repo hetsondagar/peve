@@ -45,8 +45,7 @@ const COLLABORATION_ROLES = [
 
 const VISIBILITY_OPTIONS = [
   { value: 'public', label: 'Public', description: 'Visible to everyone' },
-  { value: 'private', label: 'Private', description: 'Only you can see' },
-  { value: 'friends-only', label: 'Friends Only', description: 'Visible to your connections' }
+  { value: 'private', label: 'Private', description: 'Only you can see' }
 ];
 
 export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmissionFormProps) {
@@ -212,17 +211,47 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
     const currentTeammates = formData.collaboration.teammates;
     if (currentTeammates.includes(trimmedUsername)) return;
     
-    // Validate the username
-    await validateUsernames([trimmedUsername]);
+    // Validate the username first
+    setUsernameValidation(prev => ({ ...prev, isValidating: true }));
     
-    // Add to form data
-    setFormData(prev => ({
-      ...prev,
-      collaboration: {
-        ...prev.collaboration,
-        teammates: [...prev.collaboration.teammates, trimmedUsername]
+    try {
+      const response = await apiFetch('/api/users/validate', {
+        method: 'POST',
+        body: JSON.stringify({ usernames: [trimmedUsername] })
+      });
+      
+      if (response.success && response.data.validUsernames.includes(trimmedUsername)) {
+        // Only add if username is valid
+        setFormData(prev => ({
+          ...prev,
+          collaboration: {
+            ...prev.collaboration,
+            teammates: [...prev.collaboration.teammates, trimmedUsername]
+          }
+        }));
+        
+        setUsernameValidation(prev => ({
+          ...prev,
+          isValidating: false,
+          invalidUsernames: prev.invalidUsernames.filter(u => u !== trimmedUsername),
+          validUsernames: [...prev.validUsernames, trimmedUsername]
+        }));
+      } else {
+        // Username is invalid, don't add it
+        setUsernameValidation(prev => ({
+          ...prev,
+          isValidating: false,
+          invalidUsernames: [...prev.invalidUsernames, trimmedUsername]
+        }));
       }
-    }));
+    } catch (error) {
+      console.error('Error validating username:', error);
+      setUsernameValidation(prev => ({
+        ...prev,
+        isValidating: false,
+        invalidUsernames: [...prev.invalidUsernames, trimmedUsername]
+      }));
+    }
   };
 
   const removeArrayItem = (field: string, index: number) => {
