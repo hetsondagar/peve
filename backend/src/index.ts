@@ -115,6 +115,24 @@ async function start() {
     res.json({ status: 'ok', db: dbState === 1 ? 'connected' : 'disconnected' });
   });
 
+  // Test endpoint to verify no rate limiting
+  app.get('/test', (_req, res) => {
+    res.json({ 
+      message: 'Rate limiting test endpoint', 
+      timestamp: new Date().toISOString(),
+      status: 'success'
+    });
+  });
+
+  // Simple auth test endpoint
+  app.get('/auth-test', (_req, res) => {
+    res.json({ 
+      message: 'Auth test endpoint - no rate limiting', 
+      timestamp: new Date().toISOString(),
+      status: 'success'
+    });
+  });
+
   // Load routes synchronously
   console.log('📦 Loading routes...');
 
