@@ -18,6 +18,7 @@ import DevCards from "./pages/DevCards";
 import SearchResults from "./pages/SearchResults";
 import NotFound from "./pages/NotFound";
 import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { startTokenRefresh } from "./lib/tokenRefresh";
 
 const queryClient = new QueryClient();
@@ -53,19 +54,70 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/home" element={<Home />} />
-              <Route path="/ideas" element={<IdeaBoard />} />
-              <Route path="/ideas/:id" element={<IdeaDetail />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/projects/:id" element={<ProjectDetail />} />
-              <Route path="/codetalks" element={<CodeTalks />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/profile/:userId" element={<Profile />} />
-              <Route path="/devcards" element={<DevCards />} />
-              <Route path="/search" element={<SearchResults />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
+              
+              {/* Protected Routes - Require Authentication */}
+              <Route path="/home" element={
+                <ProtectedRoute>
+                  <Home />
+                </ProtectedRoute>
+              } />
+              <Route path="/ideas" element={
+                <ProtectedRoute>
+                  <IdeaBoard />
+                </ProtectedRoute>
+              } />
+              <Route path="/ideas/:id" element={
+                <ProtectedRoute>
+                  <IdeaDetail />
+                </ProtectedRoute>
+              } />
+              <Route path="/projects" element={
+                <ProtectedRoute>
+                  <Projects />
+                </ProtectedRoute>
+              } />
+              <Route path="/projects/:id" element={
+                <ProtectedRoute>
+                  <ProjectDetail />
+                </ProtectedRoute>
+              } />
+              <Route path="/codetalks" element={
+                <ProtectedRoute>
+                  <CodeTalks />
+                </ProtectedRoute>
+              } />
+              <Route path="/leaderboard" element={
+                <ProtectedRoute>
+                  <Leaderboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile/:userId" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/devcards" element={
+                <ProtectedRoute>
+                  <DevCards />
+                </ProtectedRoute>
+              } />
+              <Route path="/search" element={
+                <ProtectedRoute>
+                  <SearchResults />
+                </ProtectedRoute>
+              } />
+              
+              {/* 404 Page - Also Protected */}
+              <Route path="*" element={
+                <ProtectedRoute>
+                  <NotFound />
+                </ProtectedRoute>
+              } />
             </Routes>
             <Footer />
           </BrowserRouter>

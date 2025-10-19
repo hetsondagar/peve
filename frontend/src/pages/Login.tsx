@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { GlowButton } from '@/components/ui/glow-button';
 import { NetworkBackground } from '@/components/NetworkBackground';
@@ -14,6 +14,7 @@ import { startTokenRefresh } from '@/lib/tokenRefresh';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLogin, setIsLogin] = useState(true);
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -79,6 +80,28 @@ export default function Login() {
     
     return () => clearTimeout(timeoutId);
   }, [username]);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('peve_token');
+      if (token) {
+        try {
+          const response = await apiFetch('/api/auth/me');
+          if (response.success) {
+            const from = location.state?.from?.pathname || '/home';
+            navigate(from, { replace: true });
+          }
+        } catch (error) {
+          // Token is invalid, clear it
+          localStorage.removeItem('peve_token');
+          localStorage.removeItem('peve_refresh');
+        }
+      }
+    };
+
+    checkAuth();
+  }, [navigate, location.state]);
 
   const handleFullNameChange = (value: string) => {
     setFullName(value);
@@ -171,7 +194,10 @@ export default function Login() {
         setShowOnboarding(true);
         return;
       }
-      navigate('/home');
+      
+      // Redirect to intended page or home
+      const from = location.state?.from?.pathname || '/home';
+      navigate(from, { replace: true });
     } catch (err: any) {
       console.error('Auth error:', err);
       setError(err.message || 'An error occurred');
@@ -186,14 +212,16 @@ export default function Login() {
       setShowProfileCompletion(true);
     } else {
       setCurrentUser(null);
-      navigate('/home');
+      const from = location.state?.from?.pathname || '/home';
+      navigate(from, { replace: true });
     }
   };
 
   const handleProfileCompletion = (updatedUser: any) => {
     setShowProfileCompletion(false);
     setCurrentUser(null);
-    navigate('/home');
+    const from = location.state?.from?.pathname || '/home';
+    navigate(from, { replace: true });
   };
 
   return (
