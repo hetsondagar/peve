@@ -118,9 +118,13 @@ export async function createIdea(req: Request, res: Response) {
 
     // Check for badge awards
     try {
+      console.log('Checking badges for idea creation...');
       await BadgeService.checkAndAwardBadges(userId, 'idea_created', (idea._id as any).toString());
+      console.log('Badge check completed successfully');
     } catch (badgeError) {
       console.error('Error checking badges for idea creation:', badgeError);
+      console.error('Badge error details:', badgeError.message);
+      console.error('Badge error stack:', badgeError.stack);
     }
     
     return res.status(201).json({ success: true, data: populatedIdea });
