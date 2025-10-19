@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p tsconfig.json",
-    "build:src": "tsc -p tsconfig.production.json",
+    "build:src": "tsc -p tsconfig.production.json && tsc src/index-clean.ts --outDir dist --target ES2020 --module CommonJS --moduleResolution Node --esModuleInterop --skipLibCheck",
     "start": "node dist/index.js",
-    "start:prod": "node start-production.js",
+    "start:prod": "node start-clean.js",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

@@ -3,12 +3,41 @@ services:
     name: peve-backend
     env: node
     plan: free
-    buildCommand: npm run build:prod
+    buildCommand: npm install && npm run build:prod
     startCommand: npm run start:prod
-    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: NODE_OPTIONS
-        value: --max-old-space-size=512
+      - key: PORT
+        value: 4000
+      - key: MONGO_URI
+        fromDatabase:
+          name: peve-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: REFRESH_TOKEN_EXPIRES_IN
+        value: 30d
+      - key: FRONTEND_URL
+        value: https://peve-jointhehive.vercel.app
+      - key: CLOUDINARY_CLOUD_NAME
+        value: your_cloudinary_cloud_name
+      - key: CLOUDINARY_API_KEY
+        value: your_cloudinary_api_key
+      - key: CLOUDINARY_API_SECRET
+        value: your_cloudinary_api_secret
+      - key: BCRYPT_ROUNDS
+        value: 12
+    healthCheckPath: /health
     autoDeploy: true
+    branch: main
+
+databases:
+  - name: peve-db
+    plan: free
+    databaseName: peve
+    user: peve_user
