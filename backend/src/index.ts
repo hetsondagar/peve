@@ -10,6 +10,11 @@ import morgan from 'morgan';
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+// CORS origins - support multiple origins
+const CORS_ORIGINS = process.env.CORS_ORIGINS 
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+  : [FRONTEND_URL, 'https://peve-jointhehive.vercel.app'];
 const MONGO_URI = process.env.MONGO_URI || '';
 
 // Memory optimization
@@ -52,10 +57,11 @@ async function start() {
   }));
   
   app.use(cors({ 
-    origin: FRONTEND_URL, 
+    origin: CORS_ORIGINS, 
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    optionsSuccessStatus: 200
   }));
   
   app.use(express.json({ limit: '2mb' }));
@@ -189,7 +195,7 @@ async function start() {
   const { registerSocketHandlers } = await import('./sockets');
   
   const io = new SocketIOServer(server, {
-    cors: { origin: FRONTEND_URL, credentials: true },
+    cors: { origin: CORS_ORIGINS, credentials: true },
   });
 
   registerSocketHandlers(io);

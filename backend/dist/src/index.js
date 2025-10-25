@@ -47,6 +47,10 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const morgan_1 = __importDefault(require("morgan"));
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+// CORS origins - support multiple origins
+const CORS_ORIGINS = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+    : [FRONTEND_URL, 'https://peve-jointhehive.vercel.app'];
 const MONGO_URI = process.env.MONGO_URI || '';
 // Memory optimization
 process.setMaxListeners(0);
@@ -83,10 +87,11 @@ async function start() {
         crossOriginEmbedderPolicy: false,
     }));
     app.use((0, cors_1.default)({
-        origin: FRONTEND_URL,
+        origin: CORS_ORIGINS,
         credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-        allowedHeaders: ['Content-Type', 'Authorization']
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        optionsSuccessStatus: 200
     }));
     app.use(express_1.default.json({ limit: '2mb' }));
     app.use(express_1.default.urlencoded({ extended: true, limit: '2mb' }));
@@ -208,7 +213,7 @@ async function start() {
     const { Server: SocketIOServer } = await Promise.resolve().then(() => __importStar(require('socket.io')));
     const { registerSocketHandlers } = await Promise.resolve().then(() => __importStar(require('./sockets')));
     const io = new SocketIOServer(server, {
-        cors: { origin: FRONTEND_URL, credentials: true },
+        cors: { origin: CORS_ORIGINS, credentials: true },
     });
     registerSocketHandlers(io);
     console.log('✅ Socket.IO initialized');
