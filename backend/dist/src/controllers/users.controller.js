@@ -7,7 +7,6 @@ exports.searchUsers = searchUsers;
 exports.validateUsernames = validateUsernames;
 exports.testUserModel = testUserModel;
 exports.simpleUsernameSearch = simpleUsernameSearch;
-exports.searchUsernames = searchUsernames;
 const User_1 = require("../models/User");
 async function getCurrentUser(req, res) {
     const userId = req.user?.id;
@@ -200,79 +199,6 @@ async function simpleUsernameSearch(req, res) {
         return res.status(500).json({
             success: false,
             error: error.message || 'Search failed'
-        });
-    }
-}
-async function searchUsernames(req, res) {
-    try {
-        console.log('=== SEARCH USERNAMES CALLED ===');
-        console.log('Request URL:', req.url);
-        console.log('Request method:', req.method);
-        console.log('Request query:', req.query);
-        console.log('Request params:', req.params);
-        const { q, limit = 10 } = req.query;
-        const query = typeof q === 'string' ? q : '';
-        console.log('Extracted query:', query, 'limit:', limit);
-        if (!query || query.length < 2) {
-            console.log('Query too short, returning empty array');
-            return res.json({
-                success: true,
-                data: {
-                    usernames: [],
-                    total: 0
-                }
-            });
-        }
-        // Check if User model is available
-        if (!User_1.User) {
-            console.error('User model is not available');
-            return res.status(500).json({ success: false, error: 'User model not available' });
-        }
-        console.log('User model is available');
-        // Check database connection
-        const mongoose = require('mongoose');
-        const dbState = mongoose.connection.readyState;
-        console.log('Database ready state:', dbState);
-        if (dbState !== 1) {
-            console.error('Database not connected. Ready state:', dbState);
-            return res.status(500).json({ success: false, error: 'Database not connected' });
-        }
-        console.log('Database is connected');
-        // Search for usernames that start with the query
-        console.log('Searching for usernames matching:', query);
-        const users = await User_1.User.find({
-            username: { $regex: `^${query}`, $options: 'i' }
-        })
-            .select('username name')
-            .limit(Number(limit))
-            .sort({ username: 1 })
-            .lean(); // Use lean() for better performance
-        console.log('Found users:', users.length);
-        console.log('Users:', users);
-        const usernames = users.map(user => ({
-            username: user.username,
-            name: user.name,
-            displayName: user.name ? `${user.name} (@${user.username})` : `@${user.username}`
-        }));
-        const response = {
-            success: true,
-            data: {
-                usernames,
-                total: usernames.length,
-                query: query
-            }
-        };
-        console.log('Returning response:', JSON.stringify(response));
-        return res.json(response);
-    }
-    catch (error) {
-        console.error('=== USERNAME SEARCH ERROR ===');
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        return res.status(500).json({
-            success: false,
-            error: 'Failed to search usernames',
-            details: error.message || 'Unknown error'
         });
     }
 }

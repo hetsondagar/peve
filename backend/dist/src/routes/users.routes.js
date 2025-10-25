@@ -10,6 +10,16 @@ router.get('/me', auth_1.requireAuth, users_controller_1.getCurrentUser);
 router.put('/profile', auth_1.requireAuth, users_controller_1.updateProfile);
 // Test endpoint for debugging
 router.get('/test-model', users_controller_1.testUserModel);
+// Test username search endpoint
+router.get('/test-search', async (req, res) => {
+    try {
+        console.log('Test search endpoint called');
+        return res.json({ success: true, message: 'Test endpoint working', query: req.query });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, error: 'Test failed' });
+    }
+});
 // Search usernames for autocomplete (public) - using simple search
 router.get('/search-usernames', users_controller_1.simpleUsernameSearch);
 // Search users (public)
