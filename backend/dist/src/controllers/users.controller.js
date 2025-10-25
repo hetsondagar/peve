@@ -160,10 +160,15 @@ async function testUserModel(req, res) {
 }
 async function searchUsernames(req, res) {
     try {
+        console.log('=== SEARCH USERNAMES CALLED ===');
+        console.log('Request method:', req.method);
+        console.log('Request query:', req.query);
+        console.log('Request params:', req.params);
         const { q, limit = 10 } = req.query;
         const query = q;
-        console.log('Username search request:', { query, limit });
+        console.log('Extracted query:', query, 'limit:', limit);
         if (!query || query.length < 2) {
+            console.log('Query too short, returning empty array');
             return res.json({
                 success: true,
                 data: {
@@ -177,13 +182,18 @@ async function searchUsernames(req, res) {
             console.error('User model is not available');
             return res.status(500).json({ success: false, error: 'User model not available' });
         }
+        console.log('User model is available');
         // Check database connection
         const mongoose = require('mongoose');
-        if (mongoose.connection.readyState !== 1) {
-            console.error('Database not connected. Ready state:', mongoose.connection.readyState);
+        const dbState = mongoose.connection.readyState;
+        console.log('Database ready state:', dbState);
+        if (dbState !== 1) {
+            console.error('Database not connected. Ready state:', dbState);
             return res.status(500).json({ success: false, error: 'Database not connected' });
         }
+        console.log('Database is connected');
         // Search for usernames that start with the query
+        console.log('Searching for usernames matching:', query);
         const users = await User_1.User.find({
             username: { $regex: `^${query}`, $options: 'i' }
         })
@@ -192,27 +202,31 @@ async function searchUsernames(req, res) {
             .sort({ username: 1 })
             .lean(); // Use lean() for better performance
         console.log('Found users:', users.length);
+        console.log('Users:', users);
         const usernames = users.map(user => ({
             username: user.username,
             name: user.name,
             displayName: user.name ? `${user.name} (@${user.username})` : `@${user.username}`
         }));
-        return res.json({
+        const response = {
             success: true,
             data: {
                 usernames,
                 total: usernames.length,
                 query: query
             }
-        });
+        };
+        console.log('Returning response:', JSON.stringify(response));
+        return res.json(response);
     }
     catch (error) {
-        console.error('Username search error:', error);
+        console.error('=== USERNAME SEARCH ERROR ===');
+        console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
         return res.status(500).json({
             success: false,
             error: 'Failed to search usernames',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            details: error.message || 'Unknown error'
         });
     }
 }
