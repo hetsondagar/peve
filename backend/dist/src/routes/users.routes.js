@@ -10,8 +10,8 @@ router.get('/me', auth_1.requireAuth, users_controller_1.getCurrentUser);
 router.put('/profile', auth_1.requireAuth, users_controller_1.updateProfile);
 // Test endpoint for debugging
 router.get('/test-model', users_controller_1.testUserModel);
-// Search usernames for autocomplete (public)
-router.get('/search-usernames', users_controller_1.searchUsernames);
+// Search usernames for autocomplete (public) - using simple search
+router.get('/search-usernames', users_controller_1.simpleUsernameSearch);
 // Search users (public)
 router.get('/', users_controller_1.searchUsers);
 // Get user by ID (public) - must be after other specific routes

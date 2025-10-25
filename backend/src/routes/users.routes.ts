@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middlewares/auth';
-import { getCurrentUser, updateProfile, getUserById, searchUsers, validateUsernames, searchUsernames, testUserModel } from '../controllers/users.controller';
+import { getCurrentUser, updateProfile, getUserById, searchUsers, validateUsernames, searchUsernames, testUserModel, simpleUsernameSearch } from '../controllers/users.controller';
 
 const router = Router();
 
@@ -13,8 +13,8 @@ router.put('/profile', requireAuth, updateProfile);
 // Test endpoint for debugging
 router.get('/test-model', testUserModel);
 
-// Search usernames for autocomplete (public)
-router.get('/search-usernames', searchUsernames);
+// Search usernames for autocomplete (public) - using simple search
+router.get('/search-usernames', simpleUsernameSearch);
 
 // Search users (public)
 router.get('/', searchUsers);

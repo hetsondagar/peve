@@ -6,6 +6,7 @@ exports.getUserById = getUserById;
 exports.searchUsers = searchUsers;
 exports.validateUsernames = validateUsernames;
 exports.testUserModel = testUserModel;
+exports.simpleUsernameSearch = simpleUsernameSearch;
 exports.searchUsernames = searchUsernames;
 const User_1 = require("../models/User");
 async function getCurrentUser(req, res) {
@@ -140,11 +141,14 @@ async function testUserModel(req, res) {
         console.log('Testing User model...');
         const userCount = await User_1.User.countDocuments();
         console.log('User count:', userCount);
+        // Try to get a few sample users
+        const sampleUsers = await User_1.User.find({}).select('username name').limit(5);
         return res.json({
             success: true,
             data: {
                 userCount,
                 modelAvailable: !!User_1.User,
+                sampleUsers: sampleUsers,
                 message: 'User model is working'
             }
         });
@@ -158,14 +162,52 @@ async function testUserModel(req, res) {
         });
     }
 }
+// Simple search without complex query
+async function simpleUsernameSearch(req, res) {
+    try {
+        console.log('=== SIMPLE USERNAME SEARCH CALLED ===');
+        const { q } = req.query;
+        const searchTerm = typeof q === 'string' ? q.trim() : '';
+        if (!searchTerm || searchTerm.length < 2) {
+            return res.json({
+                success: true,
+                data: { usernames: [], total: 0 }
+            });
+        }
+        console.log('Search term:', searchTerm);
+        // Simple regex search
+        const searchRegex = new RegExp(searchTerm, 'i');
+        const users = await User_1.User.find({ username: searchRegex })
+            .select('username name')
+            .limit(10);
+        console.log('Found users:', users.length);
+        const result = users.map(user => ({
+            username: user.username,
+            name: user.name || '',
+            displayName: user.name ? `${user.name} (@${user.username})` : `@${user.username}`
+        }));
+        return res.json({
+            success: true,
+            data: { usernames: result, total: result.length }
+        });
+    }
+    catch (error) {
+        console.error('Simple search error:', error);
+        return res.status(500).json({
+            success: false,
+            error: error.message || 'Search failed'
+        });
+    }
+}
 async function searchUsernames(req, res) {
     try {
         console.log('=== SEARCH USERNAMES CALLED ===');
+        console.log('Request URL:', req.url);
         console.log('Request method:', req.method);
         console.log('Request query:', req.query);
         console.log('Request params:', req.params);
         const { q, limit = 10 } = req.query;
-        const query = q;
+        const query = typeof q === 'string' ? q : '';
         console.log('Extracted query:', query, 'limit:', limit);
         if (!query || query.length < 2) {
             console.log('Query too short, returning empty array');

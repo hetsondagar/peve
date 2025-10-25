@@ -149,11 +149,15 @@ export async function testUserModel(req: Request, res: Response) {
     const userCount = await User.countDocuments();
     console.log('User count:', userCount);
     
+    // Try to get a few sample users
+    const sampleUsers = await User.find({}).select('username name').limit(5);
+    
     return res.json({
       success: true,
       data: {
         userCount,
         modelAvailable: !!User,
+        sampleUsers: sampleUsers,
         message: 'User model is working'
       }
     });
@@ -167,15 +171,59 @@ export async function testUserModel(req: Request, res: Response) {
   }
 }
 
+// Simple search without complex query
+export async function simpleUsernameSearch(req: Request, res: Response) {
+  try {
+    console.log('=== SIMPLE USERNAME SEARCH CALLED ===');
+    const { q } = req.query;
+    const searchTerm = typeof q === 'string' ? q.trim() : '';
+    
+    if (!searchTerm || searchTerm.length < 2) {
+      return res.json({
+        success: true,
+        data: { usernames: [], total: 0 }
+      });
+    }
+    
+    console.log('Search term:', searchTerm);
+    
+    // Simple regex search
+    const searchRegex = new RegExp(searchTerm, 'i');
+    const users = await User.find({ username: searchRegex })
+      .select('username name')
+      .limit(10);
+    
+    console.log('Found users:', users.length);
+    
+    const result = users.map(user => ({
+      username: user.username,
+      name: user.name || '',
+      displayName: user.name ? `${user.name} (@${user.username})` : `@${user.username}`
+    }));
+    
+    return res.json({
+      success: true,
+      data: { usernames: result, total: result.length }
+    });
+  } catch (error: any) {
+    console.error('Simple search error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Search failed'
+    });
+  }
+}
+
 export async function searchUsernames(req: Request, res: Response) {
   try {
     console.log('=== SEARCH USERNAMES CALLED ===');
+    console.log('Request URL:', req.url);
     console.log('Request method:', req.method);
     console.log('Request query:', req.query);
     console.log('Request params:', req.params);
     
     const { q, limit = 10 } = req.query;
-    const query = q as string;
+    const query = typeof q === 'string' ? q : '';
     
     console.log('Extracted query:', query, 'limit:', limit);
     
