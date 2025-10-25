@@ -4,7 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { apiFetch } from '@/lib/api';
-import { X } from 'lucide-react';
+import { X, Users } from 'lucide-react';
+import UsernameAutocomplete from './UsernameAutocomplete';
+import UsernameTag from './UsernameTag';
 
 interface EditProjectFormProps {
   project: any;
@@ -42,6 +44,7 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
     techStack: project?.techStack || [],
     keyFeatures: project?.keyFeatures || [],
     tags: project?.tags || [],
+    collaborators: project?.collaborators?.map((c: any) => c.username) || [],
     links: {
       liveDemo: project?.links?.liveDemo || '',
       githubRepo: project?.links?.githubRepo || '',
@@ -91,6 +94,13 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
         [field]: currentArray.filter((_, i) => i !== index)
       };
     });
+  };
+
+  const removeCollaborator = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      collaborators: prev.collaborators.filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmit = async () => {
@@ -267,6 +277,46 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
               </button>
             </Badge>
           ))}
+        </div>
+      </div>
+
+      {/* Contributors */}
+      <div>
+        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Users className="w-4 h-4 text-primary" />
+          Contributors
+        </h3>
+        <div className="space-y-3">
+          <UsernameAutocomplete
+            onSelect={(username) => {
+              if (!formData.collaborators.includes(username)) {
+                setFormData(prev => ({
+                  ...prev,
+                  collaborators: [...prev.collaborators, username]
+                }));
+              }
+            }}
+            selectedUsernames={formData.collaborators}
+            placeholder="Search for Peve usernames..."
+            disabled={loading}
+          />
+          
+          {/* Selected contributors */}
+          {formData.collaborators.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {formData.collaborators.map((collaborator, index) => (
+                <UsernameTag
+                  key={index}
+                  username={collaborator}
+                  onRemove={() => removeCollaborator(index)}
+                />
+              ))}
+            </div>
+          )}
+          
+          <p className="text-xs text-muted-foreground">
+            💡 Add Peve usernames as contributors to this project. Projects will show on their profile too.
+          </p>
         </div>
       </div>
 

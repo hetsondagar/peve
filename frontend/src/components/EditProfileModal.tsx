@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Eye, EyeOff, User, Lock, Github, MessageSquare, Linkedin, Sparkles, RefreshCw, Users } from 'lucide-react';
+import { X, Eye, EyeOff, User, Lock, Github, MessageSquare, Linkedin, Sparkles, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { GlowButton } from '@/components/ui/glow-button';
 import { apiFetch } from '@/lib/api';
 import { generateAvatarDataUrl, getRandomSeed, AVATAR_STYLES, type AvatarStyle } from '@/lib/avatar';
 import Avatar from './Avatar';
-import UsernameAutocomplete from './UsernameAutocomplete';
-import UsernameTag from './UsernameTag';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -27,7 +25,6 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onUpdat
   const [linkedinUrl, setLinkedinUrl] = useState(currentUser?.linkedinUrl || '');
   const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>(currentUser?.avatarStyle || 'botttsNeutral');
   const [currentSeed, setCurrentSeed] = useState(currentUser?.username || 'user');
-  const [contributors, setContributors] = useState<string[]>(currentUser?.contributors || []);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -45,17 +42,12 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onUpdat
     setLinkedinUrl(currentUser?.linkedinUrl || '');
     setAvatarStyle(currentUser?.avatarStyle || 'botttsNeutral');
     setCurrentSeed(currentUser?.username || 'user');
-    setContributors(currentUser?.contributors || []);
     setError('');
     onClose();
   };
 
   const handleRegenerateAvatar = () => {
     setCurrentSeed(getRandomSeed(currentUser?.username || 'user'));
-  };
-
-  const removeContributor = (index: number) => {
-    setContributors(prev => prev.filter((_, i) => i !== index));
   };
 
   const validateUsername = (username: string) => {
@@ -140,9 +132,6 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onUpdat
       }
       if (avatarStyle !== currentUser?.avatarStyle) {
         updateData.avatarStyle = avatarStyle;
-      }
-      if (JSON.stringify(contributors) !== JSON.stringify(currentUser?.contributors || [])) {
-        updateData.contributors = contributors;
       }
 
       const response = await apiFetch('/api/auth/profile', {
@@ -354,44 +343,6 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onUpdat
             </div>
           </div>
 
-          {/* Contributors Section */}
-          <div className="space-y-4 pt-4 border-t border-border">
-            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              Contributors
-            </h3>
-            
-            <div className="space-y-3">
-              <UsernameAutocomplete
-                onSelect={(username) => {
-                  if (!contributors.includes(username)) {
-                    setContributors(prev => [...prev, username]);
-                  }
-                }}
-                selectedUsernames={contributors}
-                placeholder="Search for Peve usernames..."
-                disabled={loading}
-              />
-              
-              {/* Selected contributors */}
-              {contributors.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {contributors.map((contributor, index) => (
-                    <UsernameTag
-                      key={index}
-                      username={contributor}
-                      onRemove={() => removeContributor(index)}
-                    />
-                  ))}
-                </div>
-              )}
-              
-              <p className="text-xs text-muted-foreground">
-                💡 Add Peve usernames to showcase your collaboration network. Start typing to search.
-              </p>
-            </div>
-          </div>
-
           {/* Avatar Style */}
           <div className="space-y-4 pt-4 border-t border-border">
             <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -452,7 +403,7 @@ export default function EditProfileModal({ isOpen, onClose, currentUser, onUpdat
             <GlowButton
               type="submit"
               size="lg"
-              disabled={loading || (!username && !fullName && !newPassword && !githubUsername && !discordUsername && !linkedinUrl && avatarStyle === currentUser?.avatarStyle && JSON.stringify(contributors) === JSON.stringify(currentUser?.contributors || []))}
+              disabled={loading || (!username && !fullName && !newPassword && !githubUsername && !discordUsername && !linkedinUrl && avatarStyle === currentUser?.avatarStyle)}
             >
               {loading ? 'Updating...' : 'Update Profile'}
             </GlowButton>
