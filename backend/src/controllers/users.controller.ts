@@ -171,31 +171,35 @@ export async function testUserModel(req: Request, res: Response) {
   }
 }
 
-// Simple search without complex query
+// Username search using same pattern as search controller
 export async function simpleUsernameSearch(req: Request, res: Response) {
   try {
-    console.log('=== SIMPLE USERNAME SEARCH CALLED ===');
-    const { q } = req.query;
-    const searchTerm = typeof q === 'string' ? q.trim() : '';
+    const { q, limit = 10 } = req.query;
     
-    if (!searchTerm || searchTerm.length < 2) {
+    if (!q || typeof q !== 'string' || q.trim().length < 2) {
       return res.json({
         success: true,
         data: { usernames: [], total: 0 }
       });
     }
     
-    console.log('Search term:', searchTerm);
+    const searchQuery = q.trim();
+    const limitNum = parseInt(limit as string) || 10;
     
-    // Simple regex search
-    const searchRegex = new RegExp(searchTerm, 'i');
-    const users = await User.find({ username: searchRegex })
+    // Use same pattern as search.controller.ts
+    const userQuery = {
+      $or: [
+        { username: { $regex: searchQuery, $options: 'i' } },
+        { name: { $regex: searchQuery, $options: 'i' } }
+      ]
+    };
+    
+    const users = await User.find(userQuery)
       .select('username name')
-      .limit(10);
+      .sort({ username: 1 })
+      .limit(limitNum);
     
-    console.log('Found users:', users.length);
-    
-    const result = users.map(user => ({
+    const usernames = users.map(user => ({
       username: user.username,
       name: user.name || '',
       displayName: user.name ? `${user.name} (@${user.username})` : `@${user.username}`
@@ -203,10 +207,10 @@ export async function simpleUsernameSearch(req: Request, res: Response) {
     
     return res.json({
       success: true,
-      data: { usernames: result, total: result.length }
+      data: { usernames, total: usernames.length }
     });
   } catch (error: any) {
-    console.error('Simple search error:', error);
+    console.error('Username search error:', error);
     return res.status(500).json({ 
       success: false, 
       error: error.message || 'Search failed'
