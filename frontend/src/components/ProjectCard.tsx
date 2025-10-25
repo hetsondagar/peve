@@ -109,15 +109,15 @@ export const ProjectCard = ({
     >
       {/* Image/Thumbnail */}
       {(coverImage || image) ? (
-        <div className="w-full h-64 overflow-hidden bg-gradient-primary">
+        <div className="w-full h-48 overflow-hidden bg-gradient-primary">
           <img
             src={coverImage || image}
             alt={title}
-            className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
       ) : (
-        <div className="h-64 bg-gradient-primary opacity-20" />
+        <div className="h-48 bg-gradient-primary opacity-20" />
       )}
 
       {/* Content */}
