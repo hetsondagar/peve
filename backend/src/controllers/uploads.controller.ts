@@ -19,7 +19,7 @@ export async function uploadFile(req: Request, res: Response) {
         folder: 'peve/projects',
         resource_type: 'image',
         transformation: [
-          { width: 800, height: 600, crop: 'fill', quality: 'auto' }
+          { width: 1200, height: 800, crop: 'limit', quality: 'auto' }
         ]
       });
     } else {
@@ -28,7 +28,7 @@ export async function uploadFile(req: Request, res: Response) {
         folder: 'peve/projects',
         resource_type: 'image',
         transformation: [
-          { width: 800, height: 600, crop: 'fill', quality: 'auto' }
+          { width: 1200, height: 800, crop: 'limit', quality: 'auto' }
         ]
       });
     }

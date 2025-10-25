@@ -109,11 +109,11 @@ export const ProjectCard = ({
     >
       {/* Image/Thumbnail */}
       {(coverImage || image) ? (
-        <div className="w-full overflow-hidden">
+        <div className="w-full h-48 overflow-hidden">
           <img
             src={coverImage || image}
             alt={title}
-            className="w-full h-auto max-h-64 object-contain transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
       ) : (

@@ -171,8 +171,19 @@ export default function Projects() {
           </DialogHeader>
           
           <div className="space-y-6 mt-4">
-            {/* Project Image Placeholder */}
-            <div className="h-64 rounded-xl bg-gradient-primary opacity-20" />
+            {/* Project Image */}
+            {selectedProject?.coverImage?.url ? (
+              <div className="w-full rounded-xl overflow-hidden bg-gradient-primary">
+                <img 
+                  src={selectedProject.coverImage.url} 
+                  alt={selectedProject.title}
+                  className="w-full h-auto object-contain"
+                  style={{ maxHeight: '400px' }}
+                />
+              </div>
+            ) : (
+              <div className="h-64 rounded-xl bg-gradient-primary opacity-20" />
+            )}
             
             <p className="text-muted-foreground">{selectedProject?.description}</p>
             
