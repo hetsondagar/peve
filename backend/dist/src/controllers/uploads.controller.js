@@ -16,9 +16,8 @@ async function uploadFile(req, res) {
             uploadRes = await cloudinary_1.cloudinary.uploader.upload(base64String, {
                 folder: 'peve/projects',
                 resource_type: 'image',
-                transformation: [
-                    { width: 1200, height: 800, crop: 'limit', quality: 'auto' }
-                ]
+                quality: 'auto',
+                fetch_format: 'auto'
             });
         }
         else {
@@ -26,9 +25,8 @@ async function uploadFile(req, res) {
             uploadRes = await cloudinary_1.cloudinary.uploader.upload(dataUrl, {
                 folder: 'peve/projects',
                 resource_type: 'image',
-                transformation: [
-                    { width: 1200, height: 800, crop: 'limit', quality: 'auto' }
-                ]
+                quality: 'auto',
+                fetch_format: 'auto'
             });
         }
         return res.json({

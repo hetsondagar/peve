@@ -18,18 +18,16 @@ export async function uploadFile(req: Request, res: Response) {
       uploadRes = await cloudinary.uploader.upload(base64String, {
         folder: 'peve/projects',
         resource_type: 'image',
-        transformation: [
-          { width: 1200, height: 800, crop: 'limit', quality: 'auto' }
-        ]
+        quality: 'auto',
+        fetch_format: 'auto'
       });
     } else {
       // Handle data URL upload
       uploadRes = await cloudinary.uploader.upload(dataUrl, {
         folder: 'peve/projects',
         resource_type: 'image',
-        transformation: [
-          { width: 1200, height: 800, crop: 'limit', quality: 'auto' }
-        ]
+        quality: 'auto',
+        fetch_format: 'auto'
       });
     }
     

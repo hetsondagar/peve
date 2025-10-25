@@ -353,8 +353,7 @@ export default function ProjectDetail() {
                   <img 
                     src={project.coverImage.url} 
                     alt={project.title}
-                    className="w-full h-auto object-contain"
-                    style={{ maxHeight: '600px' }}
+                    className="w-full h-auto"
                   />
                 </div>
               )}
