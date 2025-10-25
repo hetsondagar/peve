@@ -49,7 +49,7 @@ export default function UserProfileModal({ isOpen, onClose, userId }: UserProfil
             initial={{ scale: 0.9, y: 50 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 50 }}
-            className="relative bg-card border border-border rounded-2xl shadow-lg w-full max-w-md p-6 space-y-6"
+            className="relative bg-card border border-border rounded-2xl shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto p-6 space-y-6"
           >
             <button
               onClick={onClose}

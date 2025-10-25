@@ -263,10 +263,10 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="glass rounded-2xl border border-border w-full max-w-2xl max-h-[90vh] overflow-hidden"
+        className="glass rounded-2xl border border-border w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-foreground">Create New Project</h2>
             <p className="text-sm text-muted-foreground">Step {currentStep} of {totalSteps}</p>
@@ -280,7 +280,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
         </div>
 
         {/* Progress Bar */}
-        <div className="px-6 py-4 border-b border-border">
+        <div className="px-6 py-4 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-2">
             {Array.from({ length: totalSteps }, (_, i) => (
               <div key={i} className="flex items-center">
@@ -306,7 +306,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
         </div>
 
         {/* Form Content */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
+        <div className="flex-1 overflow-y-auto p-6">
           <AnimatePresence mode="wait">
             {currentStep === 1 && (
               <motion.div
@@ -829,7 +829,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
 
         {/* Error Message */}
         {error && (
-          <div className="px-6 py-3 bg-red-500/10 border-t border-red-500/20">
+          <div className="px-6 py-3 bg-red-500/10 border-t border-red-500/20 flex-shrink-0">
             <div className="flex items-center gap-2 text-red-500">
               <AlertCircle className="w-4 h-4" />
               <span className="text-sm">{error}</span>
@@ -838,7 +838,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-border">
+        <div className="flex items-center justify-between p-6 border-t border-border flex-shrink-0">
           <GlowButton
             variant="outline"
             onClick={prevStep}

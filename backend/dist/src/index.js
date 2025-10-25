@@ -161,6 +161,19 @@ async function start() {
             status: 'success'
         });
     });
+    // Health check endpoint
+    app.get('/health', (_req, res) => {
+        const mongoose = require('mongoose');
+        res.json({
+            message: 'Server is running',
+            timestamp: new Date().toISOString(),
+            status: 'success',
+            database: {
+                connected: mongoose.connection.readyState === 1,
+                readyState: mongoose.connection.readyState
+            }
+        });
+    });
     // Load routes synchronously
     console.log('📦 Loading routes...');
     try {

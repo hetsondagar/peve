@@ -143,10 +143,36 @@ export async function validateUsernames(req: Request, res: Response) {
   }
 }
 
+export async function testUserModel(req: Request, res: Response) {
+  try {
+    console.log('Testing User model...');
+    const userCount = await User.countDocuments();
+    console.log('User count:', userCount);
+    
+    return res.json({
+      success: true,
+      data: {
+        userCount,
+        modelAvailable: !!User,
+        message: 'User model is working'
+      }
+    });
+  } catch (error: any) {
+    console.error('User model test error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'User model test failed',
+      details: error.message
+    });
+  }
+}
+
 export async function searchUsernames(req: Request, res: Response) {
   try {
     const { q, limit = 10 } = req.query;
     const query = q as string;
+    
+    console.log('Username search request:', { query, limit });
     
     if (!query || query.length < 2) {
       return res.json({
@@ -158,13 +184,29 @@ export async function searchUsernames(req: Request, res: Response) {
       });
     }
     
+    // Check if User model is available
+    if (!User) {
+      console.error('User model is not available');
+      return res.status(500).json({ success: false, error: 'User model not available' });
+    }
+    
+    // Check database connection
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      console.error('Database not connected. Ready state:', mongoose.connection.readyState);
+      return res.status(500).json({ success: false, error: 'Database not connected' });
+    }
+    
     // Search for usernames that start with the query
     const users = await User.find({
       username: { $regex: `^${query}`, $options: 'i' }
     })
     .select('username name')
     .limit(Number(limit))
-    .sort({ username: 1 });
+    .sort({ username: 1 })
+    .lean(); // Use lean() for better performance
+    
+    console.log('Found users:', users.length);
     
     const usernames = users.map(user => ({
       username: user.username,
@@ -180,8 +222,13 @@ export async function searchUsernames(req: Request, res: Response) {
         query: query
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Username search error:', error);
-    return res.status(500).json({ success: false, error: 'Failed to search usernames' });
+    console.error('Error stack:', error.stack);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Failed to search usernames',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 }

@@ -631,8 +631,8 @@ export default function CompatibilityWizard({ isOpen, onClose, onComplete }: Com
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-        <div className="sticky top-0 bg-background border-b border-border p-6">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 flex flex-col">
+        <div className="sticky top-0 bg-background border-b border-border p-6 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -659,7 +659,7 @@ export default function CompatibilityWizard({ isOpen, onClose, onComplete }: Com
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-6">
           {error && (
             <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
               <p className="text-destructive text-sm">{error}</p>
@@ -678,45 +678,46 @@ export default function CompatibilityWizard({ isOpen, onClose, onComplete }: Com
             </motion.div>
           </AnimatePresence>
 
-          <div className="flex justify-between items-center mt-8 pt-6 border-t border-border">
-            <div className="flex gap-2">
-              {currentStep > 1 && (
-                <Button variant="outline" onClick={handleBack} disabled={loading}>
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  Back
-                </Button>
-              )}
-              <Button variant="ghost" onClick={handleSkip}>
-                Skip for now
-              </Button>
-            </div>
+        </div>
 
-            <div className="flex gap-2">
-              {saving && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  Saving...
-                </div>
-              )}
-              
-              <Button 
-                onClick={handleNext} 
-                disabled={loading || !validateStep(currentStep)}
-                className="min-w-[120px]"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    {currentStep === 4 ? 'Completing...' : 'Saving...'}
-                  </>
-                ) : (
-                  <>
-                    {currentStep === 4 ? 'Complete Setup' : 'Save & Continue'}
-                    <ChevronRight className="w-4 h-4 ml-2" />
-                  </>
-                )}
+        <div className="flex justify-between items-center p-6 border-t border-border flex-shrink-0">
+          <div className="flex gap-2">
+            {currentStep > 1 && (
+              <Button variant="outline" onClick={handleBack} disabled={loading}>
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Back
               </Button>
-            </div>
+            )}
+            <Button variant="ghost" onClick={handleSkip}>
+              Skip for now
+            </Button>
+          </div>
+
+          <div className="flex gap-2">
+            {saving && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                Saving...
+              </div>
+            )}
+            
+            <Button 
+              onClick={handleNext} 
+              disabled={loading || !validateStep(currentStep)}
+              className="min-w-[120px]"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  {currentStep === 4 ? 'Completing...' : 'Saving...'}
+                </>
+              ) : (
+                <>
+                  {currentStep === 4 ? 'Complete Setup' : 'Save & Continue'}
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </DialogContent>

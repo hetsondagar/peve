@@ -8,6 +8,8 @@ const router = (0, express_1.Router)();
 router.get('/me', auth_1.requireAuth, users_controller_1.getCurrentUser);
 // Update current user profile
 router.put('/profile', auth_1.requireAuth, users_controller_1.updateProfile);
+// Test endpoint for debugging
+router.get('/test-model', users_controller_1.testUserModel);
 // Search usernames for autocomplete (public)
 router.get('/search-usernames', users_controller_1.searchUsernames);
 // Search users (public)
