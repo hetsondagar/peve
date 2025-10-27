@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import Login from "./pages/Login";
+import HiveGuide from "./pages/HiveGuide";
 import Home from "./pages/Home";
 import IdeaBoard from "./pages/IdeaBoard";
 import Projects from "./pages/Projects";
@@ -54,6 +55,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/hive-guide" element={<HiveGuide />} />
               
               {/* Protected Routes - Require Authentication */}
               <Route path="/home" element={

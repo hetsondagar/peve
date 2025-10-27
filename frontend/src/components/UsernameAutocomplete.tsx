@@ -29,6 +29,7 @@ export default function UsernameAutocomplete({
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -43,10 +44,13 @@ export default function UsernameAutocomplete({
     if (query.length < 2) {
       setSuggestions([]);
       setIsOpen(false);
+      setHasSearched(false);
+      setError('');
       return;
     }
 
     setLoading(true);
+    setError('');
     debounceRef.current = setTimeout(async () => {
       try {
         console.log('Searching usernames for query:', query);
@@ -61,19 +65,22 @@ export default function UsernameAutocomplete({
           );
           console.log('Filtered suggestions:', filteredSuggestions);
           setSuggestions(filteredSuggestions);
-          setIsOpen(filteredSuggestions.length > 0);
+          setIsOpen(true);
+          setHasSearched(true);
           setError('');
         } else {
           console.error('Username search failed:', response);
           setError('Failed to search usernames');
           setSuggestions([]);
           setIsOpen(false);
+          setHasSearched(true);
         }
       } catch (err) {
         console.error('Username search error:', err);
         setError('Failed to search usernames');
         setSuggestions([]);
         setIsOpen(false);
+        setHasSearched(true);
       } finally {
         setLoading(false);
       }
@@ -127,7 +134,7 @@ export default function UsernameAutocomplete({
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (suggestions.length > 0) {
+            if (suggestions.length > 0 || (hasSearched && suggestions.length === 0 && !loading)) {
               setIsOpen(true);
             }
           }}
@@ -151,7 +158,7 @@ export default function UsernameAutocomplete({
 
       {/* Suggestions dropdown */}
       <AnimatePresence>
-        {isOpen && suggestions.length > 0 && (
+        {isOpen && (suggestions.length > 0 || (hasSearched && suggestions.length === 0 && !loading)) && (
           <motion.div
             ref={dropdownRef}
             initial={{ opacity: 0, y: -10 }}
@@ -160,25 +167,41 @@ export default function UsernameAutocomplete({
             transition={{ duration: 0.2 }}
             className="absolute z-50 w-full mt-2 bg-card border border-primary/20 rounded-xl shadow-lg max-h-60 overflow-y-auto"
           >
-            {suggestions.map((user) => (
-              <div
-                key={user.username}
-                onClick={() => handleSelect(user.username)}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-primary/5 cursor-pointer transition-colors first:rounded-t-xl last:rounded-b-xl"
-              >
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="w-4 h-4 text-primary" />
+            {suggestions.length > 0 ? (
+              suggestions.map((user) => (
+                <div
+                  key={user.username}
+                  onClick={() => handleSelect(user.username)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-primary/5 cursor-pointer transition-colors first:rounded-t-xl last:rounded-b-xl"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-foreground truncate">
+                      {user.name || user.username}
+                    </div>
+                    <div className="text-sm text-muted-foreground truncate">
+                      @{user.username}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex items-center gap-3 px-4 py-3 text-muted-foreground">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <User className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-foreground truncate">
-                    {user.name || user.username}
+                  <div className="font-medium text-foreground">
+                    Username not available
                   </div>
-                  <div className="text-sm text-muted-foreground truncate">
-                    @{user.username}
+                  <div className="text-sm text-muted-foreground">
+                    No users found matching "{query}"
                   </div>
                 </div>
               </div>
-            ))}
+            )}
           </motion.div>
         )}
       </AnimatePresence>
