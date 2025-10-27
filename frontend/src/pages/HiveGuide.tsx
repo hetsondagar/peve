@@ -13,7 +13,6 @@ import {
   MessageCircle, 
   Trophy, 
   Search, 
-  Code, 
   Heart, 
   Zap, 
   Target, 
@@ -44,11 +43,11 @@ const features = [
     bgColor: 'bg-blue-500/10',
     description: 'Connect with developers who match your skills, interests, and work style',
     details: [
-      'AI-powered compatibility matching based on skills, interests, and work style',
-      'Real-time collaboration rooms with Socket.io integration',
+      'Compatibility algorithm matching based on skills, interests, and work style',
       'Project-based team formation with role assignments',
-      'Seamless communication through integrated chat system',
-      'Collaboration request system with compatibility scoring'
+      'Collaboration request system with compatibility scoring',
+      'Join ideas and projects you want to help build',
+      'Track collaboration history and contributions'
     ],
     innovation: 'Our proprietary compatibility algorithm analyzes 5+ factors to find your perfect coding partners'
   },
@@ -86,11 +85,11 @@ const features = [
   },
   {
     id: 'compatibility',
-    title: 'AI Compatibility Engine',
+    title: 'Compatibility Algorithm',
     icon: Target,
     color: 'text-green-400',
     bgColor: 'bg-green-500/10',
-    description: 'Revolutionary matching system that finds your perfect coding partners',
+    description: 'Advanced matching system that finds your perfect coding partners',
     details: [
       'Skills overlap analysis (30% weight)',
       'Preferred roles compatibility (20% weight)',
@@ -102,21 +101,20 @@ const features = [
     innovation: 'The most advanced developer matching system, analyzing compatibility across multiple dimensions'
   },
   {
-    id: 'realtime',
-    title: 'Real-time Collaboration',
+    id: 'notifications',
+    title: 'Notification System',
     icon: MessageCircle,
     color: 'text-cyan-400',
     bgColor: 'bg-cyan-500/10',
-    description: 'Live collaboration rooms with instant messaging and file sharing',
+    description: 'Stay updated with collaboration requests and project activities',
     details: [
-      'Socket.io powered real-time messaging',
-      'Project-specific collaboration rooms',
-      'File and code sharing capabilities',
-      'Message threading and reply system',
-      'Online presence indicators',
-      'Notification system for team updates'
+      'Real-time notifications for collaboration requests',
+      'Project activity updates and mentions',
+      'Idea join request notifications',
+      'Achievement and badge notifications',
+      'System alerts and updates'
     ],
-    innovation: 'Seamless real-time communication that keeps teams connected and productive'
+    innovation: 'Comprehensive notification system that keeps you informed of all platform activities'
   },
   {
     id: 'gamification',
@@ -137,38 +135,21 @@ const features = [
   },
   {
     id: 'search',
-    title: 'Advanced Search & Discovery',
+    title: 'Search & Discovery',
     icon: Search,
     color: 'text-pink-400',
     bgColor: 'bg-pink-500/10',
     description: 'Powerful search across projects, ideas, and developers',
     details: [
-      'Global search across all content types',
+      'Global search across projects, ideas, and users',
+      'Username search with autocomplete functionality',
       'Filter by skills, technologies, and categories',
-      'Semantic search with AI-powered results',
-      'Trending and popular content discovery',
-      'Personalized recommendations',
-      'Advanced filtering and sorting options'
+      'Real-time search suggestions and results',
+      'Debounced search for optimal performance',
+      'Search history and recent searches'
     ],
-    innovation: 'Intelligent search that understands context and finds exactly what you need'
+    innovation: 'Fast and accurate search that helps you find exactly what you need'
   },
-  {
-    id: 'devcards',
-    title: 'DevCard Generator',
-    icon: Code,
-    color: 'text-indigo-400',
-    bgColor: 'bg-indigo-500/10',
-    description: 'Create beautiful portfolio cards for networking and sharing',
-    details: [
-      'Multiple professional templates',
-      'Customizable design and branding',
-      'QR code generation for easy sharing',
-      'Download as high-quality images',
-      'Integration with your Peve profile',
-      'Social media ready formats'
-    ],
-    innovation: 'Professional networking cards that showcase your skills in style'
-  }
 ];
 
 const techStack = [
@@ -185,7 +166,7 @@ const techStack = [
 const problemSolutions = [
   {
     problem: 'Finding the Right Collaborators',
-    solution: 'AI-powered compatibility matching analyzes skills, interests, work style, and availability to connect you with perfect coding partners.',
+    solution: 'Advanced compatibility algorithm analyzes skills, interests, work style, and availability to connect you with perfect coding partners.',
     icon: UserCheck
   },
   {
@@ -200,7 +181,7 @@ const problemSolutions = [
   },
   {
     problem: 'Fragmented Communication',
-    solution: 'Integrated real-time chat system with project-specific rooms, file sharing, and seamless collaboration tools.',
+    solution: 'Integrated notification system with collaboration requests, project updates, and seamless communication tools.',
     icon: MessageCircle
   },
   {
@@ -210,7 +191,7 @@ const problemSolutions = [
   },
   {
     problem: 'Difficulty Finding Content',
-    solution: 'Advanced search and discovery system with AI-powered recommendations and intelligent filtering across all content.',
+    solution: 'Advanced search and discovery system with real-time suggestions and intelligent filtering across all content.',
     icon: Search
   }
 ];
@@ -264,8 +245,8 @@ export default function HiveGuide() {
             <span className="gradient-text">Hive Guide</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-            Discover how Peve revolutionizes developer collaboration through AI-powered matching, 
-            real-time communication, and innovative project management tools.
+            Discover how Peve revolutionizes developer collaboration through advanced compatibility matching, 
+            seamless communication, and innovative project management tools.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Badge variant="outline" className="text-lg px-4 py-2">
@@ -274,11 +255,11 @@ export default function HiveGuide() {
             </Badge>
             <Badge variant="outline" className="text-lg px-4 py-2">
               <Target className="w-4 h-4 mr-2" />
-              AI Matching
+              Compatibility
             </Badge>
             <Badge variant="outline" className="text-lg px-4 py-2">
               <MessageCircle className="w-4 h-4 mr-2" />
-              Real-time Chat
+              Notifications
             </Badge>
             <Badge variant="outline" className="text-lg px-4 py-2">
               <Trophy className="w-4 h-4 mr-2" />
