@@ -31,7 +31,8 @@ import {
   Smartphone,
   Database,
   Cpu,
-  Palette
+  Palette,
+  Code
 } from 'lucide-react';
 
 const features = [
