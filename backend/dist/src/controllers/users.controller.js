@@ -164,8 +164,10 @@ async function testUserModel(req, res) {
 // Username search using same pattern as search controller
 async function simpleUsernameSearch(req, res) {
     try {
+        console.log('Username search called with query:', req.query);
         const { q, limit = 10 } = req.query;
         if (!q || typeof q !== 'string' || q.trim().length < 2) {
+            console.log('Query too short or invalid:', q);
             return res.json({
                 success: true,
                 data: { usernames: [], total: 0 }
@@ -173,6 +175,7 @@ async function simpleUsernameSearch(req, res) {
         }
         const searchQuery = q.trim();
         const limitNum = parseInt(limit) || 10;
+        console.log('Searching for:', searchQuery, 'with limit:', limitNum);
         // Use same pattern as search.controller.ts
         const userQuery = {
             $or: [
@@ -180,15 +183,26 @@ async function simpleUsernameSearch(req, res) {
                 { name: { $regex: searchQuery, $options: 'i' } }
             ]
         };
+        console.log('User query:', userQuery);
+        // Check if User model is available
+        if (!User_1.User) {
+            console.error('User model is not available');
+            return res.status(500).json({
+                success: false,
+                error: 'User model not available'
+            });
+        }
         const users = await User_1.User.find(userQuery)
             .select('username name')
             .sort({ username: 1 })
             .limit(limitNum);
+        console.log('Found users:', users.length);
         const usernames = users.map(user => ({
             username: user.username,
             name: user.name || '',
             displayName: user.name ? `${user.name} (@${user.username})` : `@${user.username}`
         }));
+        console.log('Mapped usernames:', usernames);
         return res.json({
             success: true,
             data: { usernames, total: usernames.length }
@@ -196,6 +210,7 @@ async function simpleUsernameSearch(req, res) {
     }
     catch (error) {
         console.error('Username search error:', error);
+        console.error('Error stack:', error.stack);
         return res.status(500).json({
             success: false,
             error: error.message || 'Search failed'

@@ -15,7 +15,20 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const CORS_ORIGINS = process.env.CORS_ORIGINS 
   ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
   : [FRONTEND_URL, 'https://peve-jointhehive.vercel.app'];
-const MONGO_URI = process.env.MONGO_URI || '';
+// Set environment variables if not provided
+if (!process.env.MONGO_URI) {
+  process.env.MONGO_URI = 'mongodb://localhost:27017/peve';
+}
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'fallback-jwt-secret-for-development-only';
+}
+if (!process.env.JWT_REFRESH_SECRET) {
+  process.env.JWT_REFRESH_SECRET = 'fallback-refresh-secret-for-development-only';
+}
+
+const MONGO_URI = process.env.MONGO_URI;
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
 // Memory optimization
 process.setMaxListeners(0);
@@ -27,13 +40,23 @@ if (process.env.NODE_ENV === 'production') {
 async function start() {
   if (!MONGO_URI) {
     // eslint-disable-next-line no-console
-    console.error('MONGO_URI is not set');
-    process.exit(1);
+    console.error('MONGO_URI is not set. Using fallback local MongoDB connection.');
+    // Use local MongoDB as fallback
+    const fallbackUri = 'mongodb://localhost:27017/peve';
+    console.log('Attempting to connect to fallback MongoDB:', fallbackUri);
+    try {
+      await mongoose.connect(fallbackUri);
+      console.log('✅ Connected to fallback MongoDB');
+    } catch (error) {
+      console.error('Failed to connect to fallback MongoDB:', error);
+      console.error('Please set MONGO_URI environment variable or start local MongoDB');
+      process.exit(1);
+    }
+  } else {
+    // Connect to MongoDB first
+    await mongoose.connect(MONGO_URI);
+    console.log('✅ Connected to MongoDB');
   }
-
-  // Connect to MongoDB first
-  await mongoose.connect(MONGO_URI);
-  console.log('✅ Connected to MongoDB');
 
   const app = express();
   const server = http.createServer(app);
