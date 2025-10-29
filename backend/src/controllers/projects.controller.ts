@@ -119,7 +119,7 @@ export async function createProject(req: Request, res: Response) {
     const projectData = { ...req.body };
     
     // Handle contributors (from frontend collaborators field)
-    if (projectData.collaborators && projectData.collaborators.length > 0) {
+    if (projectData.collaborators && Array.isArray(projectData.collaborators) && projectData.collaborators.length > 0) {
       const validContributors = [];
       for (const contributor of projectData.collaborators) {
         // Handle both string usernames and object format
@@ -137,10 +137,13 @@ export async function createProject(req: Request, res: Response) {
           }
         }
       }
-      projectData.contributors = validContributors;
+      // Only set contributors if we found valid ones
+      if (validContributors.length > 0) {
+        projectData.contributors = validContributors;
+      }
     }
     
-    // Remove collaborators field to avoid conflicts
+    // Remove collaborators field to avoid conflicts with schema
     delete projectData.collaborators;
 
     // Handle collaboration teammates
@@ -234,7 +237,7 @@ export async function updateProject(req: Request, res: Response) {
     const updateData = { ...req.body };
     
     // Handle contributors (from frontend collaborators field)
-    if (updateData.collaborators && updateData.collaborators.length > 0) {
+    if (updateData.collaborators && Array.isArray(updateData.collaborators) && updateData.collaborators.length > 0) {
       const validContributors = [];
       for (const contributor of updateData.collaborators) {
         // Handle both string usernames and object format
@@ -252,10 +255,16 @@ export async function updateProject(req: Request, res: Response) {
           }
         }
       }
-      updateData.contributors = validContributors;
+      // Only set contributors if we found valid ones
+      if (validContributors.length > 0) {
+        updateData.contributors = validContributors;
+      }
+    } else {
+      // If collaborators is empty or not provided, clear contributors
+      updateData.contributors = [];
     }
     
-    // Remove collaborators field to avoid conflicts
+    // Remove collaborators field to avoid conflicts with schema
     delete updateData.collaborators;
 
     // Handle collaboration teammates
