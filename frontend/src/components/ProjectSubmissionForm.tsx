@@ -223,7 +223,15 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
       navigate(`/projects/${response.data._id}`);
       
     } catch (err: any) {
-      setError(err.message || 'Failed to create project');
+      console.error('Project creation error:', err);
+      console.error('Error details:', err.response || err);
+      
+      // Show detailed error message
+      const errorMessage = err.message || err.response?.error || 'Failed to create project';
+      setError(errorMessage);
+      
+      // Also show alert for better visibility
+      alert(`Failed to create project: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
