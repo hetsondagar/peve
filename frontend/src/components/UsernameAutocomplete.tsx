@@ -8,10 +8,7 @@ import UsernameTag from '@/components/UsernameTag';
 interface UsernameAutocompleteProps {
   onSelect: (username: string) => void;
   onRemove?: (username: string) => void;
-  onValidationChange?: (invalid: string[], valid: string[]) => void;
   selectedUsernames: string[];
-  invalidUsernames?: string[];
-  validUsernames?: string[];
   placeholder?: string;
   disabled?: boolean;
 }
@@ -25,10 +22,7 @@ interface UsernameOption {
 export default function UsernameAutocomplete({ 
   onSelect,
   onRemove,
-  onValidationChange,
   selectedUsernames,
-  invalidUsernames = [],
-  validUsernames = [],
   placeholder = "Search usernames...",
   disabled = false 
 }: UsernameAutocompleteProps) {
@@ -121,38 +115,10 @@ export default function UsernameAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const validateUsername = async (username: string) => {
-    try {
-      const response = await apiFetch(`/api/users/${username}`);
-      return response.success && response.data;
-    } catch {
-      return false;
-    }
-  };
-
-  const handleSelect = async (username: string) => {
+  const handleSelect = (username: string) => {
     onSelect(username);
     setQuery('');
     setIsOpen(false);
-    
-    // Validate the selected username immediately
-    if (onValidationChange) {
-      const isValid = await validateUsername(username);
-      const currentInvalid = invalidUsernames || [];
-      const currentValid = validUsernames || [];
-      
-      if (isValid) {
-        onValidationChange(
-          currentInvalid.filter(u => u !== username),
-          [...currentValid.filter(u => u !== username), username]
-        );
-      } else {
-        onValidationChange(
-          [...currentInvalid.filter(u => u !== username), username],
-          currentValid.filter(u => u !== username)
-        );
-      }
-    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -256,17 +222,9 @@ export default function UsernameAutocomplete({
                 username={username}
                 onRemove={onRemove ? () => onRemove(username) : undefined}
                 showRemove={!!onRemove}
-                isInvalid={invalidUsernames.includes(username)}
-                isValid={validUsernames.includes(username)}
               />
             ))}
           </div>
-          {invalidUsernames.length > 0 && (
-            <p className="text-xs text-red-500 flex items-center gap-1">
-              <X className="w-3 h-3" />
-              Remove invalid usernames (shown in red) before continuing
-            </p>
-          )}
         </div>
       )}
     </div>

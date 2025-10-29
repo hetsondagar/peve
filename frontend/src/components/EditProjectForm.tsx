@@ -58,9 +58,6 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
   const [newTech, setNewTech] = useState('');
   const [newFeature, setNewFeature] = useState('');
   const [newTag, setNewTag] = useState('');
-  const [invalidUsernames, setInvalidUsernames] = useState<string[]>([]);
-  const [validUsernames, setValidUsernames] = useState<string[]>([]);
-  const [validatingUsernames, setValidatingUsernames] = useState(false);
 
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
@@ -117,10 +114,6 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
         throw new Error('Title, tagline, description, and category are required');
       }
 
-      // Check for invalid usernames
-      if (invalidUsernames.length > 0) {
-        throw new Error('Please remove invalid usernames (shown in red) before saving');
-      }
 
       const response = await apiFetch(`/api/projects/${project._id}`, {
         method: 'PUT',
@@ -310,18 +303,10 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
                 ...prev,
                 collaborators: prev.collaborators.filter(u => u !== username)
               }));
-              setInvalidUsernames(prev => prev.filter(u => u !== username));
-              setValidUsernames(prev => prev.filter(u => u !== username));
-            }}
-            onValidationChange={(invalid, valid) => {
-              setInvalidUsernames(invalid);
-              setValidUsernames(valid);
             }}
             selectedUsernames={formData.collaborators}
-            invalidUsernames={invalidUsernames}
-            validUsernames={validUsernames}
             placeholder="Search for Peve usernames..."
-            disabled={loading || validatingUsernames}
+            disabled={loading}
           />
           
           <p className="text-xs text-muted-foreground">

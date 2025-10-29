@@ -41,14 +41,12 @@ export default function UsernameTag({
       whileTap={clickable ? { scale: 0.95 } : {}}
     >
       <Badge 
-        variant={isInvalid ? 'destructive' : isValid ? 'secondary' : variant} 
-        className={`flex items-center gap-1 ${clickable ? 'cursor-pointer hover:bg-primary/10' : ''} ${className} ${isInvalid ? 'bg-red-500 text-white' : isValid ? 'bg-green-500 text-white' : ''}`}
+        variant={variant} 
+        className={`flex items-center gap-1 ${clickable ? 'cursor-pointer hover:bg-primary/10' : ''} ${className}`}
         onClick={handleClick}
       >
         <User className="w-3 h-3" />
         @{username}
-        {isInvalid && <span className="ml-1 text-xs">(invalid)</span>}
-        {isValid && <span className="ml-1 text-xs">✓</span>}
         {onRemove && showRemove && (
           <button
             onClick={(e) => {
