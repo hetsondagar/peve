@@ -97,6 +97,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
   const [newTech, setNewTech] = useState('');
   const [newTag, setNewTag] = useState('');
   const [invalidUsernames, setInvalidUsernames] = useState<string[]>([]);
+  const [validUsernames, setValidUsernames] = useState<string[]>([]);
   const [validatingUsernames, setValidatingUsernames] = useState(false);
 
   const totalSteps = 5;
@@ -187,36 +188,6 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
     });
   };
 
-  const validateUsernames = async (usernames: string[]) => {
-    if (usernames.length === 0) {
-      setInvalidUsernames([]);
-      return true;
-    }
-
-    setValidatingUsernames(true);
-    try {
-      const invalid: string[] = [];
-      
-      for (const username of usernames) {
-        try {
-          const response = await apiFetch(`/api/users/${username}`);
-          if (!response.success || !response.data) {
-            invalid.push(username);
-          }
-        } catch {
-          invalid.push(username);
-        }
-      }
-      
-      setInvalidUsernames(invalid);
-      setValidatingUsernames(false);
-      return invalid.length === 0;
-    } catch (error) {
-      console.error('Error validating usernames:', error);
-      setValidatingUsernames(false);
-      return false;
-    }
-  };
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -228,9 +199,8 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
         throw new Error('Please fill in all required fields');
       }
 
-      // Validate usernames
-      const usernamesValid = await validateUsernames(formData.collaborators);
-      if (!usernamesValid) {
+      // Check for invalid usernames
+      if (invalidUsernames.length > 0) {
         throw new Error('Please remove invalid usernames (shown in red) before submitting');
       }
 
@@ -267,6 +237,12 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
   };
 
   const nextStep = () => {
+    // Check if there are invalid usernames and block navigation
+    if (invalidUsernames.length > 0) {
+      setError('Please remove invalid usernames (shown in red) before continuing to the next step');
+      return;
+    }
+    
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     }
@@ -838,8 +814,6 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                               ...prev,
                               collaborators: [...prev.collaborators, username]
                             }));
-                            // Remove from invalid list if it was there
-                            setInvalidUsernames(prev => prev.filter(u => u !== username));
                           }
                         }}
                         onRemove={(username) => {
@@ -848,9 +822,15 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                             collaborators: prev.collaborators.filter(u => u !== username)
                           }));
                           setInvalidUsernames(prev => prev.filter(u => u !== username));
+                          setValidUsernames(prev => prev.filter(u => u !== username));
+                        }}
+                        onValidationChange={(invalid, valid) => {
+                          setInvalidUsernames(invalid);
+                          setValidUsernames(valid);
                         }}
                         selectedUsernames={formData.collaborators}
                         invalidUsernames={invalidUsernames}
+                        validUsernames={validUsernames}
                         placeholder="Search for Peve usernames..."
                         disabled={loading || validatingUsernames}
                       />

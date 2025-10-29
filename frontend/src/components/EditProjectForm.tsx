@@ -59,6 +59,7 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
   const [newFeature, setNewFeature] = useState('');
   const [newTag, setNewTag] = useState('');
   const [invalidUsernames, setInvalidUsernames] = useState<string[]>([]);
+  const [validUsernames, setValidUsernames] = useState<string[]>([]);
   const [validatingUsernames, setValidatingUsernames] = useState(false);
 
   const handleInputChange = (field: string, value: any) => {
@@ -105,36 +106,6 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
     }));
   };
 
-  const validateUsernames = async (usernames: string[]) => {
-    if (usernames.length === 0) {
-      setInvalidUsernames([]);
-      return true;
-    }
-
-    setValidatingUsernames(true);
-    try {
-      const invalid: string[] = [];
-      
-      for (const username of usernames) {
-        try {
-          const response = await apiFetch(`/api/users/${username}`);
-          if (!response.success || !response.data) {
-            invalid.push(username);
-          }
-        } catch {
-          invalid.push(username);
-        }
-      }
-      
-      setInvalidUsernames(invalid);
-      setValidatingUsernames(false);
-      return invalid.length === 0;
-    } catch (error) {
-      console.error('Error validating usernames:', error);
-      setValidatingUsernames(false);
-      return false;
-    }
-  };
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -146,9 +117,8 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
         throw new Error('Title, tagline, description, and category are required');
       }
 
-      // Validate usernames
-      const usernamesValid = await validateUsernames(formData.collaborators);
-      if (!usernamesValid) {
+      // Check for invalid usernames
+      if (invalidUsernames.length > 0) {
         throw new Error('Please remove invalid usernames (shown in red) before saving');
       }
 
@@ -333,7 +303,6 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
                   ...prev,
                   collaborators: [...prev.collaborators, username]
                 }));
-                setInvalidUsernames(prev => prev.filter(u => u !== username));
               }
             }}
             onRemove={(username) => {
@@ -342,9 +311,15 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
                 collaborators: prev.collaborators.filter(u => u !== username)
               }));
               setInvalidUsernames(prev => prev.filter(u => u !== username));
+              setValidUsernames(prev => prev.filter(u => u !== username));
+            }}
+            onValidationChange={(invalid, valid) => {
+              setInvalidUsernames(invalid);
+              setValidUsernames(valid);
             }}
             selectedUsernames={formData.collaborators}
             invalidUsernames={invalidUsernames}
+            validUsernames={validUsernames}
             placeholder="Search for Peve usernames..."
             disabled={loading || validatingUsernames}
           />
