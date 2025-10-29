@@ -198,9 +198,11 @@ export default function ProjectDetail() {
   const handleDeleteProject = async () => {
     try {
       setLoading(true);
+      console.log('Deleting project with ID:', id);
       const response = await apiFetch(`/api/projects/${id}`, {
         method: 'DELETE'
       });
+      console.log('Delete response:', response);
       
       if (response.success) {
         // Close confirmation dialog
@@ -212,6 +214,8 @@ export default function ProjectDetail() {
       }
     } catch (error: any) {
       console.error('Failed to delete project:', error);
+      console.error('Error message:', error.message);
+      console.error('Project ID:', id);
       alert(error.message || 'Failed to delete project. Please try again.');
     } finally {
       setLoading(false);

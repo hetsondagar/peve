@@ -44,12 +44,16 @@ export async function apiFetch(path: string, init?: RequestInit) {
         throw new Error('Authentication failed. Please log in again.');
       } else if (res.status === 400) {
         throw new Error(data?.error || 'Invalid request. Please check your input.');
+      } else if (res.status === 404) {
+        throw new Error(data?.error || 'Resource not found. Please try again.');
+      } else if (res.status === 403) {
+        throw new Error(data?.error || 'You do not have permission to perform this action.');
       } else if (res.status === 409) {
         throw new Error(data?.error || 'This username or email is already taken.');
       } else if (res.status === 429) {
         throw new Error('Too many requests. Please wait a moment and try again.');
       } else if (res.status === 500) {
-        throw new Error('Server error. Please try again later.');
+        throw new Error(data?.error || 'Server error. Please try again later.');
       } else {
         throw new Error(data?.error || `Request failed with status ${res.status}`);
       }

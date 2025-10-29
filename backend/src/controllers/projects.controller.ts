@@ -374,26 +374,41 @@ export async function updateProject(req: Request, res: Response) {
 
 export async function deleteProject(req: Request, res: Response) {
   try {
+    console.log('Delete project request - ID:', req.params.id);
     const userId = (req as any).user?.id;
+    console.log('User ID:', userId);
+    
+    if (!req.params.id) {
+      return res.status(400).json({ success: false, error: 'Project ID is required' });
+    }
+    
     const project = await Project.findById(req.params.id);
+    console.log('Project found:', !!project);
     
     if (!project) {
+      console.log('Project not found for ID:', req.params.id);
       return res.status(404).json({ success: false, error: 'Project not found' });
     }
     
     // Check if user is the author
     if (String(project.author) !== String(userId)) {
+      console.log('User is not the author of the project');
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     
+    console.log('Starting project deletion...');
+    
     // Delete associated comments
     await Comment.deleteMany({ targetType: 'project', targetId: project._id });
+    console.log('Comments deleted');
     
     // Delete associated collaboration requests
     await CollaborationRequest.deleteMany({ project: project._id });
+    console.log('Collaboration requests deleted');
     
     // Delete the project
     await Project.findByIdAndDelete(req.params.id);
+    console.log('Project deleted successfully');
     
     return res.json({ success: true, message: 'Project deleted successfully' });
   } catch (error) {
