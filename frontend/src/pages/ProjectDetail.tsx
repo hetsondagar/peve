@@ -349,13 +349,12 @@ export default function ProjectDetail() {
             >
               {/* Cover Image */}
               {project.coverImage?.url && (
-                <div className="w-full">
-                  <img 
-                    src={project.coverImage.url} 
-                    alt={project.title}
-                    className="w-full h-auto rounded-2xl"
-                  />
-                </div>
+                <img 
+                  src={project.coverImage.url} 
+                  alt={project.title}
+                  className="w-full h-auto rounded-2xl"
+                  style={{ maxWidth: '100%', height: 'auto' }}
+                />
               )}
 
               {/* Title & Tagline */}

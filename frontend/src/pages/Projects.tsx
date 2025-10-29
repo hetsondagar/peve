@@ -173,12 +173,11 @@ export default function Projects() {
           <div className="space-y-6 mt-4">
             {/* Project Image */}
             {selectedProject?.coverImage?.url ? (
-              <div className="w-full rounded-xl overflow-hidden bg-gradient-primary flex items-center justify-center">
+              <div className="w-full h-64 rounded-xl overflow-hidden bg-gradient-primary">
                 <img 
                   src={selectedProject.coverImage.url} 
                   alt={selectedProject.title}
-                  className="w-full h-auto object-contain"
-                  style={{ maxHeight: '400px' }}
+                  className="w-full h-full object-cover"
                 />
               </div>
             ) : (
