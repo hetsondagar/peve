@@ -174,12 +174,10 @@ export async function testUserModel(req: Request, res: Response) {
 // Username search using same pattern as search controller
 export async function simpleUsernameSearch(req: Request, res: Response) {
   try {
-    console.log('Username search called with query:', req.query);
-    
     const { q, limit = 10 } = req.query;
     
-    if (!q || typeof q !== 'string' || q.trim().length < 2) {
-      console.log('Query too short or invalid:', q);
+    // Validate query
+    if (!q || typeof q !== 'string' || q.trim().length < 1) {
       return res.json({
         success: true,
         data: { usernames: [], total: 0 }
@@ -187,35 +185,19 @@ export async function simpleUsernameSearch(req: Request, res: Response) {
     }
     
     const searchQuery = q.trim();
-    const limitNum = parseInt(limit as string) || 10;
+    const limitNum = Math.min(parseInt(limit as string) || 10, 50);
     
-    console.log('Searching for:', searchQuery, 'with limit:', limitNum);
+    // Escape special regex characters
+    const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     
-    // Use same pattern as search.controller.ts
-    const userQuery = {
-      $or: [
-        { username: { $regex: searchQuery, $options: 'i' } },
-        { name: { $regex: searchQuery, $options: 'i' } }
-      ]
-    };
-    
-    console.log('User query:', userQuery);
-    
-    // Check if User model is available
-    if (!User) {
-      console.error('User model is not available');
-      return res.status(500).json({ 
-        success: false, 
-        error: 'User model not available'
-      });
-    }
-    
-    const users = await User.find(userQuery)
+    // Search by username only (more specific)
+    const users = await User.find({
+      username: { $regex: escapedQuery, $options: 'i' }
+    })
       .select('username name')
       .sort({ username: 1 })
-      .limit(limitNum);
-    
-    console.log('Found users:', users.length);
+      .limit(limitNum)
+      .lean();
     
     const usernames = users.map(user => ({
       username: user.username,
@@ -223,18 +205,15 @@ export async function simpleUsernameSearch(req: Request, res: Response) {
       displayName: user.name ? `${user.name} (@${user.username})` : `@${user.username}`
     }));
     
-    console.log('Mapped usernames:', usernames);
-    
     return res.json({
       success: true,
       data: { usernames, total: usernames.length }
     });
   } catch (error: any) {
     console.error('Username search error:', error);
-    console.error('Error stack:', error.stack);
     return res.status(500).json({ 
       success: false, 
-      error: error.message || 'Search failed'
+      error: 'Failed to search usernames'
     });
   }
 }
