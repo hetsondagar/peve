@@ -61,23 +61,27 @@ export default function UsernameAutocomplete({
     setError('');
     debounceRef.current = setTimeout(async () => {
       try {
-        console.log('Searching usernames for query:', query);
-        const response = await apiFetch(`/api/users/search-usernames?q=${encodeURIComponent(query)}&limit=10`);
+        // Use the same search API as SearchBar
+        const response = await apiFetch(`/api/search?q=${encodeURIComponent(query)}&limit=10`);
         
-        console.log('Username search response:', response);
-        
-        if (response.success) {
-          // Filter out already selected usernames
-          const filteredSuggestions = response.data.usernames.filter(
-            (user: UsernameOption) => !selectedUsernames.includes(user.username)
-          );
-          console.log('Filtered suggestions:', filteredSuggestions);
+        if (response.success && response.data.results) {
+          // Get users from the search results
+          const users = response.data.results.users || [];
+          
+          // Convert to UsernameOption format and filter out selected
+          const filteredSuggestions = users
+            .filter((user: any) => !selectedUsernames.includes(user.username))
+            .map((user: any) => ({
+              username: user.username,
+              name: user.name || '',
+              displayName: user.name ? `${user.name} (@${user.username})` : `@${user.username}`
+            }));
+          
           setSuggestions(filteredSuggestions);
           setIsOpen(true);
           setHasSearched(true);
           setError('');
         } else {
-          console.error('Username search failed:', response);
           setError('Failed to search usernames');
           setSuggestions([]);
           setIsOpen(false);
