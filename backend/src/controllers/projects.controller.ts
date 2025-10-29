@@ -64,6 +64,36 @@ export async function listProjects(req: Request, res: Response) {
   }
 }
 
+export async function getProjectsByContributor(req: Request, res: Response) {
+  try {
+    const userId = req.params.userId;
+    
+    // Get projects where user is a contributor
+    const projects = await Project.find({
+      'contributors.user': userId,
+      visibility: 'public',
+      isDraft: false
+    })
+      .populate('author', 'username name avatarUrl avatarStyle bio skills')
+      .populate('contributors.user', 'username name avatarUrl avatarStyle bio skills')
+      .sort({ createdAt: -1 });
+    
+    // Add collaborator flag to each project
+    const projectsWithFlag = projects.map(project => ({
+      ...project.toObject(),
+      isCollaborator: true
+    }));
+    
+    return res.json({
+      success: true,
+      data: { projects: projectsWithFlag }
+    });
+  } catch (error) {
+    console.error('Get projects by contributor error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch projects' });
+  }
+}
+
 export async function getProject(req: Request, res: Response) {
   try {
     const project = await Project.findById(req.params.id)

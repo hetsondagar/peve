@@ -11,7 +11,8 @@ import {
   likeProject,
   bookmarkProject,
   shareProject,
-  requestCollaboration
+  requestCollaboration,
+  getProjectsByContributor
 } from '../controllers/projects.controller';
 import { requireAuth } from '../middlewares/auth';
 
@@ -19,6 +20,7 @@ const router = Router();
 
 router.get('/', listProjects);
 router.get('/trending', getTrendingProjects);
+router.get('/contributor/:userId', getProjectsByContributor);
 router.get('/:id', getProject);
 router.post('/', requireAuth, createProject);
 router.put('/:id', requireAuth, updateProject);

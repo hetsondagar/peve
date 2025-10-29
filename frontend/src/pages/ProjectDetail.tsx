@@ -517,6 +517,24 @@ export default function ProjectDetail() {
                       </div>
                     )}
                     
+                    {/* Contributors */}
+                    {project.contributors && project.contributors.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2">Contributors</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {project.contributors.map((contributor: any, index: number) => (
+                            <UsernameTag
+                              key={index}
+                              username={contributor.user?.username || contributor.user?.name || 'Unknown'}
+                              clickable={true}
+                              variant="outline"
+                              showRemove={false}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     {project.collaboration.teammates && project.collaboration.teammates.length > 0 && (
                       <div>
                         <h4 className="font-semibold text-foreground mb-2">Team Members</h4>
