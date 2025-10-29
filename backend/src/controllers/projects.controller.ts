@@ -40,8 +40,8 @@ export async function listProjects(req: Request, res: Response) {
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
     
     const cursor = Project.find(q)
-      .populate('author', 'username name avatarUrl')
-      .populate('contributors.user', 'username name avatarUrl')
+      .populate('author', 'username name avatarUrl avatarStyle bio skills')
+      .populate('contributors.user', 'username name avatarUrl avatarStyle bio skills')
       .sort(sort)
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit));
@@ -67,8 +67,8 @@ export async function listProjects(req: Request, res: Response) {
 export async function getProject(req: Request, res: Response) {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('author', 'username name avatarUrl bio skills')
-      .populate('contributors.user', 'username name avatarUrl skills');
+      .populate('author', 'username name avatarUrl avatarStyle bio skills')
+      .populate('contributors.user', 'username name avatarUrl avatarStyle bio skills');
     
     if (!project) {
       return res.status(404).json({ success: false, error: 'Project not found' });
@@ -189,8 +189,8 @@ export async function createProject(req: Request, res: Response) {
     }
 
     const populatedProject = await Project.findById(project._id)
-      .populate('author', 'username name avatarUrl')
-      .populate('contributors.user', 'username name avatarUrl');
+      .populate('author', 'username name avatarUrl avatarStyle bio skills')
+      .populate('contributors.user', 'username name avatarUrl avatarStyle bio skills');
 
     // Check for badge awards
     try {
@@ -377,7 +377,7 @@ export async function getTrendingProjects(req: Request, res: Response) {
     
     // Get projects with highest engagement (likes + views + comments)
     const projects = await Project.find({ visibility: 'public', isDraft: false })
-      .populate('author', 'username name avatarUrl')
+      .populate('author', 'username name avatarUrl avatarStyle bio skills')
       .sort({ 
         'metrics.likes': -1, 
         'metrics.views': -1, 
