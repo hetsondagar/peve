@@ -7,6 +7,7 @@ import UsernameTag from '@/components/UsernameTag';
 
 interface UsernameAutocompleteProps {
   onSelect: (username: string) => void;
+  onRemove?: (username: string) => void;
   selectedUsernames: string[];
   placeholder?: string;
   disabled?: boolean;
@@ -19,7 +20,8 @@ interface UsernameOption {
 }
 
 export default function UsernameAutocomplete({ 
-  onSelect, 
+  onSelect,
+  onRemove,
   selectedUsernames, 
   placeholder = "Search usernames...",
   disabled = false 
@@ -213,11 +215,8 @@ export default function UsernameAutocomplete({
             <UsernameTag
               key={username}
               username={username}
-              onRemove={() => {
-                // This would need to be handled by the parent component
-                // For now, we'll just show the tags
-              }}
-              showRemove={false}
+              onRemove={onRemove ? () => onRemove(username) : undefined}
+              showRemove={!!onRemove}
             />
           ))}
         </div>

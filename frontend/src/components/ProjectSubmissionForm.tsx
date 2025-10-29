@@ -801,23 +801,16 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                             }));
                           }
                         }}
+                        onRemove={(username) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            collaborators: prev.collaborators.filter(u => u !== username)
+                          }));
+                        }}
                         selectedUsernames={formData.collaborators}
                         placeholder="Search for Peve usernames..."
                         disabled={loading}
                       />
-                      
-                      {/* Selected contributors */}
-                      {formData.collaborators.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {formData.collaborators.map((collaborator, index) => (
-                            <UsernameTag
-                              key={index}
-                              username={collaborator}
-                              onRemove={() => removeArrayItem('collaborators', index)}
-                            />
-                          ))}
-                        </div>
-                      )}
                       
                       <div className="text-xs text-muted-foreground">
                         💡 Add Peve usernames as contributors to this project. Projects will show on their profile too.

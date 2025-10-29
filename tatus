@@ -1,0 +1,61 @@
+[1mdiff --git a/frontend/src/components/ProjectCard.tsx b/frontend/src/components/ProjectCard.tsx[m
+[1mindex ba06ed2..ae0a090 100644[m
+[1m--- a/frontend/src/components/ProjectCard.tsx[m
+[1m+++ b/frontend/src/components/ProjectCard.tsx[m
+[36m@@ -109,11 +109,11 @@[m [mexport const ProjectCard = ({[m
+     >[m
+       {/* Image/Thumbnail */}[m
+       {(coverImage || image) ? ([m
+[31m-        <div className="w-full h-48 overflow-hidden bg-gradient-primary flex items-center justify-center">[m
+[32m+[m[32m        <div className="w-full h-48 overflow-hidden bg-gradient-primary">[m
+           <img[m
+             src={coverImage || image}[m
+             alt={title}[m
+[31m-            className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"[m
+[32m+[m[32m            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"[m
+           />[m
+         </div>[m
+       ) : ([m
+[1mdiff --git a/frontend/src/pages/ProjectDetail.tsx b/frontend/src/pages/ProjectDetail.tsx[m
+[1mindex d04f9bc..8113e13 100644[m
+[1m--- a/frontend/src/pages/ProjectDetail.tsx[m
+[1m+++ b/frontend/src/pages/ProjectDetail.tsx[m
+[36m@@ -349,13 +349,12 @@[m [mexport default function ProjectDetail() {[m
+             >[m
+               {/* Cover Image */}[m
+               {project.coverImage?.url && ([m
+[31m-                <div className="w-full">[m
+[31m-                  <img [m
+[31m-                    src={project.coverImage.url} [m
+[31m-                    alt={project.title}[m
+[31m-                    className="w-full h-auto rounded-2xl"[m
+[31m-                  />[m
+[31m-                </div>[m
+[32m+[m[32m                <img[m[41m [m
+[32m+[m[32m                  src={project.coverImage.url}[m[41m [m
+[32m+[m[32m                  alt={project.title}[m
+[32m+[m[32m                  className="w-full h-auto rounded-2xl"[m
+[32m+[m[32m                  style={{ maxWidth: '100%', height: 'auto' }}[m
+[32m+[m[32m                />[m
+               )}[m
+ [m
+               {/* Title & Tagline */}[m
+[1mdiff --git a/frontend/src/pages/Projects.tsx b/frontend/src/pages/Projects.tsx[m
+[1mindex 0e474de..7af8876 100644[m
+[1m--- a/frontend/src/pages/Projects.tsx[m
+[1m+++ b/frontend/src/pages/Projects.tsx[m
+[36m@@ -173,12 +173,11 @@[m [mexport default function Projects() {[m
+           <div className="space-y-6 mt-4">[m
+             {/* Project Image */}[m
+             {selectedProject?.coverImage?.url ? ([m
+[31m-              <div className="w-full rounded-xl overflow-hidden bg-gradient-primary flex items-center justify-center">[m
+[32m+[m[32m              <div className="w-full h-64 rounded-xl overflow-hidden bg-gradient-primary">[m
+                 <img [m
+                   src={selectedProject.coverImage.url} [m
+                   alt={selectedProject.title}[m
+[31m-                  className="w-full h-auto object-contain"[m
+[31m-                  style={{ maxHeight: '400px' }}[m
+[32m+[m[32m                  className="w-full h-full object-cover"[m
+                 />[m
+               </div>[m
+             ) : ([m
