@@ -197,14 +197,24 @@ export default function ProjectDetail() {
 
   const handleDeleteProject = async () => {
     try {
-      await apiFetch(`/api/projects/${id}`, {
+      setLoading(true);
+      const response = await apiFetch(`/api/projects/${id}`, {
         method: 'DELETE'
       });
       
-      // Redirect to projects page after successful deletion
-      navigate('/projects');
-    } catch (error) {
+      if (response.success) {
+        // Close confirmation dialog
+        setShowDeleteConfirm(false);
+        // Redirect to projects page after successful deletion
+        navigate('/projects');
+      } else {
+        throw new Error(response.error || 'Failed to delete project');
+      }
+    } catch (error: any) {
       console.error('Failed to delete project:', error);
+      alert(error.message || 'Failed to delete project. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
