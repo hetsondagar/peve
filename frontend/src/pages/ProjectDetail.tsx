@@ -441,8 +441,9 @@ export default function ProjectDetail() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-4">
+                    {/* Project Owner */}
+                    <div className="flex items-center gap-3">
                       <UsernameWithAvatar
                         username={project.author?.username || project.author?.name || 'Unknown'}
                         userId={project.author?._id}
@@ -452,29 +453,38 @@ export default function ProjectDetail() {
                         size={40}
                         variant="detailed"
                         showFullName={true}
-                        className="flex-1"
                       />
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Project Owner</p>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">Project Owner</p>
                       </div>
                     </div>
-                    {project.contributors?.map((contributor: any, index: number) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <UsernameWithAvatar
-                          username={contributor.user?.username || contributor.user?.name || 'Unknown'}
-                          userId={contributor.user?._id}
-                          name={contributor.user?.name}
-                          avatarStyle={contributor.user?.avatarStyle}
-                          avatarUrl={contributor.user?.avatarUrl}
-                          size={40}
-                          variant="detailed"
-                          className="flex-1"
-                        />
-                        <div className="text-right">
-                          <p className="text-sm text-muted-foreground">{contributor.role}</p>
+                    
+                    {/* Contributors */}
+                    {project.contributors && project.contributors.length > 0 && (
+                      <>
+                        <div className="border-t border-border pt-4">
+                          <h4 className="text-sm font-semibold text-foreground mb-3">Contributors</h4>
+                          <div className="flex flex-wrap gap-3">
+                            {project.contributors.map((contributor: any, index: number) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <UsernameWithAvatar
+                                  username={contributor.user?.username || contributor.user?.name || 'Unknown'}
+                                  userId={contributor.user?._id}
+                                  name={contributor.user?.name}
+                                  avatarStyle={contributor.user?.avatarStyle}
+                                  avatarUrl={contributor.user?.avatarUrl}
+                                  size={32}
+                                  variant="detailed"
+                                />
+                                {contributor.role && (
+                                  <span className="text-xs text-muted-foreground">{contributor.role}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>

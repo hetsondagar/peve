@@ -269,7 +269,13 @@ export async function updateProject(req: Request, res: Response) {
 
     Object.assign(project, updateData);
     await project.save();
-    return res.json({ success: true, data: project });
+    
+    // Populate the project with author and contributors data
+    const updatedProject = await Project.findById(project._id)
+      .populate('author', 'username name avatarUrl avatarStyle bio skills')
+      .populate('contributors.user', 'username name avatarUrl avatarStyle bio skills');
+    
+    return res.json({ success: true, data: updatedProject });
   } catch (error) {
     console.error('Update project error:', error);
     return res.status(500).json({ success: false, error: 'Failed to update project' });
