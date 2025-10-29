@@ -9,6 +9,7 @@ interface UsernameTagProps {
   clickable?: boolean;
   variant?: 'default' | 'secondary' | 'destructive' | 'outline';
   className?: string;
+  showRemove?: boolean;
 }
 
 export default function UsernameTag({ 
@@ -16,7 +17,8 @@ export default function UsernameTag({
   onRemove, 
   clickable = true, 
   variant = 'outline',
-  className = ''
+  className = '',
+  showRemove = true
 }: UsernameTagProps) {
   const navigate = useNavigate();
 
@@ -41,7 +43,7 @@ export default function UsernameTag({
       >
         <User className="w-3 h-3" />
         @{username}
-        {onRemove && (
+        {onRemove && showRemove && (
           <button
             onClick={(e) => {
               e.stopPropagation();

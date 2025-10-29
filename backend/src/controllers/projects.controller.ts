@@ -115,8 +115,30 @@ export async function createProject(req: Request, res: Response) {
       });
     }
 
-    // Add teammates as tags if they exist and are valid usernames
+    // Process contributors and teammates
     const projectData = { ...req.body };
+    
+    // Handle contributors (from frontend collaborators field)
+    if (projectData.collaborators && projectData.collaborators.length > 0) {
+      const validContributors = [];
+      for (const contributor of projectData.collaborators) {
+        if (contributor && contributor.trim()) {
+          const user = await User.findOne({ username: contributor.trim().toLowerCase() });
+          if (user) {
+            validContributors.push({
+              user: user._id,
+              role: 'Contributor',
+              contributions: 'Project contributor'
+            });
+          } else {
+            console.log(`Contributor username not found: ${contributor}`);
+          }
+        }
+      }
+      projectData.contributors = validContributors;
+    }
+
+    // Handle collaboration teammates
     if (projectData.collaboration?.teammates && projectData.collaboration.teammates.length > 0) {
       // Validate that all teammates exist as users
       const validTeammates = [];
@@ -124,7 +146,7 @@ export async function createProject(req: Request, res: Response) {
         if (teammate && teammate.trim()) {
           const user = await User.findOne({ username: teammate.trim().toLowerCase() });
           if (user) {
-            validTeammates.push(teammate.trim());
+            validTeammates.push(user._id);
           } else {
             console.log(`Teammate username not found: ${teammate}`);
           }
@@ -133,11 +155,11 @@ export async function createProject(req: Request, res: Response) {
       
       // Only add valid teammates as tags with @ prefix
       if (validTeammates.length > 0) {
-        const teammateTags = validTeammates.map((teammate: string) => `@${teammate}`);
+        const teammateTags = projectData.collaboration.teammates.map((teammate: string) => `@${teammate}`);
         projectData.tags = [...(projectData.tags || []), ...teammateTags];
       }
       
-      // Update the teammates array to only include valid ones
+      // Update the teammates array to only include valid user IDs
       projectData.collaboration.teammates = validTeammates;
     }
 
@@ -191,13 +213,67 @@ export async function createProject(req: Request, res: Response) {
 }
 
 export async function updateProject(req: Request, res: Response) {
-  const userId = (req as any).user?.id;
-  const project = await Project.findById(req.params.id);
-  if (!project) return res.status(404).json({ success: false, error: 'Not found' });
-  if (String(project.author) !== String(userId)) return res.status(403).json({ success: false, error: 'Forbidden' });
-  Object.assign(project, req.body);
-  await project.save();
-  return res.json({ success: true, data: project });
+  try {
+    const userId = (req as any).user?.id;
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ success: false, error: 'Not found' });
+    if (String(project.author) !== String(userId)) return res.status(403).json({ success: false, error: 'Forbidden' });
+
+    // Process contributors and teammates
+    const updateData = { ...req.body };
+    
+    // Handle contributors (from frontend collaborators field)
+    if (updateData.collaborators && updateData.collaborators.length > 0) {
+      const validContributors = [];
+      for (const contributor of updateData.collaborators) {
+        if (contributor && contributor.trim()) {
+          const user = await User.findOne({ username: contributor.trim().toLowerCase() });
+          if (user) {
+            validContributors.push({
+              user: user._id,
+              role: 'Contributor',
+              contributions: 'Project contributor'
+            });
+          } else {
+            console.log(`Contributor username not found: ${contributor}`);
+          }
+        }
+      }
+      updateData.contributors = validContributors;
+    }
+
+    // Handle collaboration teammates
+    if (updateData.collaboration?.teammates && updateData.collaboration.teammates.length > 0) {
+      // Validate that all teammates exist as users
+      const validTeammates = [];
+      for (const teammate of updateData.collaboration.teammates) {
+        if (teammate && teammate.trim()) {
+          const user = await User.findOne({ username: teammate.trim().toLowerCase() });
+          if (user) {
+            validTeammates.push(user._id);
+          } else {
+            console.log(`Teammate username not found: ${teammate}`);
+          }
+        }
+      }
+      
+      // Only add valid teammates as tags with @ prefix
+      if (validTeammates.length > 0) {
+        const teammateTags = updateData.collaboration.teammates.map((teammate: string) => `@${teammate}`);
+        updateData.tags = [...(updateData.tags || []), ...teammateTags];
+      }
+      
+      // Update the teammates array to only include valid user IDs
+      updateData.collaboration.teammates = validTeammates;
+    }
+
+    Object.assign(project, updateData);
+    await project.save();
+    return res.json({ success: true, data: project });
+  } catch (error) {
+    console.error('Update project error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update project' });
+  }
 }
 
 export async function deleteProject(req: Request, res: Response) {

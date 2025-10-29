@@ -89,7 +89,8 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
     // Step 5 - Finalize
     tags: [] as string[],
     visibility: 'public',
-    isDraft: false
+    isDraft: false,
+    collaborators: [] as string[]
   });
 
   const [newFeature, setNewFeature] = useState('');
@@ -781,6 +782,45 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                             </button>
                           </Badge>
                         ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contributors */}
+                  <div>
+                    <label className="block text-sm font-semibold text-foreground mb-2">
+                      Contributors
+                    </label>
+                    <div className="space-y-3">
+                      <UsernameAutocomplete
+                        onSelect={(username) => {
+                          if (!formData.collaborators.includes(username)) {
+                            setFormData(prev => ({
+                              ...prev,
+                              collaborators: [...prev.collaborators, username]
+                            }));
+                          }
+                        }}
+                        selectedUsernames={formData.collaborators}
+                        placeholder="Search for Peve usernames..."
+                        disabled={loading}
+                      />
+                      
+                      {/* Selected contributors */}
+                      {formData.collaborators.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {formData.collaborators.map((collaborator, index) => (
+                            <UsernameTag
+                              key={index}
+                              username={collaborator}
+                              onRemove={() => removeArrayItem('collaborators', index)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="text-xs text-muted-foreground">
+                        💡 Add Peve usernames as contributors to this project. Projects will show on their profile too.
                       </div>
                     </div>
                   </div>

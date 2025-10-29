@@ -173,7 +173,7 @@ export default function Projects() {
           <div className="space-y-6 mt-4">
             {/* Project Image */}
             {selectedProject?.coverImage?.url ? (
-              <div className="w-full rounded-xl overflow-hidden bg-gradient-primary">
+              <div className="w-full rounded-xl overflow-hidden bg-gradient-primary flex items-center justify-center">
                 <img 
                   src={selectedProject.coverImage.url} 
                   alt={selectedProject.title}
