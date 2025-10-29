@@ -9,6 +9,7 @@ interface UsernameAutocompleteProps {
   onSelect: (username: string) => void;
   onRemove?: (username: string) => void;
   selectedUsernames: string[];
+  invalidUsernames?: string[];
   placeholder?: string;
   disabled?: boolean;
 }
@@ -22,7 +23,8 @@ interface UsernameOption {
 export default function UsernameAutocomplete({ 
   onSelect,
   onRemove,
-  selectedUsernames, 
+  selectedUsernames,
+  invalidUsernames = [],
   placeholder = "Search usernames...",
   disabled = false 
 }: UsernameAutocompleteProps) {
@@ -210,15 +212,24 @@ export default function UsernameAutocomplete({
 
       {/* Selected usernames */}
       {selectedUsernames.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {selectedUsernames.map((username) => (
-            <UsernameTag
-              key={username}
-              username={username}
-              onRemove={onRemove ? () => onRemove(username) : undefined}
-              showRemove={!!onRemove}
-            />
-          ))}
+        <div className="mt-3 space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {selectedUsernames.map((username) => (
+              <UsernameTag
+                key={username}
+                username={username}
+                onRemove={onRemove ? () => onRemove(username) : undefined}
+                showRemove={!!onRemove}
+                isInvalid={invalidUsernames.includes(username)}
+              />
+            ))}
+          </div>
+          {invalidUsernames.length > 0 && (
+            <p className="text-xs text-red-500 flex items-center gap-1">
+              <X className="w-3 h-3" />
+              Remove invalid usernames (shown in red) before submitting
+            </p>
+          )}
         </div>
       )}
     </div>

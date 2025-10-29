@@ -10,6 +10,7 @@ interface UsernameTagProps {
   variant?: 'default' | 'secondary' | 'destructive' | 'outline';
   className?: string;
   showRemove?: boolean;
+  isInvalid?: boolean;
 }
 
 export default function UsernameTag({ 
@@ -18,7 +19,8 @@ export default function UsernameTag({
   clickable = true, 
   variant = 'outline',
   className = '',
-  showRemove = true
+  showRemove = true,
+  isInvalid = false
 }: UsernameTagProps) {
   const navigate = useNavigate();
 
@@ -37,12 +39,13 @@ export default function UsernameTag({
       whileTap={clickable ? { scale: 0.95 } : {}}
     >
       <Badge 
-        variant={variant} 
-        className={`flex items-center gap-1 ${clickable ? 'cursor-pointer hover:bg-primary/10' : ''} ${className}`}
+        variant={isInvalid ? 'destructive' : variant} 
+        className={`flex items-center gap-1 ${clickable ? 'cursor-pointer hover:bg-primary/10' : ''} ${className} ${isInvalid ? 'bg-red-500 text-white' : ''}`}
         onClick={handleClick}
       >
         <User className="w-3 h-3" />
         @{username}
+        {isInvalid && <span className="ml-1 text-xs">(invalid)</span>}
         {onRemove && showRemove && (
           <button
             onClick={(e) => {

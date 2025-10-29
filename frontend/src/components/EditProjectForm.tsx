@@ -58,6 +58,8 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
   const [newTech, setNewTech] = useState('');
   const [newFeature, setNewFeature] = useState('');
   const [newTag, setNewTag] = useState('');
+  const [invalidUsernames, setInvalidUsernames] = useState<string[]>([]);
+  const [validatingUsernames, setValidatingUsernames] = useState(false);
 
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
@@ -103,6 +105,37 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
     }));
   };
 
+  const validateUsernames = async (usernames: string[]) => {
+    if (usernames.length === 0) {
+      setInvalidUsernames([]);
+      return true;
+    }
+
+    setValidatingUsernames(true);
+    try {
+      const invalid: string[] = [];
+      
+      for (const username of usernames) {
+        try {
+          const response = await apiFetch(`/api/users/${username}`);
+          if (!response.success || !response.data) {
+            invalid.push(username);
+          }
+        } catch {
+          invalid.push(username);
+        }
+      }
+      
+      setInvalidUsernames(invalid);
+      setValidatingUsernames(false);
+      return invalid.length === 0;
+    } catch (error) {
+      console.error('Error validating usernames:', error);
+      setValidatingUsernames(false);
+      return false;
+    }
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
@@ -111,6 +144,12 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
       // Validate required fields
       if (!formData.title.trim() || !formData.tagline.trim() || !formData.description.trim() || !formData.category.trim()) {
         throw new Error('Title, tagline, description, and category are required');
+      }
+
+      // Validate usernames
+      const usernamesValid = await validateUsernames(formData.collaborators);
+      if (!usernamesValid) {
+        throw new Error('Please remove invalid usernames (shown in red) before saving');
       }
 
       const response = await apiFetch(`/api/projects/${project._id}`, {
@@ -294,6 +333,7 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
                   ...prev,
                   collaborators: [...prev.collaborators, username]
                 }));
+                setInvalidUsernames(prev => prev.filter(u => u !== username));
               }
             }}
             onRemove={(username) => {
@@ -301,10 +341,12 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
                 ...prev,
                 collaborators: prev.collaborators.filter(u => u !== username)
               }));
+              setInvalidUsernames(prev => prev.filter(u => u !== username));
             }}
             selectedUsernames={formData.collaborators}
+            invalidUsernames={invalidUsernames}
             placeholder="Search for Peve usernames..."
-            disabled={loading}
+            disabled={loading || validatingUsernames}
           />
           
           <p className="text-xs text-muted-foreground">

@@ -96,6 +96,8 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
   const [newFeature, setNewFeature] = useState('');
   const [newTech, setNewTech] = useState('');
   const [newTag, setNewTag] = useState('');
+  const [invalidUsernames, setInvalidUsernames] = useState<string[]>([]);
+  const [validatingUsernames, setValidatingUsernames] = useState(false);
 
   const totalSteps = 5;
 
@@ -185,6 +187,37 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
     });
   };
 
+  const validateUsernames = async (usernames: string[]) => {
+    if (usernames.length === 0) {
+      setInvalidUsernames([]);
+      return true;
+    }
+
+    setValidatingUsernames(true);
+    try {
+      const invalid: string[] = [];
+      
+      for (const username of usernames) {
+        try {
+          const response = await apiFetch(`/api/users/${username}`);
+          if (!response.success || !response.data) {
+            invalid.push(username);
+          }
+        } catch {
+          invalid.push(username);
+        }
+      }
+      
+      setInvalidUsernames(invalid);
+      setValidatingUsernames(false);
+      return invalid.length === 0;
+    } catch (error) {
+      console.error('Error validating usernames:', error);
+      setValidatingUsernames(false);
+      return false;
+    }
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
@@ -193,6 +226,12 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
       // Validate required fields
       if (!formData.title || !formData.tagline || !formData.category || !formData.links.githubRepo) {
         throw new Error('Please fill in all required fields');
+      }
+
+      // Validate usernames
+      const usernamesValid = await validateUsernames(formData.collaborators);
+      if (!usernamesValid) {
+        throw new Error('Please remove invalid usernames (shown in red) before submitting');
       }
 
       // Prepare project data with cover image
@@ -799,6 +838,8 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                               ...prev,
                               collaborators: [...prev.collaborators, username]
                             }));
+                            // Remove from invalid list if it was there
+                            setInvalidUsernames(prev => prev.filter(u => u !== username));
                           }
                         }}
                         onRemove={(username) => {
@@ -806,10 +847,12 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                             ...prev,
                             collaborators: prev.collaborators.filter(u => u !== username)
                           }));
+                          setInvalidUsernames(prev => prev.filter(u => u !== username));
                         }}
                         selectedUsernames={formData.collaborators}
+                        invalidUsernames={invalidUsernames}
                         placeholder="Search for Peve usernames..."
-                        disabled={loading}
+                        disabled={loading || validatingUsernames}
                       />
                       
                       <div className="text-xs text-muted-foreground">
