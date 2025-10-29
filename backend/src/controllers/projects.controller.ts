@@ -122,8 +122,10 @@ export async function createProject(req: Request, res: Response) {
     if (projectData.collaborators && projectData.collaborators.length > 0) {
       const validContributors = [];
       for (const contributor of projectData.collaborators) {
-        if (contributor && contributor.trim()) {
-          const user = await User.findOne({ username: contributor.trim().toLowerCase() });
+        // Handle both string usernames and object format
+        const username = typeof contributor === 'string' ? contributor : contributor.username;
+        if (username && username.trim()) {
+          const user = await User.findOne({ username: username.trim().toLowerCase() });
           if (user) {
             validContributors.push({
               user: user._id,
@@ -131,12 +133,15 @@ export async function createProject(req: Request, res: Response) {
               contributions: 'Project contributor'
             });
           } else {
-            console.log(`Contributor username not found: ${contributor}`);
+            console.log(`Contributor username not found: ${username}`);
           }
         }
       }
       projectData.contributors = validContributors;
     }
+    
+    // Remove collaborators field to avoid conflicts
+    delete projectData.collaborators;
 
     // Handle collaboration teammates
     if (projectData.collaboration?.teammates && projectData.collaboration.teammates.length > 0) {
@@ -204,11 +209,17 @@ export async function createProject(req: Request, res: Response) {
     }
 
     return res.status(201).json({ success: true, data: populatedProject });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create project error:', error);
-    console.error('Error details:', (error as Error).message);
-    console.error('Stack trace:', (error as Error).stack);
-    res.status(500).json({ success: false, error: 'Failed to create project' });
+    console.error('Error details:', error?.message);
+    console.error('Stack trace:', error?.stack);
+    
+    // Return more specific error message
+    const errorMessage = error?.message || 'Failed to create project';
+    return res.status(500).json({ 
+      success: false, 
+      error: errorMessage 
+    });
   }
 }
 
@@ -226,8 +237,10 @@ export async function updateProject(req: Request, res: Response) {
     if (updateData.collaborators && updateData.collaborators.length > 0) {
       const validContributors = [];
       for (const contributor of updateData.collaborators) {
-        if (contributor && contributor.trim()) {
-          const user = await User.findOne({ username: contributor.trim().toLowerCase() });
+        // Handle both string usernames and object format
+        const username = typeof contributor === 'string' ? contributor : contributor.username;
+        if (username && username.trim()) {
+          const user = await User.findOne({ username: username.trim().toLowerCase() });
           if (user) {
             validContributors.push({
               user: user._id,
@@ -235,12 +248,15 @@ export async function updateProject(req: Request, res: Response) {
               contributions: 'Project contributor'
             });
           } else {
-            console.log(`Contributor username not found: ${contributor}`);
+            console.log(`Contributor username not found: ${username}`);
           }
         }
       }
       updateData.contributors = validContributors;
     }
+    
+    // Remove collaborators field to avoid conflicts
+    delete updateData.collaborators;
 
     // Handle collaboration teammates
     if (updateData.collaboration?.teammates && updateData.collaboration.teammates.length > 0) {
