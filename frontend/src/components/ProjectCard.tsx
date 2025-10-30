@@ -146,9 +146,9 @@ export const ProjectCard = ({
           {description}
         </p>
 
-        {/* Tags/Tech Stack */}
+        {/* Tags/Tech Stack (hide legacy @username tags) */}
         <div className="flex flex-wrap gap-2">
-          {(techStack || tags || []).map((tag, index) => (
+          {(techStack || (tags || []).filter(t => typeof t === 'string' ? !t.startsWith('@') : true)).map((tag, index) => (
             <span
               key={index}
               className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary border border-primary/20"

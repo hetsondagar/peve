@@ -154,7 +154,6 @@ export async function createProject(req: Request, res: Response) {
     // Handle contributors (from frontend collaborators field)
     if (projectData.collaborators && Array.isArray(projectData.collaborators) && projectData.collaborators.length > 0) {
       const validContributors = [];
-      const collaboratorTags: string[] = [];
       for (const contributor of projectData.collaborators) {
         // Handle both string usernames and object format
         const username = typeof contributor === 'string' ? contributor : contributor.username;
@@ -167,8 +166,6 @@ export async function createProject(req: Request, res: Response) {
                 role: 'Contributor',
                 contributions: 'Project contributor'
               });
-              // Add @username tag
-              collaboratorTags.push(`@${username.trim()}`);
             } else {
               console.log(`Contributor username not found: ${username}`);
             }
@@ -180,10 +177,6 @@ export async function createProject(req: Request, res: Response) {
       // Set contributors if we found valid ones
       if (validContributors.length > 0) {
         projectData.contributors = validContributors;
-      }
-      // Merge collaborator @tags into tags
-      if (collaboratorTags.length > 0) {
-        projectData.tags = [...(projectData.tags || []), ...collaboratorTags];
       }
     }
     
@@ -208,12 +201,7 @@ export async function createProject(req: Request, res: Response) {
       }
       
       // Only add valid teammates as tags with @ prefix
-      if (validTeammates.length > 0 && Array.isArray(projectData.collaboration.teammates)) {
-        const teammateTags = projectData.collaboration.teammates
-          .filter((t: any) => typeof t === 'string')
-          .map((teammate: string) => `@${teammate}`);
-        projectData.tags = [...(projectData.tags || []), ...teammateTags];
-      }
+      // Do not add teammate usernames to tags; collaborators are tracked separately
       
       // Update the teammates array to only include valid user IDs
       projectData.collaboration.teammates = validTeammates;

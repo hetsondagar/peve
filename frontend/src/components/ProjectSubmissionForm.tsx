@@ -768,11 +768,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                           if (!formData.collaborators.includes(username)) {
                             setFormData(prev => ({
                               ...prev,
-                              collaborators: [...prev.collaborators, username],
-                              // also add @username as a tag if not present
-                              tags: prev.tags.includes(`@${username}`)
-                                ? prev.tags
-                                : [...prev.tags, `@${username}`]
+                              collaborators: [...prev.collaborators, username]
                             }));
                           }
                         }}
@@ -793,11 +789,11 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                             <UsernameTag
                               key={index}
                               username={collab}
+                              onClick={() => navigate(`/profile/${collab}`)}
                               onRemove={() => {
                                 setFormData(prev => ({
                                   ...prev,
-                                  collaborators: prev.collaborators.filter((_, i) => i !== index),
-                                  tags: prev.tags.filter(t => t !== `@${collab}`)
+                                  collaborators: prev.collaborators.filter((_, i) => i !== index)
                                 }));
                               }}
                             />

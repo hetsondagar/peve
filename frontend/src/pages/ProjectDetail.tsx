@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { apiFetch } from '@/lib/api';
 import SearchBar from '@/components/SearchBar';
 import EditProjectForm from '@/components/EditProjectForm';
@@ -952,6 +952,9 @@ export default function ProjectDetail() {
           <DialogHeader>
             <DialogTitle>Request to Collaborate</DialogTitle>
           </DialogHeader>
+          <DialogDescription>
+            Send a request to the project owner with your role and a message.
+          </DialogDescription>
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground">Role</label>
@@ -994,6 +997,9 @@ export default function ProjectDetail() {
           <DialogHeader>
             <DialogTitle className="text-red-500">Delete Project</DialogTitle>
           </DialogHeader>
+          <DialogDescription>
+            This action cannot be undone. This will permanently delete the project and its comments.
+          </DialogDescription>
           <div className="space-y-4">
             <p className="text-muted-foreground">
               Are you sure you want to delete this project? This action cannot be undone and will also delete all associated comments.

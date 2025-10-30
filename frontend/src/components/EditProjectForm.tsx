@@ -44,7 +44,10 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
     techStack: project?.techStack || [],
     keyFeatures: project?.keyFeatures || [],
     tags: project?.tags || [],
-    collaborators: project?.collaborators?.map((c: any) => c.username) || [],
+    // Initialize collaborators from contributors list on the project
+    collaborators: (project?.contributors || [])
+      .map((c: any) => c?.user?.username)
+      .filter((u: any) => typeof u === 'string') || [],
     links: {
       liveDemo: project?.links?.liveDemo || '',
       githubRepo: project?.links?.githubRepo || '',
@@ -308,6 +311,18 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
             placeholder="Search for Peve usernames..."
             disabled={loading}
           />
+          {/* Selected collaborators chips */}
+          {formData.collaborators.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {formData.collaborators.map((username, index) => (
+                <UsernameTag
+                  key={index}
+                  username={username}
+                  onRemove={() => removeCollaborator(index)}
+                />
+              ))}
+            </div>
+          )}
           
           <p className="text-xs text-muted-foreground">
             💡 Add Peve usernames as contributors to this project. Projects will show on their profile too.
