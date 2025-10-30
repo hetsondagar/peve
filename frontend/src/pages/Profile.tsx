@@ -391,10 +391,6 @@ export default function Profile() {
                       <span className="text-muted-foreground">Ideas</span>
                       <span className="text-foreground font-semibold">{user?.stats?.ideasPosted || 0}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Connections</span>
-                      <span className="text-foreground font-semibold">{user?.followers?.length || 0}</span>
-                    </div>
                   </div>
 
                   {/* Logout Button - Only for own profile */}
@@ -417,21 +413,24 @@ export default function Profile() {
                     <div className="space-y-3 pt-4 border-t border-border">
                       <h3 className="text-sm font-semibold text-foreground">Badges Earned</h3>
                       <div className="grid grid-cols-2 gap-2">
-                        {userBadges.slice(0, 6).map((badge, index) => (
-                          <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                            <span className="text-lg">{badge.icon}</span>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs font-medium text-foreground truncate">
-                                {badge.name}
-                              </div>
-                              {isOwnProfile && (
-                                <div className="text-xs text-muted-foreground truncate">
-                                  {badge.pointsAwarded} pts
+                        {userBadges.slice(0, 6).map((badge, index) => {
+                          const b = (badge as any)?.badgeId || badge;
+                          return (
+                            <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                              {b?.icon && <span className="text-lg">{b.icon}</span>}
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-medium text-foreground truncate">
+                                  {b?.name || 'Badge'}
                                 </div>
-                              )}
+                                {isOwnProfile && (badge as any)?.pointsAwarded !== undefined && (
+                                  <div className="text-xs text-muted-foreground truncate">
+                                    {(badge as any).pointsAwarded} pts
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       {userBadges.length > 6 && (
                         <div className="text-xs text-muted-foreground text-center">

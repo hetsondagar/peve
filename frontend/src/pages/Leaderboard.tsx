@@ -156,7 +156,7 @@ export default function Leaderboard() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
                         className="flex items-center gap-4 p-4 rounded-xl bg-card-secondary hover:bg-primary/5 hover-glow transition-all cursor-pointer group"
-                        onClick={() => navigate(`/profile/${user.username}`)}
+                        onClick={() => navigate(`/profile/${user._id}`)}
                       >
                         {/* Rank */}
                         <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold ${
