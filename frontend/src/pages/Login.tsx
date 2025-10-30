@@ -22,6 +22,7 @@ export default function Login() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [usernameError, setUsernameError] = useState('');
   const [fullNameError, setFullNameError] = useState('');
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -139,6 +140,7 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return; // prevent double submits
     setError('');
     
     // Validate required fields
@@ -163,9 +165,11 @@ export default function Login() {
     }
     
     try {
+      setSubmitting(true);
       if (isLogin) {
-        console.log('Login attempt:', { emailOrUsername, password: '***' });
-        const res = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ emailOrUsername, password }) });
+        const credentials = { emailOrUsername: emailOrUsername.trim(), password };
+        console.log('Login attempt:', { emailOrUsername: credentials.emailOrUsername, password: '***' });
+        const res = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify(credentials) });
         setAuthTokens(res.data.token, res.data.refreshToken);
         startTokenRefresh(); // Start automatic token refresh
         
@@ -201,6 +205,8 @@ export default function Login() {
     } catch (err: any) {
       console.error('Auth error:', err);
       setError(err.message || 'An error occurred');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -394,8 +400,8 @@ export default function Login() {
               </div>
             )}
 
-            <GlowButton type="submit" className="w-full" size="lg">
-              {isLogin ? 'Login to the Hive' : 'Create Hive Account'}
+            <GlowButton type="submit" className="w-full" size="lg" disabled={submitting}>
+              {submitting ? (isLogin ? 'Logging in...' : 'Creating...') : (isLogin ? 'Login to the Hive' : 'Create Hive Account')}
             </GlowButton>
           </form>
 
