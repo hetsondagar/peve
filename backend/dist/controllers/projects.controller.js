@@ -109,13 +109,31 @@ async function createProject(req, res) {
                 error: 'Missing required fields: title, tagline, description, category, and githubRepo are required'
             });
         }
-        // Add teammates as tags if they exist
+        // Prepare project data and normalize collaborators into contributors
         const projectData = { ...req.body };
-        if (projectData.collaboration?.teammates && projectData.collaboration.teammates.length > 0) {
-            // Add teammates as tags with @ prefix
-            const teammateTags = projectData.collaboration.teammates.map((teammate) => `@${teammate}`);
-            projectData.tags = [...(projectData.tags || []), ...teammateTags];
+        // Map collaborators -> contributors (support object or string entries)
+        if (Array.isArray(projectData.collaborators) && projectData.collaborators.length > 0) {
+            const contributors = projectData.collaborators
+                .map((c) => {
+                if (c && typeof c === 'object') {
+                    const name = (c.name || '').trim();
+                    const role = (c.role || '').trim();
+                    if (name) {
+                        return { name, role: role || 'Contributor', contributions: 'Project contributor' };
+                    }
+                }
+                else if (typeof c === 'string') {
+                    const name = c.trim();
+                    if (name)
+                        return { name, role: 'Contributor', contributions: 'Project contributor' };
+                }
+                return null;
+            })
+                .filter(Boolean);
+            projectData.contributors = contributors;
         }
+        // Remove collaborators field to avoid schema conflicts
+        delete projectData.collaborators;
         const project = await Project_1.Project.create({
             ...projectData,
             author: userId,
@@ -141,8 +159,8 @@ async function createProject(req, res) {
             });
         }
         const populatedProject = await Project_1.Project.findById(project._id)
-            .populate('author', 'username name avatarUrl')
-            .populate('contributors.user', 'username name avatarUrl');
+            .populate('author', 'username name avatarUrl avatarStyle bio skills')
+            .populate('contributors.user', 'username name avatarUrl avatarStyle bio skills');
         // Check for badge awards
         try {
             await badgeService_1.BadgeService.checkAndAwardBadges(userId, 'project_created', project._id.toString());

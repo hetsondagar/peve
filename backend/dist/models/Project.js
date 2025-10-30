@@ -41,6 +41,7 @@ const imageSchema = new mongoose_1.Schema({
 }, { _id: false });
 const contributorSchema = new mongoose_1.Schema({
     user: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    name: String,
     role: String,
     contributions: String,
 }, { _id: false });

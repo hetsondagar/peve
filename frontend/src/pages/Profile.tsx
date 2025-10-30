@@ -424,9 +424,11 @@ export default function Profile() {
                               <div className="text-xs font-medium text-foreground truncate">
                                 {badge.name}
                               </div>
-                              <div className="text-xs text-muted-foreground truncate">
-                                {badge.pointsAwarded} pts
-                              </div>
+                              {isOwnProfile && (
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {badge.pointsAwarded} pts
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -794,7 +796,7 @@ export default function Profile() {
                       </h3>
                       {userProjects.length > 0 ? (
                         <div className="grid gap-4">
-                          {userProjects.slice(0, 3).map((project) => (
+                          {userProjects.map((project) => (
                             <Card key={project._id} className="glass border-border hover:border-primary/20 transition-colors">
                               <CardContent className="p-4">
                                 <div className="flex items-start justify-between">
@@ -827,17 +829,7 @@ export default function Profile() {
                               </CardContent>
                             </Card>
                           ))}
-                          {userProjects.length > 3 && (
-                            <div className="text-center">
-                              <GlowButton 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => navigate(`/projects?author=${user?._id || userId}`)}
-                              >
-                                View All {userProjects.length} Projects
-                              </GlowButton>
-                            </div>
-                          )}
+                          
                         </div>
                       ) : (
                         <div className="text-center py-8">
@@ -855,7 +847,7 @@ export default function Profile() {
                       </h3>
                       {userIdeas.length > 0 ? (
                         <div className="grid gap-4">
-                          {userIdeas.slice(0, 3).map((idea) => (
+                          {userIdeas.map((idea) => (
                             <Card key={idea._id} className="glass border-border hover:border-primary/20 transition-colors">
                               <CardContent className="p-4">
                                 <div className="flex items-start justify-between">
@@ -876,7 +868,7 @@ export default function Profile() {
                                   <GlowButton
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => navigate(`/ideaboard`)}
+                                    onClick={() => navigate(`/ideas/${idea._id}`)}
                                   >
                                     View
                                   </GlowButton>
@@ -884,13 +876,7 @@ export default function Profile() {
                               </CardContent>
                             </Card>
                           ))}
-                          {userIdeas.length > 3 && (
-                            <div className="text-center">
-                              <GlowButton variant="outline" size="sm">
-                                View All {userIdeas.length} Ideas
-                              </GlowButton>
-                            </div>
-                          )}
+                          
                         </div>
                       ) : (
                         <div className="text-center py-8">

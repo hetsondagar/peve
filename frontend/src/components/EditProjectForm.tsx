@@ -60,8 +60,6 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
   const [error, setError] = useState('');
   const [newTech, setNewTech] = useState('');
   const [newFeature, setNewFeature] = useState('');
-  const [newCollabName, setNewCollabName] = useState('');
-  const [newCollabRole, setNewCollabRole] = useState('');
   const [newTag, setNewTag] = useState('');
 
   const handleInputChange = (field: string, value: any) => {
@@ -101,12 +99,7 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
     });
   };
 
-  const removeCollaborator = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      collaborators: prev.collaborators.filter((_, i) => i !== index)
-    }));
-  };
+  
 
 
   const handleSubmit = async () => {
@@ -287,64 +280,7 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
         </div>
       </div>
 
-      {/* Contributors */}
-      <div>
-        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <Users className="w-4 h-4 text-primary" />
-          Contributors
-        </h3>
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <Input
-              placeholder="Collaborator name"
-              value={newCollabName}
-              onChange={(e) => setNewCollabName(e.target.value)}
-              className="bg-card-secondary border-primary/20 focus:border-primary"
-            />
-            <Input
-              placeholder="Role (e.g., Designer, Backend)"
-              value={newCollabRole}
-              onChange={(e) => setNewCollabRole(e.target.value)}
-              className="bg-card-secondary border-primary/20 focus:border-primary"
-            />
-          </div>
-          <GlowButton
-            size="sm"
-            type="button"
-            onClick={() => {
-              const name = newCollabName.trim();
-              const role = newCollabRole.trim();
-              if (name) {
-                setFormData(prev => ({
-                  ...prev,
-                  collaborators: [...prev.collaborators, { name, role }]
-                }));
-                setNewCollabName('');
-                setNewCollabRole('');
-              }
-            }}
-          >
-            Add Collaborator
-          </GlowButton>
-          {formData.collaborators.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {formData.collaborators.map((c: any, index: number) => (
-                <Badge key={index} variant="outline" className="flex items-center gap-2">
-                  <span className="font-medium">{c.name}</span>
-                  {c.role && <span className="text-xs text-muted-foreground">• {c.role}</span>}
-                  <button onClick={() => removeCollaborator(index)} className="ml-1 hover:text-red-500">
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
-          
-          <p className="text-xs text-muted-foreground">
-            Add collaborator names and roles. These show under Contributors.
-          </p>
-        </div>
-      </div>
+      
 
       {/* Links */}
       <div className="space-y-3">

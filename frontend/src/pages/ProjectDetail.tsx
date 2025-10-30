@@ -478,29 +478,20 @@ export default function ProjectDetail() {
                       <>
                         <div className="border-t border-border pt-4">
                           <h4 className="text-sm font-semibold text-foreground mb-3">Contributors</h4>
-                          <div className="flex flex-wrap gap-3">
-                            {project.contributors.map((contributor: any, index: number) => (
-                              <div key={index} className="flex items-center gap-2">
-                                {contributor.user ? (
-                                  <UsernameWithAvatar
-                                    username={contributor.user?.username || contributor.user?.name || 'Unknown'}
-                                    userId={contributor.user?._id}
-                                    name={contributor.user?.name}
-                                    avatarStyle={contributor.user?.avatarStyle}
-                                    avatarUrl={contributor.user?.avatarUrl}
-                                    size={32}
-                                    variant="detailed"
-                                  />
-                                ) : (
-                                  <Badge variant="outline" className="flex items-center gap-1">
-                                    <span className="font-medium">{contributor.name || 'Contributor'}</span>
-                                  </Badge>
-                                )}
-                                {contributor.role && (
-                                  <span className="text-xs text-muted-foreground">{contributor.user ? '• ' : ''}{contributor.role}</span>
-                                )}
-                              </div>
-                            ))}
+                          <div className="flex flex-col gap-2">
+                            {project.contributors.map((contributor: any, index: number) => {
+                              const displayName = contributor.user
+                                ? (contributor.user?.name || contributor.user?.username || 'Contributor')
+                                : (contributor.name || 'Contributor');
+                              return (
+                                <div key={index} className="flex items-center gap-2">
+                                  <span className="font-medium text-foreground">{displayName}</span>
+                                  {contributor.role && (
+                                    <span className="text-xs text-muted-foreground">• {contributor.role}</span>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       </>
@@ -541,26 +532,20 @@ export default function ProjectDetail() {
                     {project.contributors && project.contributors.length > 0 && (
                       <div>
                         <h4 className="font-semibold text-foreground mb-2">Contributors</h4>
-                        <div className="flex flex-wrap gap-3">
-                          {project.contributors.map((contributor: any, index: number) => (
-                            <div key={index} className="flex items-center gap-2">
-                              {contributor.user ? (
-                                <UsernameTag
-                                  username={contributor.user?.username || contributor.user?.name || 'Unknown'}
-                                  clickable={true}
-                                  variant="outline"
-                                  showRemove={false}
-                                />
-                              ) : (
-                                <Badge variant="outline" className="flex items-center gap-1">
-                                  <span className="font-medium">{contributor.name || 'Contributor'}</span>
-                                </Badge>
-                              )}
-                              {contributor.role && (
-                                <span className="text-xs text-muted-foreground">{contributor.user ? '• ' : ''}{contributor.role}</span>
-                              )}
-                            </div>
-                          ))}
+                        <div className="flex flex-col gap-2">
+                          {project.contributors.map((contributor: any, index: number) => {
+                            const displayName = contributor.user
+                              ? (contributor.user?.name || contributor.user?.username || 'Contributor')
+                              : (contributor.name || 'Contributor');
+                            return (
+                              <div key={index} className="flex items-center gap-2">
+                                <span className="font-medium text-foreground">{displayName}</span>
+                                {contributor.role && (
+                                  <span className="text-xs text-muted-foreground">• {contributor.role}</span>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
