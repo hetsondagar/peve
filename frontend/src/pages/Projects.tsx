@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { GlowButton } from '@/components/ui/glow-button';
 import { Github, ExternalLink, Users } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import ProjectSubmissionForm from '@/components/ProjectSubmissionForm';
@@ -24,6 +24,7 @@ const mockProjects = [
 
 export default function Projects() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<any>(null);
@@ -37,7 +38,10 @@ export default function Projects() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await apiFetch('/api/projects');
+        const params = new URLSearchParams(location.search);
+        const author = params.get('author');
+        const query = author ? `?author=${encodeURIComponent(author)}` : '';
+        const response = await apiFetch(`/api/projects${query}`);
         const projectsData = response.data.items || [];
         setProjects(projectsData);
         
@@ -79,7 +83,7 @@ export default function Projects() {
     };
 
     fetchProjects();
-  }, []);
+  }, [location.search]);
 
 
   const handleLikeProject = (projectId: string) => {

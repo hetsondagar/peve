@@ -510,7 +510,7 @@ export default function ProjectDetail() {
               </Card>
 
               {/* Collaboration */}
-              {project.collaboration && (
+                    {project.collaboration && (
                 <Card className="glass border-border">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -541,15 +541,25 @@ export default function ProjectDetail() {
                     {project.contributors && project.contributors.length > 0 && (
                       <div>
                         <h4 className="font-semibold text-foreground mb-2">Contributors</h4>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-3">
                           {project.contributors.map((contributor: any, index: number) => (
-                            <UsernameTag
-                              key={index}
-                              username={contributor.user?.username || contributor.user?.name || 'Unknown'}
-                              clickable={true}
-                              variant="outline"
-                              showRemove={false}
-                            />
+                            <div key={index} className="flex items-center gap-2">
+                              {contributor.user ? (
+                                <UsernameTag
+                                  username={contributor.user?.username || contributor.user?.name || 'Unknown'}
+                                  clickable={true}
+                                  variant="outline"
+                                  showRemove={false}
+                                />
+                              ) : (
+                                <Badge variant="outline" className="flex items-center gap-1">
+                                  <span className="font-medium">{contributor.name || 'Contributor'}</span>
+                                </Badge>
+                              )}
+                              {contributor.role && (
+                                <span className="text-xs text-muted-foreground">{contributor.user ? '• ' : ''}{contributor.role}</span>
+                              )}
+                            </div>
                           ))}
                         </div>
                       </div>

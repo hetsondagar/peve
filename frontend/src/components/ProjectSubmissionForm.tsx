@@ -96,6 +96,8 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
   const [newFeature, setNewFeature] = useState('');
   const [newTech, setNewTech] = useState('');
   const [newTag, setNewTag] = useState('');
+  const [newCollaboratorName, setNewCollaboratorName] = useState('');
+  const [newCollaboratorRole, setNewCollaboratorRole] = useState('');
 
   const totalSteps = 5;
 
@@ -766,29 +768,29 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <Input
                           placeholder="Collaborator name"
-                          value={newTag}
-                          onChange={(e) => setNewTag(e.target.value)}
+                          value={newCollaboratorName}
+                          onChange={(e) => setNewCollaboratorName(e.target.value)}
                           className="bg-card-secondary border-primary/20 focus:border-primary focus:glow-subtle rounded-xl h-10"
                         />
                         <Input
                           placeholder="Role (e.g., Designer, Backend)"
-                          value={newTech}
-                          onChange={(e) => setNewTech(e.target.value)}
+                          value={newCollaboratorRole}
+                          onChange={(e) => setNewCollaboratorRole(e.target.value)}
                           className="bg-card-secondary border-primary/20 focus:border-primary focus:glow-subtle rounded-xl h-10"
                         />
                       </div>
                       <GlowButton
                         size="sm"
                         onClick={() => {
-                          const name = newTag.trim();
-                          const role = newTech.trim();
+                          const name = newCollaboratorName.trim();
+                          const role = newCollaboratorRole.trim();
                           if (name) {
                             setFormData(prev => ({
                               ...prev,
                               collaborators: [...prev.collaborators, { name, role }]
                             }));
-                            setNewTag('');
-                            setNewTech('');
+                            setNewCollaboratorName('');
+                            setNewCollaboratorRole('');
                           }
                         }}
                       >

@@ -829,7 +829,11 @@ export default function Profile() {
                           ))}
                           {userProjects.length > 3 && (
                             <div className="text-center">
-                              <GlowButton variant="outline" size="sm">
+                              <GlowButton 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => navigate(`/projects?author=${user?._id || userId}`)}
+                              >
                                 View All {userProjects.length} Projects
                               </GlowButton>
                             </div>

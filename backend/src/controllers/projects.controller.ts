@@ -334,7 +334,8 @@ export async function updateProject(req: Request, res: Response) {
 
 export async function deleteProject(req: Request, res: Response) {
   try {
-    const paramId = (req.params as any).id || (req.params as any).projectId;
+    const rawId = (req.params as any).id || (req.params as any).projectId;
+    const paramId = typeof rawId === 'string' ? rawId.trim() : rawId;
     console.log('Delete project request - ID:', paramId);
     const userId = (req as any).user?.id;
     console.log('User ID:', userId);
@@ -343,7 +344,13 @@ export async function deleteProject(req: Request, res: Response) {
       return res.status(400).json({ success: false, error: 'Project ID is required' });
     }
     
-    const project = await Project.findById(paramId);
+    let project = null as any;
+    try {
+      project = await Project.findById(paramId);
+    } catch (castErr) {
+      // If casting fails (e.g., non-ObjectId), try direct string match (in case _id stored as string)
+      project = await Project.findOne({ _id: paramId } as any);
+    }
     console.log('Project found:', !!project);
     
     if (!project) {

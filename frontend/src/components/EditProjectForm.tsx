@@ -60,6 +60,8 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
   const [error, setError] = useState('');
   const [newTech, setNewTech] = useState('');
   const [newFeature, setNewFeature] = useState('');
+  const [newCollabName, setNewCollabName] = useState('');
+  const [newCollabRole, setNewCollabRole] = useState('');
   const [newTag, setNewTag] = useState('');
 
   const handleInputChange = (field: string, value: any) => {
@@ -295,29 +297,29 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <Input
               placeholder="Collaborator name"
-              value={newFeature}
-              onChange={(e) => setNewFeature(e.target.value)}
+              value={newCollabName}
+              onChange={(e) => setNewCollabName(e.target.value)}
               className="bg-card-secondary border-primary/20 focus:border-primary"
             />
             <Input
               placeholder="Role (e.g., Designer, Backend)"
-              value={newTech}
-              onChange={(e) => setNewTech(e.target.value)}
+              value={newCollabRole}
+              onChange={(e) => setNewCollabRole(e.target.value)}
               className="bg-card-secondary border-primary/20 focus:border-primary"
             />
           </div>
           <GlowButton
             size="sm"
             onClick={() => {
-              const name = newFeature.trim();
-              const role = newTech.trim();
+              const name = newCollabName.trim();
+              const role = newCollabRole.trim();
               if (name) {
                 setFormData(prev => ({
                   ...prev,
                   collaborators: [...prev.collaborators, { name, role }]
                 }));
-                setNewFeature('');
-                setNewTech('');
+                setNewCollabName('');
+                setNewCollabRole('');
               }
             }}
           >
