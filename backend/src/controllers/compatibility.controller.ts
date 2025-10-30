@@ -142,6 +142,28 @@ export async function getCompatibilityProfile(req: Request, res: Response) {
   }
 }
 
+// Get compatibility profile for a given user (public)
+export async function getCompatibilityProfileByUser(req: Request, res: Response) {
+  try {
+    const { userId } = req.params as any;
+    if (!userId) return res.status(400).json({ success: false, error: 'User ID is required' });
+
+    const user = await User.findById(userId).select('compatibilitySetupComplete compatibilityProfile');
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+    return res.json({
+      success: true,
+      data: {
+        compatibilitySetupComplete: user.compatibilitySetupComplete,
+        compatibilityProfile: user.compatibilityProfile
+      }
+    });
+  } catch (error) {
+    console.error('Get compatibility profile by user error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch compatibility profile' });
+  }
+}
+
 // Create or update compatibility profile
 export async function setupCompatibilityProfile(req: Request, res: Response) {
   try {

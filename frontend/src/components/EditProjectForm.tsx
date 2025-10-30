@@ -44,10 +44,10 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
     techStack: project?.techStack || [],
     keyFeatures: project?.keyFeatures || [],
     tags: project?.tags || [],
-    // Initialize collaborators from contributors list on the project
+    // Initialize collaborators from contributors list (names + roles)
     collaborators: (project?.contributors || [])
-      .map((c: any) => c?.user?.username)
-      .filter((u: any) => typeof u === 'string') || [],
+      .map((c: any) => ({ name: c?.name || c?.user?.name || c?.user?.username, role: c?.role || '' }))
+      .filter((c: any) => typeof c?.name === 'string' && c.name) || [],
     links: {
       liveDemo: project?.links?.liveDemo || '',
       githubRepo: project?.links?.githubRepo || '',
@@ -292,40 +292,53 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
           Contributors
         </h3>
         <div className="space-y-3">
-          <UsernameAutocomplete
-            onSelect={(username) => {
-              if (!formData.collaborators.includes(username)) {
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <Input
+              placeholder="Collaborator name"
+              value={newFeature}
+              onChange={(e) => setNewFeature(e.target.value)}
+              className="bg-card-secondary border-primary/20 focus:border-primary"
+            />
+            <Input
+              placeholder="Role (e.g., Designer, Backend)"
+              value={newTech}
+              onChange={(e) => setNewTech(e.target.value)}
+              className="bg-card-secondary border-primary/20 focus:border-primary"
+            />
+          </div>
+          <GlowButton
+            size="sm"
+            onClick={() => {
+              const name = newFeature.trim();
+              const role = newTech.trim();
+              if (name) {
                 setFormData(prev => ({
                   ...prev,
-                  collaborators: [...prev.collaborators, username]
+                  collaborators: [...prev.collaborators, { name, role }]
                 }));
+                setNewFeature('');
+                setNewTech('');
               }
             }}
-            onRemove={(username) => {
-              setFormData(prev => ({
-                ...prev,
-                collaborators: prev.collaborators.filter(u => u !== username)
-              }));
-            }}
-            selectedUsernames={formData.collaborators}
-            placeholder="Search for Peve usernames..."
-            disabled={loading}
-          />
-          {/* Selected collaborators chips */}
+          >
+            Add Collaborator
+          </GlowButton>
           {formData.collaborators.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {formData.collaborators.map((username, index) => (
-                <UsernameTag
-                  key={index}
-                  username={username}
-                  onRemove={() => removeCollaborator(index)}
-                />
+              {formData.collaborators.map((c: any, index: number) => (
+                <Badge key={index} variant="outline" className="flex items-center gap-2">
+                  <span className="font-medium">{c.name}</span>
+                  {c.role && <span className="text-xs text-muted-foreground">• {c.role}</span>}
+                  <button onClick={() => removeCollaborator(index)} className="ml-1 hover:text-red-500">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
               ))}
             </div>
           )}
           
           <p className="text-xs text-muted-foreground">
-            💡 Add Peve usernames as contributors to this project. Projects will show on their profile too.
+            Add collaborator names and roles. These show under Contributors.
           </p>
         </div>
       </div>

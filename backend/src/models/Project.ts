@@ -6,7 +6,8 @@ export interface IProject extends Document {
   description: string;
   author: Types.ObjectId;
   contributors: {
-    user: Types.ObjectId;
+    user?: Types.ObjectId;
+    name?: string;
     role: string;
     contributions: string;
   }[];
@@ -69,6 +70,7 @@ const imageSchema = new Schema(
 const contributorSchema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User' },
+    name: String,
     role: String,
     contributions: String,
   },

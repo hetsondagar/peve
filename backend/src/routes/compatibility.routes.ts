@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { 
   getCompatibilityProfile,
+  getCompatibilityProfileByUser,
   setupCompatibilityProfile,
   updateCompatibilityProfile,
   checkCompatibility,
@@ -13,6 +14,9 @@ const router = Router();
 
 // Get user's compatibility profile
 router.get('/profile', requireAuth, getCompatibilityProfile);
+
+// Public: Get compatibility profile by userId
+router.get('/profile/:userId', getCompatibilityProfileByUser);
 
 // Setup initial compatibility profile
 router.post('/setup', requireAuth, setupCompatibilityProfile);

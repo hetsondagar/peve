@@ -153,31 +153,22 @@ export async function createProject(req: Request, res: Response) {
     
     // Handle contributors (from frontend collaborators field)
     if (projectData.collaborators && Array.isArray(projectData.collaborators) && projectData.collaborators.length > 0) {
-      const validContributors = [];
-      for (const contributor of projectData.collaborators) {
-        // Handle both string usernames and object format
-        const username = typeof contributor === 'string' ? contributor : contributor.username;
-        if (username && username.trim()) {
-          try {
-            const user = await User.findOne({ username: username.trim().toLowerCase() });
-            if (user) {
-              validContributors.push({
-                user: user._id,
-                role: 'Contributor',
-                contributions: 'Project contributor'
-              });
-            } else {
-              console.log(`Contributor username not found: ${username}`);
+      const contributors = projectData.collaborators
+        .map((c: any) => {
+          if (c && typeof c === 'object') {
+            const name = (c.name || '').trim();
+            const role = (c.role || '').trim();
+            if (name) {
+              return { name, role: role || 'Contributor', contributions: 'Project contributor' };
             }
-          } catch (userError) {
-            console.error(`Error finding user ${username}:`, userError);
+          } else if (typeof c === 'string') {
+            const name = c.trim();
+            if (name) return { name, role: 'Contributor', contributions: 'Project contributor' };
           }
-        }
-      }
-      // Set contributors if we found valid ones
-      if (validContributors.length > 0) {
-        projectData.contributors = validContributors;
-      }
+          return null;
+        })
+        .filter(Boolean);
+      projectData.contributors = contributors as any;
     }
     
     // Remove collaborators field to avoid conflicts with schema
@@ -186,7 +177,7 @@ export async function createProject(req: Request, res: Response) {
     // Handle collaboration teammates
     if (projectData.collaboration?.teammates && Array.isArray(projectData.collaboration.teammates) && projectData.collaboration.teammates.length > 0) {
       // Validate that all teammates exist as users
-      const validTeammates = [];
+      const validTeammates = [] as any[];
       for (const teammate of projectData.collaboration.teammates) {
         // Handle both string usernames and object format
         const username = typeof teammate === 'string' ? teammate : teammate.username || teammate.user;
@@ -194,15 +185,9 @@ export async function createProject(req: Request, res: Response) {
           const user = await User.findOne({ username: username.trim().toLowerCase() });
           if (user) {
             validTeammates.push(user._id);
-          } else {
-            console.log(`Teammate username not found: ${username}`);
           }
         }
       }
-      
-      // Only add valid teammates as tags with @ prefix
-      // Do not add teammate usernames to tags; collaborators are tracked separately
-      
       // Update the teammates array to only include valid user IDs
       projectData.collaboration.teammates = validTeammates;
     } else if (projectData.collaboration) {
@@ -286,31 +271,22 @@ export async function updateProject(req: Request, res: Response) {
     
     // Handle contributors (from frontend collaborators field)
     if (updateData.collaborators && Array.isArray(updateData.collaborators) && updateData.collaborators.length > 0) {
-      const validContributors = [];
-      for (const contributor of updateData.collaborators) {
-        // Handle both string usernames and object format
-        const username = typeof contributor === 'string' ? contributor : contributor.username;
-        if (username && username.trim()) {
-          try {
-            const user = await User.findOne({ username: username.trim().toLowerCase() });
-            if (user) {
-              validContributors.push({
-                user: user._id,
-                role: 'Contributor',
-                contributions: 'Project contributor'
-              });
-            } else {
-              console.log(`Contributor username not found: ${username}`);
+      const contributors = updateData.collaborators
+        .map((c: any) => {
+          if (c && typeof c === 'object') {
+            const name = (c.name || '').trim();
+            const role = (c.role || '').trim();
+            if (name) {
+              return { name, role: role || 'Contributor', contributions: 'Project contributor' };
             }
-          } catch (userError) {
-            console.error(`Error finding user ${username}:`, userError);
+          } else if (typeof c === 'string') {
+            const name = c.trim();
+            if (name) return { name, role: 'Contributor', contributions: 'Project contributor' };
           }
-        }
-      }
-      // Set contributors if we found valid ones
-      if (validContributors.length > 0) {
-        updateData.contributors = validContributors;
-      }
+          return null;
+        })
+        .filter(Boolean);
+      updateData.contributors = contributors as any;
     }
     
     // Remove collaborators field to avoid conflicts with schema
@@ -319,7 +295,7 @@ export async function updateProject(req: Request, res: Response) {
     // Handle collaboration teammates
     if (updateData.collaboration?.teammates && Array.isArray(updateData.collaboration.teammates) && updateData.collaboration.teammates.length > 0) {
       // Validate that all teammates exist as users
-      const validTeammates = [];
+      const validTeammates = [] as any[];
       for (const teammate of updateData.collaboration.teammates) {
         // Handle both string usernames and object format
         const username = typeof teammate === 'string' ? teammate : teammate.username || teammate.user;
@@ -327,20 +303,9 @@ export async function updateProject(req: Request, res: Response) {
           const user = await User.findOne({ username: username.trim().toLowerCase() });
           if (user) {
             validTeammates.push(user._id);
-          } else {
-            console.log(`Teammate username not found: ${username}`);
           }
         }
       }
-      
-      // Only add valid teammates as tags with @ prefix
-      if (validTeammates.length > 0 && Array.isArray(updateData.collaboration.teammates)) {
-        const teammateTags = updateData.collaboration.teammates
-          .filter((t: any) => typeof t === 'string')
-          .map((teammate: string) => `@${teammate}`);
-        updateData.tags = [...(updateData.tags || []), ...teammateTags];
-      }
-      
       // Update the teammates array to only include valid user IDs
       updateData.collaboration.teammates = validTeammates;
     } else if (updateData.collaboration) {
@@ -369,19 +334,20 @@ export async function updateProject(req: Request, res: Response) {
 
 export async function deleteProject(req: Request, res: Response) {
   try {
-    console.log('Delete project request - ID:', req.params.id);
+    const paramId = (req.params as any).id || (req.params as any).projectId;
+    console.log('Delete project request - ID:', paramId);
     const userId = (req as any).user?.id;
     console.log('User ID:', userId);
     
-    if (!req.params.id) {
+    if (!paramId) {
       return res.status(400).json({ success: false, error: 'Project ID is required' });
     }
     
-    const project = await Project.findById(req.params.id);
+    const project = await Project.findById(paramId);
     console.log('Project found:', !!project);
     
     if (!project) {
-      console.log('Project not found for ID:', req.params.id);
+      console.log('Project not found for ID:', paramId);
       return res.status(404).json({ success: false, error: 'Project not found' });
     }
     
@@ -402,7 +368,7 @@ export async function deleteProject(req: Request, res: Response) {
     console.log('Collaboration requests deleted');
     
     // Delete the project
-    await Project.findByIdAndDelete(req.params.id);
+    await Project.findByIdAndDelete(paramId);
     console.log('Project deleted successfully');
     
     return res.json({ success: true, message: 'Project deleted successfully' });

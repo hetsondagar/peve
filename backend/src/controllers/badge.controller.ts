@@ -52,6 +52,24 @@ export async function getUserBadges(req: Request, res: Response) {
   }
 }
 
+// Public: Get badges for a specific user by ID
+export async function getUserBadgesByUserId(req: Request, res: Response) {
+  try {
+    const { userId } = req.params as any;
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'User ID is required' });
+    }
+    const badges = await UserBadge.find({ userId })
+      .populate('badgeId')
+      .sort({ earnedAt: -1 });
+
+    return res.json({ success: true, data: badges });
+  } catch (error) {
+    console.error('Error fetching public user badges:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch user badges' });
+  }
+}
+
 /**
  * Toggle badge display status
  */

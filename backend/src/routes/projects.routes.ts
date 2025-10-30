@@ -25,6 +25,8 @@ router.get('/:id', getProject);
 router.post('/', requireAuth, createProject);
 router.put('/:id', requireAuth, updateProject);
 router.delete('/:id', requireAuth, deleteProject);
+// Alias route to be robust against client variants
+router.delete('/:projectId', requireAuth, deleteProject);
 router.post('/:id/health', requireAuth, recalcHealth);
 router.post('/:id/fork', requireAuth, forkProject);
 router.post('/:projectId/like', requireAuth, likeProject);

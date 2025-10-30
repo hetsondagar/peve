@@ -90,7 +90,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
     tags: [] as string[],
     visibility: 'public',
     isDraft: false,
-    collaborators: [] as string[]
+    collaborators: [] as { name: string; role: string }[]
   });
 
   const [newFeature, setNewFeature] = useState('');
@@ -763,46 +763,60 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                       Contributors
                     </label>
                     <div className="space-y-3">
-                      <UsernameAutocomplete
-                        onSelect={(username) => {
-                          if (!formData.collaborators.includes(username)) {
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Collaborator name"
+                          value={newTag}
+                          onChange={(e) => setNewTag(e.target.value)}
+                          className="bg-card-secondary border-primary/20 focus:border-primary focus:glow-subtle rounded-xl h-10"
+                        />
+                        <Input
+                          placeholder="Role (e.g., Designer, Backend)"
+                          value={newTech}
+                          onChange={(e) => setNewTech(e.target.value)}
+                          className="bg-card-secondary border-primary/20 focus:border-primary focus:glow-subtle rounded-xl h-10"
+                        />
+                      </div>
+                      <GlowButton
+                        size="sm"
+                        onClick={() => {
+                          const name = newTag.trim();
+                          const role = newTech.trim();
+                          if (name) {
                             setFormData(prev => ({
                               ...prev,
-                              collaborators: [...prev.collaborators, username]
+                              collaborators: [...prev.collaborators, { name, role }]
                             }));
+                            setNewTag('');
+                            setNewTech('');
                           }
                         }}
-                        onRemove={(username) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            collaborators: prev.collaborators.filter(u => u !== username)
-                          }));
-                        }}
-                        selectedUsernames={formData.collaborators}
-                        placeholder="Search for Peve usernames..."
-                        disabled={loading}
-                      />
-                      {/* Selected collaborators as tags */}
+                      >
+                        Add Collaborator
+                      </GlowButton>
                       {formData.collaborators.length > 0 && (
                         <div className="flex flex-wrap gap-2">
-                          {formData.collaborators.map((collab, index) => (
-                            <UsernameTag
-                              key={index}
-                              username={collab}
-                              onClick={() => navigate(`/profile/${collab}`)}
-                              onRemove={() => {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  collaborators: prev.collaborators.filter((_, i) => i !== index)
-                                }));
-                              }}
-                            />
+                          {formData.collaborators.map((c, index) => (
+                            <Badge key={index} variant="outline" className="flex items-center gap-2">
+                              <span className="font-medium">{c.name}</span>
+                              {c.role && <span className="text-xs text-muted-foreground">• {c.role}</span>}
+                              <button
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    collaborators: prev.collaborators.filter((_, i) => i !== index)
+                                  }));
+                                }}
+                                className="ml-1 hover:text-red-500"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
                           ))}
                         </div>
                       )}
-                      
                       <div className="text-xs text-muted-foreground">
-                        💡 Add Peve usernames as contributors to this project. Projects will show on their profile too.
+                        Add collaborator names and roles. These are displayed under Contributors.
                       </div>
                     </div>
                   </div>

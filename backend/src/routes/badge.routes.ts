@@ -3,6 +3,7 @@ import { requireAuth } from '../middlewares/auth';
 import {
   getAllBadges,
   getUserBadges,
+  getUserBadgesByUserId,
   toggleBadgeDisplay,
   getBadgeStats,
   checkUserBadges
@@ -12,6 +13,7 @@ const router = Router();
 
 // Public routes
 router.get('/all', getAllBadges);
+router.get('/user/:userId', getUserBadgesByUserId);
 
 // Protected routes
 router.get('/user', requireAuth, getUserBadges);

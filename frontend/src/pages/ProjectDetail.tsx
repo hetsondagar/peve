@@ -481,17 +481,23 @@ export default function ProjectDetail() {
                           <div className="flex flex-wrap gap-3">
                             {project.contributors.map((contributor: any, index: number) => (
                               <div key={index} className="flex items-center gap-2">
-                                <UsernameWithAvatar
-                                  username={contributor.user?.username || contributor.user?.name || 'Unknown'}
-                                  userId={contributor.user?._id}
-                                  name={contributor.user?.name}
-                                  avatarStyle={contributor.user?.avatarStyle}
-                                  avatarUrl={contributor.user?.avatarUrl}
-                                  size={32}
-                                  variant="detailed"
-                                />
+                                {contributor.user ? (
+                                  <UsernameWithAvatar
+                                    username={contributor.user?.username || contributor.user?.name || 'Unknown'}
+                                    userId={contributor.user?._id}
+                                    name={contributor.user?.name}
+                                    avatarStyle={contributor.user?.avatarStyle}
+                                    avatarUrl={contributor.user?.avatarUrl}
+                                    size={32}
+                                    variant="detailed"
+                                  />
+                                ) : (
+                                  <Badge variant="outline" className="flex items-center gap-1">
+                                    <span className="font-medium">{contributor.name || 'Contributor'}</span>
+                                  </Badge>
+                                )}
                                 {contributor.role && (
-                                  <span className="text-xs text-muted-foreground">{contributor.role}</span>
+                                  <span className="text-xs text-muted-foreground">{contributor.user ? '• ' : ''}{contributor.role}</span>
                                 )}
                               </div>
                             ))}
