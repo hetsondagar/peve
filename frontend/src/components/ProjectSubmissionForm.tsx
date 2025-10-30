@@ -697,46 +697,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                     </div>
                   )}
 
-                  <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">
-                      Add Teammates (Peve usernames)
-                    </label>
-                    <div className="space-y-3">
-                      <UsernameAutocomplete
-                        onSelect={(username) => {
-                          if (!formData.collaboration.teammates.includes(username)) {
-                            setFormData(prev => ({
-                              ...prev,
-                              collaboration: {
-                                ...prev.collaboration,
-                                teammates: [...prev.collaboration.teammates, username]
-                              }
-                            }));
-                          }
-                        }}
-                        selectedUsernames={formData.collaboration.teammates}
-                        placeholder="Search for Peve usernames..."
-                        disabled={loading}
-                      />
-                      
-                      {/* Selected teammates */}
-                      {formData.collaboration.teammates.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {formData.collaboration.teammates.map((teammate, index) => (
-                            <UsernameTag
-                              key={index}
-                              username={teammate}
-                              onRemove={() => removeArrayItem('collaboration.teammates', index)}
-                            />
-                          ))}
-                        </div>
-                      )}
-                      
-                      <div className="text-xs text-muted-foreground">
-                        💡 Only existing Peve usernames can be selected. Start typing to search.
-                      </div>
-                    </div>
-                  </div>
+                  {/* Collaborator username selection moved to Finalize step to avoid duplication */}
                 </div>
               </motion.div>
             )}
@@ -807,7 +768,11 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                           if (!formData.collaborators.includes(username)) {
                             setFormData(prev => ({
                               ...prev,
-                              collaborators: [...prev.collaborators, username]
+                              collaborators: [...prev.collaborators, username],
+                              // also add @username as a tag if not present
+                              tags: prev.tags.includes(`@${username}`)
+                                ? prev.tags
+                                : [...prev.tags, `@${username}`]
                             }));
                           }
                         }}
@@ -821,6 +786,24 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                         placeholder="Search for Peve usernames..."
                         disabled={loading}
                       />
+                      {/* Selected collaborators as tags */}
+                      {formData.collaborators.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {formData.collaborators.map((collab, index) => (
+                            <UsernameTag
+                              key={index}
+                              username={collab}
+                              onRemove={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  collaborators: prev.collaborators.filter((_, i) => i !== index),
+                                  tags: prev.tags.filter(t => t !== `@${collab}`)
+                                }));
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
                       
                       <div className="text-xs text-muted-foreground">
                         💡 Add Peve usernames as contributors to this project. Projects will show on their profile too.

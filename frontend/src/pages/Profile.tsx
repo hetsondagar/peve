@@ -28,6 +28,7 @@ export default function Profile() {
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [userProjects, setUserProjects] = useState<any[]>([]);
+  const [contributedProjects, setContributedProjects] = useState<any[]>([]);
   const [userIdeas, setUserIdeas] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [likedItems, setLikedItems] = useState<any[]>([]);
@@ -70,6 +71,16 @@ export default function Profile() {
           project.author?._id === userData._id || project.author === userData._id
         );
         setUserProjects(userProjects);
+
+        // Fetch projects where user is a contributor
+        try {
+          const contribResp = await apiFetch(`/api/projects/contributor/${userData._id}`);
+          const contribProjects = contribResp?.data?.projects || [];
+          setContributedProjects(contribProjects);
+        } catch (e) {
+          console.error('Failed to fetch contributed projects:', e);
+          setContributedProjects([]);
+        }
 
         // Fetch user's ideas
         const ideasResponse = await apiFetch('/api/ideas');
@@ -881,6 +892,49 @@ export default function Profile() {
                         </div>
                       )}
                     </div>
+
+                    {/* Collaborations Section */}
+                    <div className="space-y-4 pt-6">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Users className="w-5 h-5 text-primary" />
+                        Collaborations ({contributedProjects.length})
+                      </h3>
+                      {contributedProjects.length > 0 ? (
+                        <div className="grid gap-4">
+                          {contributedProjects.slice(0, 3).map((project) => (
+                            <Card key={project._id} className="glass border-border hover:border-primary/20 transition-colors">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold text-foreground mb-1">{project.title}</h4>
+                                    <p className="text-sm text-muted-foreground mb-2">{project.tagline}</p>
+                                  </div>
+                                  <GlowButton
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/projects/${project._id}`)}
+                                  >
+                                    View
+                                  </GlowButton>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                          {contributedProjects.length > 3 && (
+                            <div className="text-center">
+                              <GlowButton variant="outline" size="sm">
+                                View All {contributedProjects.length} Collaborations
+                              </GlowButton>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                          <p className="text-muted-foreground">No collaborations yet</p>
+                        </div>
+                      )}
+                    </div>
                   </motion.div>
                 </TabsContent>
               )}
@@ -911,7 +965,8 @@ export default function Profile() {
             </Tabs>
           </div>
 
-          {/* Right Sidebar - Projects & Ideas - Only for own profile */}
+          {/* Right Sidebar - Projects & Ideas - Only for own profile */
+          }
           {isOwnProfile && (
             <div className="lg:col-span-1 space-y-6">
             {/* My Projects - Only for own profile */}
@@ -966,6 +1021,37 @@ export default function Profile() {
                         </div>
                       </div>
                     ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* My Collaborations - Only for own profile */}
+            {isOwnProfile && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <Card className="glass border-border">
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Users className="w-4 h-4 text-accent" />
+                      My Collaborations
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {contributedProjects.map((project, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-card-secondary hover:bg-primary/5 transition-colors cursor-pointer">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-sm font-semibold text-foreground">{project.title}</div>
+                          <Badge variant="outline" className="text-xs">Collaborator</Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground line-clamp-2">{project.tagline}</div>
+                      </div>
+                    ))}
+                    {contributedProjects.length === 0 && (
+                      <div className="text-sm text-muted-foreground">No collaborations yet</div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
