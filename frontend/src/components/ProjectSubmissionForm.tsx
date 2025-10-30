@@ -781,6 +781,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                       </div>
                       <GlowButton
                         size="sm"
+            type="button"
                         onClick={() => {
                           const name = newCollaboratorName.trim();
                           const role = newCollaboratorRole.trim();

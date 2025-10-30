@@ -310,6 +310,7 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
           </div>
           <GlowButton
             size="sm"
+            type="button"
             onClick={() => {
               const name = newCollabName.trim();
               const role = newCollabRole.trim();
