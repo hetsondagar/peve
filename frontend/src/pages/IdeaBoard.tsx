@@ -237,7 +237,7 @@ export default function IdeaBoard() {
                 transition={{ delay: index * 0.05 }}
               >
                 <Card 
-                  className="glass border-border hover-glow cursor-pointer group h-64 flex flex-col"
+                  className="glass border-border hover-glow cursor-pointer group min-h-[260px] flex flex-col"
                   onClick={() => navigate(`/ideas/${idea._id}`)}
                 >
                   <CardHeader className="pb-3">
