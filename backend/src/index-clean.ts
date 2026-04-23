@@ -9,10 +9,22 @@ import morgan from 'morgan';
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// CORS origins - support multiple origins
-const CORS_ORIGINS = process.env.CORS_ORIGINS 
-  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-  : [FRONTEND_URL, 'https://peve-jointhehive.vercel.app'];
+function normalizeOrigin(origin: string) {
+  return origin.trim().replace(/\/+$/, '');
+}
+
+// CORS origins - support multiple origins and always include trusted defaults.
+const CORS_ORIGINS = Array.from(
+  new Set(
+    [
+      FRONTEND_URL,
+      'https://peve-jointhehive.vercel.app',
+      ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
+    ]
+      .map(normalizeOrigin)
+      .filter(Boolean),
+  ),
+);
 const MONGO_URI = process.env.MONGO_URI || '';
 
 // Memory optimization
@@ -52,6 +64,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   optionsSuccessStatus: 200
 }));
+app.options('*', cors({ origin: CORS_ORIGINS, credentials: true }));
 
 // Body parsing middleware
 app.use(express.json({ limit: '2mb' }));
@@ -154,7 +167,7 @@ console.log('✅ Socket.IO initialized');
 // Start server
 server.listen(PORT, () => {
   console.log(`🚀 peve-backend API server started successfully!`);
-  console.log(`📡 CORS/Socket allowed origin: ${FRONTEND_URL}`);
+  console.log(`📡 CORS/Socket allowed origins: ${CORS_ORIGINS.join(', ')}`);
   console.log(`🌐 Server running on port: ${PORT}`);
   console.log(`🔒 NO RATE LIMITING - CLEAN VERSION`);
 });

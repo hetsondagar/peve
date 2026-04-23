@@ -12,15 +12,15 @@ export async function signup(req: Request, res: Response) {
   if (username.length > 20) return res.status(400).json({ success: false, error: 'Username cannot exceed 20 characters' });
   if (!/^[a-zA-Z0-9_]+$/.test(username)) return res.status(400).json({ success: false, error: 'Username can only contain letters, numbers, and underscores' });
   
-  // Check for existing email
-  const existingEmail = await User.findOne({ email: email.toLowerCase() });
-  if (existingEmail) return res.status(409).json({ success: false, error: 'Email already in use' });
-  
-  // Check for existing username
-  const existingUsername = await User.findOne({ username: String(username).toLowerCase() });
-  if (existingUsername) return res.status(409).json({ success: false, error: 'Username already taken' });
-  
   try {
+    // Check for existing email
+    const existingEmail = await User.findOne({ email: email.toLowerCase() });
+    if (existingEmail) return res.status(409).json({ success: false, error: 'Email already in use' });
+
+    // Check for existing username
+    const existingUsername = await User.findOne({ username: String(username).toLowerCase() });
+    if (existingUsername) return res.status(409).json({ success: false, error: 'Username already taken' });
+
     const user = await User.create({ username: String(username).toLowerCase(), name, email: email.toLowerCase(), passwordHash: password, college, role, skills }) as IUser;
     const token = signAccessToken({ sub: String(user._id) });
     const refreshToken = signRefreshToken({ sub: String(user._id) });

@@ -11,10 +11,22 @@ import morgan from 'morgan';
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// CORS origins - support multiple origins
-const CORS_ORIGINS = process.env.CORS_ORIGINS 
-  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-  : [FRONTEND_URL, 'https://peve-jointhehive.vercel.app'];
+function normalizeOrigin(origin: string) {
+  return origin.trim().replace(/\/+$/, '');
+}
+
+// CORS origins - support multiple origins and always include trusted defaults.
+const CORS_ORIGINS = Array.from(
+  new Set(
+    [
+      FRONTEND_URL,
+      'https://peve-jointhehive.vercel.app',
+      ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
+    ]
+      .map(normalizeOrigin)
+      .filter(Boolean),
+  ),
+);
 // Set environment variables if not provided
 if (!process.env.MONGO_URI) {
   process.env.MONGO_URI = 'mongodb://localhost:27017/peve';
@@ -86,6 +98,7 @@ async function start() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     optionsSuccessStatus: 200
   }));
+  app.options('*', cors({ origin: CORS_ORIGINS, credentials: true }));
   
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
@@ -253,7 +266,7 @@ async function start() {
     // eslint-disable-next-line no-console
         console.log(`🚀 peve-backend API server started successfully!`);
         // eslint-disable-next-line no-console
-        console.log(`📡 CORS/Socket allowed origin: ${FRONTEND_URL}`);
+        console.log(`📡 CORS/Socket allowed origins: ${CORS_ORIGINS.join(', ')}`);
     // eslint-disable-next-line no-console
         console.log(`🌐 Server running on port: ${PORT}`);
       });
