@@ -6,6 +6,8 @@ const auth_1 = require("../middlewares/auth");
 const router = (0, express_1.Router)();
 // Get user's compatibility profile
 router.get('/profile', auth_1.requireAuth, compatibility_controller_1.getCompatibilityProfile);
+// Public: Get compatibility profile by userId
+router.get('/profile/:userId', compatibility_controller_1.getCompatibilityProfileByUser);
 // Setup initial compatibility profile
 router.post('/setup', auth_1.requireAuth, compatibility_controller_1.setupCompatibilityProfile);
 // Update compatibility profile (partial update)

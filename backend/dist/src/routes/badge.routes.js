@@ -6,6 +6,7 @@ const badge_controller_1 = require("../controllers/badge.controller");
 const router = (0, express_1.Router)();
 // Public routes
 router.get('/all', badge_controller_1.getAllBadges);
+router.get('/user/:userId', badge_controller_1.getUserBadgesByUserId);
 // Protected routes
 router.get('/user', auth_1.requireAuth, badge_controller_1.getUserBadges);
 router.put('/:badgeId/display', auth_1.requireAuth, badge_controller_1.toggleBadgeDisplay);
