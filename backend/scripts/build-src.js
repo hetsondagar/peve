@@ -31,5 +31,5 @@ const ignoreDeprecations = getIgnoreDeprecationsValue();
 
 run(`tsc -p tsconfig.production.json --ignoreDeprecations ${ignoreDeprecations}`);
 run(
-  `tsc src/index-clean.ts --outDir dist --target ES2020 --module CommonJS --moduleResolution node --ignoreDeprecations ${ignoreDeprecations} --esModuleInterop --skipLibCheck`
+  `tsc -p tsconfig.index-clean.json --ignoreDeprecations ${ignoreDeprecations}`
 );
