@@ -15,6 +15,22 @@ function normalizeOrigin(origin: string) {
   return origin.trim().replace(/\/+$/, '');
 }
 
+function isAllowedOrigin(origin: string, allowedOrigins: string[]) {
+  const normalized = normalizeOrigin(origin);
+  if (allowedOrigins.includes(normalized)) return true;
+
+  try {
+    const { hostname } = new URL(normalized);
+    // Allow Vercel preview domains for this project.
+    if (hostname === 'peve-jointhehive.vercel.app') return true;
+    if (hostname.startsWith('peve-jointhehive-') && hostname.endsWith('.vercel.app')) return true;
+  } catch {
+    return false;
+  }
+
+  return false;
+}
+
 // CORS origins - support multiple origins and always include trusted defaults.
 const CORS_ORIGINS = Array.from(
   new Set(
@@ -27,6 +43,22 @@ const CORS_ORIGINS = Array.from(
       .filter(Boolean),
   ),
 );
+
+const corsOriginHandler: cors.CorsOptions['origin'] = (origin, callback) => {
+  // Allow non-browser/server-to-server requests with no Origin header.
+  if (!origin) {
+    callback(null, true);
+    return;
+  }
+
+  if (isAllowedOrigin(origin, CORS_ORIGINS)) {
+    callback(null, true);
+    return;
+  }
+
+  console.warn(`Blocked by CORS: ${origin}`);
+  callback(null, false);
+};
 // Set environment variables if not provided
 if (!process.env.MONGO_URI) {
   process.env.MONGO_URI = 'mongodb://localhost:27017/peve';
@@ -92,13 +124,19 @@ async function start() {
   }));
   
   app.use(cors({ 
-    origin: CORS_ORIGINS, 
+    origin: corsOriginHandler,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     optionsSuccessStatus: 200
   }));
-  app.options('*', cors({ origin: CORS_ORIGINS, credentials: true }));
+  app.options('*', cors({
+    origin: corsOriginHandler,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    optionsSuccessStatus: 200
+  }));
   
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
