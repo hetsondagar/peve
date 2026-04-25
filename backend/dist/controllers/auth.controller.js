@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.signup = signup;
 exports.login = login;
 exports.logout = logout;
+exports.checkUsername = checkUsername;
 exports.me = me;
 exports.refresh = refresh;
 exports.updateProfile = updateProfile;
@@ -24,15 +25,15 @@ async function signup(req, res) {
         return res.status(400).json({ success: false, error: 'Username cannot exceed 20 characters' });
     if (!/^[a-zA-Z0-9_]+$/.test(username))
         return res.status(400).json({ success: false, error: 'Username can only contain letters, numbers, and underscores' });
-    // Check for existing email
-    const existingEmail = await User_1.User.findOne({ email: email.toLowerCase() });
-    if (existingEmail)
-        return res.status(409).json({ success: false, error: 'Email already in use' });
-    // Check for existing username
-    const existingUsername = await User_1.User.findOne({ username: String(username).toLowerCase() });
-    if (existingUsername)
-        return res.status(409).json({ success: false, error: 'Username already taken' });
     try {
+        // Check for existing email
+        const existingEmail = await User_1.User.findOne({ email: email.toLowerCase() });
+        if (existingEmail)
+            return res.status(409).json({ success: false, error: 'Email already in use' });
+        // Check for existing username
+        const existingUsername = await User_1.User.findOne({ username: String(username).toLowerCase() });
+        if (existingUsername)
+            return res.status(409).json({ success: false, error: 'Username already taken' });
         const user = await User_1.User.create({ username: String(username).toLowerCase(), name, email: email.toLowerCase(), passwordHash: password, college, role, skills });
         const token = (0, jwt_1.signAccessToken)({ sub: String(user._id) });
         const refreshToken = (0, jwt_1.signRefreshToken)({ sub: String(user._id) });
@@ -80,17 +81,41 @@ async function logout(req, res) {
     // You could implement a token blacklist here if needed
     return res.json({ success: true, message: 'Logged out successfully' });
 }
+async function checkUsername(req, res) {
+    const { username } = req.params;
+    if (!username) {
+        return res.status(400).json({ success: false, error: 'Username is required' });
+    }
+    try {
+        const existingUser = await User_1.User.findOne({ username: username.toLowerCase() });
+        return res.json({
+            success: true,
+            data: {
+                available: !existingUser,
+                username: username
+            }
+        });
+    }
+    catch (error) {
+        return res.status(500).json({ success: false, error: 'Failed to check username availability' });
+    }
+}
 async function me(req, res) {
     const userId = req.user?.id;
     if (!userId)
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     try {
+        console.log('Fetching user with ID:', userId);
         const user = await User_1.User.findById(userId).select('-passwordHash');
-        if (!user)
+        if (!user) {
+            console.log('User not found for ID:', userId);
             return res.status(404).json({ success: false, error: 'User not found' });
+        }
+        console.log('User found:', user.username);
         return res.json({ success: true, data: user });
     }
     catch (error) {
+        console.error('Error in me function:', error);
         return res.status(500).json({ success: false, error: 'Failed to fetch user' });
     }
 }

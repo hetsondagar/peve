@@ -5,6 +5,8 @@ exports.updateProfile = updateProfile;
 exports.getUserById = getUserById;
 exports.searchUsers = searchUsers;
 exports.validateUsernames = validateUsernames;
+exports.testUserModel = testUserModel;
+exports.simpleUsernameSearch = simpleUsernameSearch;
 const User_1 = require("../models/User");
 async function getCurrentUser(req, res) {
     const userId = req.user?.id;
@@ -122,8 +124,8 @@ async function validateUsernames(req, res) {
         return res.json({
             success: true,
             data: {
-                valid: validUsernames,
-                invalid: invalidUsernames,
+                validUsernames: validUsernames,
+                invalidUsernames: invalidUsernames,
                 existing: existingUsernames
             }
         });
@@ -131,5 +133,72 @@ async function validateUsernames(req, res) {
     catch (error) {
         console.error('Username validation error:', error);
         return res.status(500).json({ success: false, error: 'Failed to validate usernames' });
+    }
+}
+async function testUserModel(req, res) {
+    try {
+        console.log('Testing User model...');
+        const userCount = await User_1.User.countDocuments();
+        console.log('User count:', userCount);
+        // Try to get a few sample users
+        const sampleUsers = await User_1.User.find({}).select('username name').limit(5);
+        return res.json({
+            success: true,
+            data: {
+                userCount,
+                modelAvailable: !!User_1.User,
+                sampleUsers: sampleUsers,
+                message: 'User model is working'
+            }
+        });
+    }
+    catch (error) {
+        console.error('User model test error:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'User model test failed',
+            details: error.message
+        });
+    }
+}
+// Username search using same pattern as search controller
+async function simpleUsernameSearch(req, res) {
+    try {
+        const { q, limit = 10 } = req.query;
+        // Validate query
+        if (!q || typeof q !== 'string' || q.trim().length < 1) {
+            return res.json({
+                success: true,
+                data: { usernames: [], total: 0 }
+            });
+        }
+        const searchQuery = q.trim();
+        const limitNum = Math.min(parseInt(limit) || 10, 50);
+        // Escape special regex characters
+        const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Search by username only (more specific)
+        const users = await User_1.User.find({
+            username: { $regex: escapedQuery, $options: 'i' }
+        })
+            .select('username name')
+            .sort({ username: 1 })
+            .limit(limitNum)
+            .lean();
+        const usernames = users.map(user => ({
+            username: user.username,
+            name: user.name || '',
+            displayName: user.name ? `${user.name} (@${user.username})` : `@${user.username}`
+        }));
+        return res.json({
+            success: true,
+            data: { usernames, total: usernames.length }
+        });
+    }
+    catch (error) {
+        console.error('Username search error:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to search usernames'
+        });
     }
 }

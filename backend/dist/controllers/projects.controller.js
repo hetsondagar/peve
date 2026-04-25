@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.listProjects = listProjects;
+exports.getProjectsByContributor = getProjectsByContributor;
 exports.getProject = getProject;
 exports.createProject = createProject;
 exports.updateProject = updateProject;
+exports.deleteProject = deleteProject;
 exports.recalcHealth = recalcHealth;
 exports.forkProject = forkProject;
 exports.getTrendingProjects = getTrendingProjects;
@@ -41,8 +43,8 @@ async function listProjects(req, res) {
         const sort = {};
         sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
         const cursor = Project_1.Project.find(q)
-            .populate('author', 'username name avatarUrl')
-            .populate('contributors.user', 'username name avatarUrl')
+            .populate('author', 'username name avatarUrl avatarStyle bio skills')
+            .populate('contributors.user', 'username name avatarUrl avatarStyle bio skills')
             .sort(sort)
             .skip((Number(page) - 1) * Number(limit))
             .limit(Number(limit));
@@ -63,11 +65,38 @@ async function listProjects(req, res) {
         res.status(500).json({ success: false, error: 'Failed to fetch projects' });
     }
 }
+async function getProjectsByContributor(req, res) {
+    try {
+        const userId = req.params.userId;
+        // Get projects where user is a contributor
+        const projects = await Project_1.Project.find({
+            'contributors.user': userId,
+            visibility: 'public',
+            isDraft: false
+        })
+            .populate('author', 'username name avatarUrl avatarStyle bio skills')
+            .populate('contributors.user', 'username name avatarUrl avatarStyle bio skills')
+            .sort({ createdAt: -1 });
+        // Add collaborator flag to each project
+        const projectsWithFlag = projects.map(project => ({
+            ...project.toObject(),
+            isCollaborator: true
+        }));
+        return res.json({
+            success: true,
+            data: { projects: projectsWithFlag }
+        });
+    }
+    catch (error) {
+        console.error('Get projects by contributor error:', error);
+        return res.status(500).json({ success: false, error: 'Failed to fetch projects' });
+    }
+}
 async function getProject(req, res) {
     try {
         const project = await Project_1.Project.findById(req.params.id)
-            .populate('author', 'username name avatarUrl bio skills')
-            .populate('contributors.user', 'username name avatarUrl skills');
+            .populate('author', 'username name avatarUrl avatarStyle bio skills')
+            .populate('contributors.user', 'username name avatarUrl avatarStyle bio skills');
         if (!project) {
             return res.status(404).json({ success: false, error: 'Project not found' });
         }
@@ -109,10 +138,12 @@ async function createProject(req, res) {
                 error: 'Missing required fields: title, tagline, description, category, and githubRepo are required'
             });
         }
-        // Prepare project data and normalize collaborators into contributors
+        // Process contributors and teammates
         const projectData = { ...req.body };
-        // Map collaborators -> contributors (support object or string entries)
-        if (Array.isArray(projectData.collaborators) && projectData.collaborators.length > 0) {
+        // Initialize contributors array
+        projectData.contributors = [];
+        // Handle contributors (from frontend collaborators field)
+        if (projectData.collaborators && Array.isArray(projectData.collaborators) && projectData.collaborators.length > 0) {
             const contributors = projectData.collaborators
                 .map((c) => {
                 if (c && typeof c === 'object') {
@@ -132,8 +163,33 @@ async function createProject(req, res) {
                 .filter(Boolean);
             projectData.contributors = contributors;
         }
-        // Remove collaborators field to avoid schema conflicts
+        // Remove collaborators field to avoid conflicts with schema
         delete projectData.collaborators;
+        // Handle collaboration teammates
+        if (projectData.collaboration?.teammates && Array.isArray(projectData.collaboration.teammates) && projectData.collaboration.teammates.length > 0) {
+            // Validate that all teammates exist as users
+            const validTeammates = [];
+            for (const teammate of projectData.collaboration.teammates) {
+                // Handle both string usernames and object format
+                const username = typeof teammate === 'string' ? teammate : teammate.username || teammate.user;
+                if (username && typeof username === 'string' && username.trim()) {
+                    const user = await User_1.User.findOne({ username: username.trim().toLowerCase() });
+                    if (user) {
+                        validTeammates.push(user._id);
+                    }
+                }
+            }
+            // Update the teammates array to only include valid user IDs
+            projectData.collaboration.teammates = validTeammates;
+        }
+        else if (projectData.collaboration) {
+            // Ensure collaboration object has correct structure
+            projectData.collaboration = {
+                openToCollaboration: projectData.collaboration.openToCollaboration || false,
+                lookingForRoles: projectData.collaboration.lookingForRoles || [],
+                teammates: []
+            };
+        }
         const project = await Project_1.Project.create({
             ...projectData,
             author: userId,
@@ -163,28 +219,148 @@ async function createProject(req, res) {
             .populate('contributors.user', 'username name avatarUrl avatarStyle bio skills');
         // Check for badge awards
         try {
+            console.log('Checking badges for project creation...');
             await badgeService_1.BadgeService.checkAndAwardBadges(userId, 'project_created', project._id.toString());
+            console.log('Badge check completed successfully');
         }
         catch (badgeError) {
             console.error('Error checking badges for project creation:', badgeError);
+            console.error('Badge error details:', badgeError.message);
+            console.error('Badge error stack:', badgeError.stack);
         }
         return res.status(201).json({ success: true, data: populatedProject });
     }
     catch (error) {
         console.error('Create project error:', error);
-        res.status(500).json({ success: false, error: 'Failed to create project' });
+        console.error('Error details:', error?.message);
+        console.error('Stack trace:', error?.stack);
+        console.error('Request body:', req.body);
+        // Return more specific error message
+        const errorMessage = error?.message || 'Failed to create project';
+        return res.status(500).json({
+            success: false,
+            error: errorMessage,
+            details: error?.stack
+        });
     }
 }
 async function updateProject(req, res) {
-    const userId = req.user?.id;
-    const project = await Project_1.Project.findById(req.params.id);
-    if (!project)
-        return res.status(404).json({ success: false, error: 'Not found' });
-    if (String(project.author) !== String(userId))
-        return res.status(403).json({ success: false, error: 'Forbidden' });
-    Object.assign(project, req.body);
-    await project.save();
-    return res.json({ success: true, data: project });
+    try {
+        const userId = req.user?.id;
+        const project = await Project_1.Project.findById(req.params.id);
+        if (!project)
+            return res.status(404).json({ success: false, error: 'Not found' });
+        if (String(project.author) !== String(userId))
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        // Process contributors and teammates
+        const updateData = { ...req.body };
+        // Initialize contributors array
+        updateData.contributors = [];
+        // Handle contributors (from frontend collaborators field)
+        if (updateData.collaborators && Array.isArray(updateData.collaborators) && updateData.collaborators.length > 0) {
+            const contributors = updateData.collaborators
+                .map((c) => {
+                if (c && typeof c === 'object') {
+                    const name = (c.name || '').trim();
+                    const role = (c.role || '').trim();
+                    if (name) {
+                        return { name, role: role || 'Contributor', contributions: 'Project contributor' };
+                    }
+                }
+                else if (typeof c === 'string') {
+                    const name = c.trim();
+                    if (name)
+                        return { name, role: 'Contributor', contributions: 'Project contributor' };
+                }
+                return null;
+            })
+                .filter(Boolean);
+            updateData.contributors = contributors;
+        }
+        // Remove collaborators field to avoid conflicts with schema
+        delete updateData.collaborators;
+        // Handle collaboration teammates
+        if (updateData.collaboration?.teammates && Array.isArray(updateData.collaboration.teammates) && updateData.collaboration.teammates.length > 0) {
+            // Validate that all teammates exist as users
+            const validTeammates = [];
+            for (const teammate of updateData.collaboration.teammates) {
+                // Handle both string usernames and object format
+                const username = typeof teammate === 'string' ? teammate : teammate.username || teammate.user;
+                if (username && typeof username === 'string' && username.trim()) {
+                    const user = await User_1.User.findOne({ username: username.trim().toLowerCase() });
+                    if (user) {
+                        validTeammates.push(user._id);
+                    }
+                }
+            }
+            // Update the teammates array to only include valid user IDs
+            updateData.collaboration.teammates = validTeammates;
+        }
+        else if (updateData.collaboration) {
+            // Ensure collaboration object has correct structure
+            updateData.collaboration = {
+                openToCollaboration: updateData.collaboration.openToCollaboration || false,
+                lookingForRoles: updateData.collaboration.lookingForRoles || [],
+                teammates: []
+            };
+        }
+        Object.assign(project, updateData);
+        await project.save();
+        // Populate the project with author and contributors data
+        const updatedProject = await Project_1.Project.findById(project._id)
+            .populate('author', 'username name avatarUrl avatarStyle bio skills')
+            .populate('contributors.user', 'username name avatarUrl avatarStyle bio skills');
+        return res.json({ success: true, data: updatedProject });
+    }
+    catch (error) {
+        console.error('Update project error:', error);
+        return res.status(500).json({ success: false, error: 'Failed to update project' });
+    }
+}
+async function deleteProject(req, res) {
+    try {
+        const rawId = req.params.id || req.params.projectId;
+        const paramId = typeof rawId === 'string' ? rawId.trim() : rawId;
+        console.log('Delete project request - ID:', paramId);
+        const userId = req.user?.id;
+        console.log('User ID:', userId);
+        if (!paramId) {
+            return res.status(400).json({ success: false, error: 'Project ID is required' });
+        }
+        let project = null;
+        try {
+            project = await Project_1.Project.findById(paramId);
+        }
+        catch (castErr) {
+            // If casting fails (e.g., non-ObjectId), try direct string match (in case _id stored as string)
+            project = await Project_1.Project.findOne({ _id: paramId });
+        }
+        console.log('Project found:', !!project);
+        if (!project) {
+            console.log('Project not found for ID:', paramId);
+            return res.status(404).json({ success: false, error: 'Project not found' });
+        }
+        // Check if user is the author
+        if (String(project.author) !== String(userId)) {
+            console.log('User is not the author of the project');
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+        console.log('Starting project deletion...');
+        // Delete associated comments
+        await Comment_1.Comment.deleteMany({ targetType: 'project', targetId: project._id });
+        console.log('Comments deleted');
+        // Delete associated collaboration requests
+        await CollaborationRequest_1.CollaborationRequest.deleteMany({ project: project._id });
+        console.log('Collaboration requests deleted');
+        // Delete the project
+        await Project_1.Project.findByIdAndDelete(paramId);
+        console.log('Project deleted successfully');
+        return res.json({ success: true, message: 'Project deleted successfully' });
+    }
+    catch (error) {
+        console.error('Error deleting project:', error);
+        return res.status(500).json({ success: false, error: 'Failed to delete project' });
+    }
 }
 async function recalcHealth(req, res) {
     const project = await Project_1.Project.findById(req.params.id);
@@ -252,7 +428,7 @@ async function getTrendingProjects(req, res) {
         const { limit = '10' } = req.query;
         // Get projects with highest engagement (likes + views + comments)
         const projects = await Project_1.Project.find({ visibility: 'public', isDraft: false })
-            .populate('author', 'username name avatarUrl')
+            .populate('author', 'username name avatarUrl avatarStyle bio skills')
             .sort({
             'metrics.likes': -1,
             'metrics.views': -1,

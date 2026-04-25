@@ -13,4 +13,5 @@ router.post('/logout', auth_1.requireAuth, auth_controller_1.logout);
 router.put('/profile', auth_1.requireAuth, auth_controller_1.updateProfile);
 router.post('/onboarding', auth_1.requireAuth, auth_controller_1.completeOnboarding);
 router.post('/profile-completion', auth_1.requireAuth, profile_completion_controller_1.completeProfile);
+router.get('/check-username/:username', auth_controller_1.checkUsername);
 exports.default = router;

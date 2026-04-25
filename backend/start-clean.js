@@ -7,4 +7,4 @@ console.log('🚀 Starting peve backend (clean version)...');
 process.env.NODE_OPTIONS = '--max-old-space-size=512';
 
 // Import and start the server
-require('./dist/index-clean.js');
+require('./dist/src/index-clean.js');

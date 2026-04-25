@@ -42,26 +42,93 @@ const http_1 = __importDefault(require("http"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const mongoose_1 = __importDefault(require("mongoose"));
-const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+// Rate limiting removed for production stability
+// import rateLimit from 'express-rate-limit';
 const morgan_1 = __importDefault(require("morgan"));
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
-const MONGO_URI = process.env.MONGO_URI || '';
+function normalizeOrigin(origin) {
+    return origin.trim().replace(/\/+$/, '');
+}
+function isAllowedOrigin(origin, allowedOrigins) {
+    const normalized = normalizeOrigin(origin);
+    if (allowedOrigins.includes(normalized))
+        return true;
+    try {
+        const { hostname } = new URL(normalized);
+        // Allow Vercel preview domains for this project.
+        if (hostname === 'peve-jointhehive.vercel.app')
+            return true;
+        if (hostname.startsWith('peve-jointhehive-') && hostname.endsWith('.vercel.app'))
+            return true;
+    }
+    catch {
+        return false;
+    }
+    return false;
+}
+// CORS origins - support multiple origins and always include trusted defaults.
+const CORS_ORIGINS = Array.from(new Set([
+    FRONTEND_URL,
+    'https://peve-jointhehive.vercel.app',
+    ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
+]
+    .map(normalizeOrigin)
+    .filter(Boolean)));
+const corsOriginHandler = (origin, callback) => {
+    // Allow non-browser/server-to-server requests with no Origin header.
+    if (!origin) {
+        callback(null, true);
+        return;
+    }
+    if (isAllowedOrigin(origin, CORS_ORIGINS)) {
+        callback(null, true);
+        return;
+    }
+    console.warn(`Blocked by CORS: ${origin}`);
+    callback(null, false);
+};
+// Set environment variables if not provided
+if (!process.env.MONGO_URI) {
+    process.env.MONGO_URI = 'mongodb://localhost:27017/peve';
+}
+if (!process.env.JWT_SECRET) {
+    process.env.JWT_SECRET = 'fallback-jwt-secret-for-development-only';
+}
+if (!process.env.JWT_REFRESH_SECRET) {
+    process.env.JWT_REFRESH_SECRET = 'fallback-refresh-secret-for-development-only';
+}
+const MONGO_URI = process.env.MONGO_URI;
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 // Memory optimization
 process.setMaxListeners(0);
 if (process.env.NODE_ENV === 'production') {
-    // Conservative memory limit for Render free tier
-    process.env.NODE_OPTIONS = '--max-old-space-size=256 --optimize-for-size';
+    // Increase memory limit for production
+    process.env.NODE_OPTIONS = '--max-old-space-size=512';
 }
 async function start() {
     if (!MONGO_URI) {
         // eslint-disable-next-line no-console
-        console.error('MONGO_URI is not set');
-        process.exit(1);
+        console.error('MONGO_URI is not set. Using fallback local MongoDB connection.');
+        // Use local MongoDB as fallback
+        const fallbackUri = 'mongodb://localhost:27017/peve';
+        console.log('Attempting to connect to fallback MongoDB:', fallbackUri);
+        try {
+            await mongoose_1.default.connect(fallbackUri);
+            console.log('✅ Connected to fallback MongoDB');
+        }
+        catch (error) {
+            console.error('Failed to connect to fallback MongoDB:', error);
+            console.error('Please set MONGO_URI environment variable or start local MongoDB');
+            process.exit(1);
+        }
     }
-    // Connect to MongoDB first
-    await mongoose_1.default.connect(MONGO_URI);
-    console.log('✅ Connected to MongoDB');
+    else {
+        // Connect to MongoDB first
+        await mongoose_1.default.connect(MONGO_URI);
+        console.log('✅ Connected to MongoDB');
+    }
     const app = (0, express_1.default)();
     const server = http_1.default.createServer(app);
     // Enhanced security middleware
@@ -82,31 +149,39 @@ async function start() {
         crossOriginEmbedderPolicy: false,
     }));
     app.use((0, cors_1.default)({
-        origin: FRONTEND_URL,
+        origin: corsOriginHandler,
         credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-        allowedHeaders: ['Content-Type', 'Authorization']
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        optionsSuccessStatus: 200
+    }));
+    app.options('*', (0, cors_1.default)({
+        origin: corsOriginHandler,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+        optionsSuccessStatus: 200
     }));
     app.use(express_1.default.json({ limit: '2mb' }));
     app.use(express_1.default.urlencoded({ extended: true, limit: '2mb' }));
     app.use((0, morgan_1.default)('combined'));
-    // Enhanced rate limiting
-    const limiter = (0, express_rate_limit_1.default)({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 100, // limit each IP to 100 requests per windowMs
-        message: 'Too many requests from this IP, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
-    app.use(limiter);
-    // Stricter rate limiting for auth endpoints
-    const authLimiter = (0, express_rate_limit_1.default)({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 5, // limit each IP to 5 requests per windowMs
-        message: 'Too many authentication attempts, please try again later.',
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    // Temporarily disable rate limiting for debugging
+    // const limiter = rateLimit({
+    //   windowMs: 15 * 60 * 1000, // 15 minutes
+    //   max: 5000, // limit each IP to 5000 requests per windowMs (very generous)
+    //   message: 'Too many requests from this IP, please try again later.',
+    //   standardHeaders: true,
+    //   legacyHeaders: false,
+    // });
+    // app.use(limiter);
+    // Temporarily disable auth rate limiting for debugging
+    // const authLimiter = rateLimit({
+    //   windowMs: 15 * 60 * 1000, // 15 minutes
+    //   max: 200, // limit each IP to 200 requests per windowMs (very generous)
+    //   message: 'Too many authentication attempts, please try again later.',
+    //   standardHeaders: true,
+    //   legacyHeaders: false,
+    // });
     // Root route
     app.get('/', (_req, res) => {
         res.json({
@@ -139,92 +214,118 @@ async function start() {
         const dbState = mongoose_1.default.connection.readyState; // 1 connected
         res.json({ status: 'ok', db: dbState === 1 ? 'connected' : 'disconnected' });
     });
-    // Lazy load routes to reduce memory usage
-    console.log('📦 Loading essential routes...');
-    // Load only essential routes first
-    const authRoutes = await Promise.resolve().then(() => __importStar(require('./routes/auth.routes')));
-    app.use('/api/auth', authLimiter, authRoutes.default);
-    console.log('✅ Auth routes loaded');
-    const usersRoutes = await Promise.resolve().then(() => __importStar(require('./routes/users.routes')));
-    app.use('/api/users', usersRoutes.default);
-    console.log('✅ Users routes loaded');
-    const projectsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/projects.routes')));
-    app.use('/api/projects', projectsRoutes.default);
-    console.log('✅ Projects routes loaded');
-    const ideasRoutes = await Promise.resolve().then(() => __importStar(require('./routes/ideas.routes')));
-    app.use('/api/ideas', ideasRoutes.default);
-    console.log('✅ Ideas routes loaded');
-    // Load remaining routes in background
-    setTimeout(async () => {
-        try {
-            console.log('📦 Loading secondary routes...');
-            const commentsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/comments.routes')));
-            const notificationsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/notifications.routes')));
-            const searchRoutes = await Promise.resolve().then(() => __importStar(require('./routes/search.routes')));
-            const likesRoutes = await Promise.resolve().then(() => __importStar(require('./routes/likes.routes')));
-            app.use('/api/comments', commentsRoutes.default);
-            app.use('/api/notifications', notificationsRoutes.default);
-            app.use('/api/search', searchRoutes.default);
-            app.use('/api/likes', likesRoutes.default);
-            console.log('✅ Secondary routes loaded');
-            // Load additional routes after a delay
-            setTimeout(async () => {
-                try {
-                    console.log('📦 Loading additional routes...');
-                    const uploadsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/uploads.routes')));
-                    const collaborationsRoutes = await Promise.resolve().then(() => __importStar(require('./routes/collaborations.routes')));
-                    const chatRoutes = await Promise.resolve().then(() => __importStar(require('./routes/chat.routes')));
-                    const compatibilityRoutes = await Promise.resolve().then(() => __importStar(require('./routes/compatibility.routes')));
-                    const collaborationRoutes = await Promise.resolve().then(() => __importStar(require('./routes/collaboration-requests.routes')));
-                    const dashboardRoutes = await Promise.resolve().then(() => __importStar(require('./routes/dashboard.routes')));
-                    const leaderboardRoutes = await Promise.resolve().then(() => __importStar(require('./routes/leaderboard.routes')));
-                    const promptRoutes = await Promise.resolve().then(() => __importStar(require('./routes/prompt.routes')));
-                    const interactionRoutes = await Promise.resolve().then(() => __importStar(require('./routes/interaction.routes')));
-                    const badgeRoutes = await Promise.resolve().then(() => __importStar(require('./routes/badge.routes')));
-                    app.use('/api/uploads', uploadsRoutes.default);
-                    app.use('/api/collaborations', collaborationsRoutes.default);
-                    app.use('/api/chat', chatRoutes.default);
-                    app.use('/api/compatibility', compatibilityRoutes.default);
-                    app.use('/api/collaboration', collaborationRoutes.default);
-                    app.use('/api/dashboard', dashboardRoutes.default);
-                    app.use('/api/leaderboard', leaderboardRoutes.default);
-                    app.use('/api/prompts', promptRoutes.default);
-                    app.use('/api/interactions', interactionRoutes.default);
-                    app.use('/api/badges', badgeRoutes.default);
-                    console.log('✅ All routes loaded successfully');
-                }
-                catch (error) {
-                    console.error('❌ Error loading additional routes:', error);
-                }
-            }, 2000); // 2 second delay
-        }
-        catch (error) {
-            console.error('❌ Error loading secondary routes:', error);
-        }
-    }, 1000); // 1 second delay
-    // Initialize Socket.IO after a delay to reduce startup memory
-    setTimeout(async () => {
-        try {
-            console.log('🔌 Initializing Socket.IO...');
-            const { Server: SocketIOServer } = await Promise.resolve().then(() => __importStar(require('socket.io')));
-            const { registerSocketHandlers } = await Promise.resolve().then(() => __importStar(require('./sockets')));
-            const io = new SocketIOServer(server, {
-                cors: { origin: FRONTEND_URL, credentials: true },
-            });
-            registerSocketHandlers(io);
-            console.log('✅ Socket.IO initialized');
-        }
-        catch (error) {
-            console.error('❌ Error initializing Socket.IO:', error);
-        }
-    }, 3000); // 3 second delay
+    // Test endpoint to verify no rate limiting
+    app.get('/test', (_req, res) => {
+        res.json({
+            message: 'Rate limiting test endpoint',
+            timestamp: new Date().toISOString(),
+            status: 'success'
+        });
+    });
+    // Simple auth test endpoint
+    app.get('/auth-test', (_req, res) => {
+        res.json({
+            message: 'Auth test endpoint - no rate limiting',
+            timestamp: new Date().toISOString(),
+            status: 'success'
+        });
+    });
+    // Health check endpoint
+    app.get('/health', (_req, res) => {
+        const mongoose = require('mongoose');
+        res.json({
+            message: 'Server is running',
+            timestamp: new Date().toISOString(),
+            status: 'success',
+            database: {
+                connected: mongoose.connection.readyState === 1,
+                readyState: mongoose.connection.readyState
+            }
+        });
+    });
+    // Load routes synchronously
+    console.log('📦 Loading routes...');
+    try {
+        // Import and mount routes synchronously
+        const authRoutes = require('./routes/auth.routes');
+        const usersRoutes = require('./routes/users.routes');
+        const projectsRoutes = require('./routes/projects.routes');
+        const ideasRoutes = require('./routes/ideas.routes');
+        const commentsRoutes = require('./routes/comments.routes');
+        const notificationsRoutes = require('./routes/notifications.routes');
+        const searchRoutes = require('./routes/search.routes');
+        const likesRoutes = require('./routes/likes.routes');
+        const uploadsRoutes = require('./routes/uploads.routes');
+        const collaborationsRoutes = require('./routes/collaborations.routes');
+        const chatRoutes = require('./routes/chat.routes');
+        const compatibilityRoutes = require('./routes/compatibility.routes');
+        const collaborationRoutes = require('./routes/collaboration-requests.routes');
+        const dashboardRoutes = require('./routes/dashboard.routes');
+        const leaderboardRoutes = require('./routes/leaderboard.routes');
+        const promptRoutes = require('./routes/prompt.routes');
+        const interactionRoutes = require('./routes/interaction.routes');
+        const badgeRoutes = require('./routes/badge.routes');
+        // Mount routes
+        app.use('/api/auth', authRoutes.default);
+        app.use('/api/users', usersRoutes.default);
+        app.use('/api/projects', projectsRoutes.default);
+        app.use('/api/ideas', ideasRoutes.default);
+        app.use('/api/comments', commentsRoutes.default);
+        app.use('/api/notifications', notificationsRoutes.default);
+        app.use('/api/search', searchRoutes.default);
+        app.use('/api/likes', likesRoutes.default);
+        app.use('/api/uploads', uploadsRoutes.default);
+        app.use('/api/collaborations', collaborationsRoutes.default);
+        app.use('/api/chat', chatRoutes.default);
+        app.use('/api/compatibility', compatibilityRoutes.default);
+        app.use('/api/collaboration', collaborationRoutes.default);
+        app.use('/api/dashboard', dashboardRoutes.default);
+        app.use('/api/leaderboard', leaderboardRoutes.default);
+        app.use('/api/prompts', promptRoutes.default);
+        app.use('/api/interactions', interactionRoutes.default);
+        app.use('/api/badges', badgeRoutes.default);
+    }
+    catch (error) {
+        console.error('❌ Error loading routes:', error);
+        throw error;
+    }
+    console.log('✅ Routes loaded successfully');
+    // Initialize Socket.IO (lazy load)
+    console.log('🔌 Initializing Socket.IO...');
+    const { Server: SocketIOServer } = await Promise.resolve().then(() => __importStar(require('socket.io')));
+    const { registerSocketHandlers } = await Promise.resolve().then(() => __importStar(require('./sockets')));
+    const io = new SocketIOServer(server, {
+        cors: { origin: CORS_ORIGINS, credentials: true },
+    });
+    registerSocketHandlers(io);
+    console.log('✅ Socket.IO initialized');
+    // Global error handler
+    app.use((error, req, res, next) => {
+        console.error('Global error handler:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+        });
+    });
     server.listen(PORT, () => {
         // eslint-disable-next-line no-console
-        console.log(`API listening on http://localhost:${PORT}`);
+        console.log(`🚀 peve-backend API server started successfully!`);
         // eslint-disable-next-line no-console
-        console.log(`CORS/Socket allowed origin: ${FRONTEND_URL}`);
+        console.log(`📡 CORS/Socket allowed origins: ${CORS_ORIGINS.join(', ')}`);
+        // eslint-disable-next-line no-console
+        console.log(`🌐 Server running on port: ${PORT}`);
     });
 }
+// Process error handlers
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    console.error('Stack:', error.stack);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
 // Memory monitoring
 if (process.env.NODE_ENV === 'production') {
     setInterval(() => {

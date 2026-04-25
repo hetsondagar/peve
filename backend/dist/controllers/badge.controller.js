@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllBadges = getAllBadges;
 exports.getUserBadges = getUserBadges;
+exports.getUserBadgesByUserId = getUserBadgesByUserId;
 exports.toggleBadgeDisplay = toggleBadgeDisplay;
 exports.getBadgeStats = getBadgeStats;
 exports.checkUserBadges = checkUserBadges;
@@ -51,6 +52,23 @@ async function getUserBadges(req, res) {
             success: false,
             error: 'Failed to fetch user badges'
         });
+    }
+}
+// Public: Get badges for a specific user by ID
+async function getUserBadgesByUserId(req, res) {
+    try {
+        const { userId } = req.params;
+        if (!userId) {
+            return res.status(400).json({ success: false, error: 'User ID is required' });
+        }
+        const badges = await UserBadge_1.UserBadge.find({ userId })
+            .populate('badgeId')
+            .sort({ earnedAt: -1 });
+        return res.json({ success: true, data: badges });
+    }
+    catch (error) {
+        console.error('Error fetching public user badges:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch user badges' });
     }
 }
 /**

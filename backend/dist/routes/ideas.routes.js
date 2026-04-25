@@ -9,6 +9,8 @@ router.get('/trending', ideas_controller_1.getTrendingIdeas);
 router.get('/:id', ideas_controller_1.getIdea);
 router.get('/:id/detailed', ideas_controller_1.getIdeaWithComments);
 router.post('/', auth_1.requireAuth, ideas_controller_1.createIdea);
+router.put('/:id', auth_1.requireAuth, ideas_controller_1.updateIdea);
+router.delete('/:id', auth_1.requireAuth, ideas_controller_1.deleteIdea);
 router.post('/:id/join', auth_1.requireAuth, ideas_controller_1.joinIdea);
 router.post('/:id/join/:requestId/respond', auth_1.requireAuth, ideas_controller_1.respondJoin);
 router.post('/:id/like', auth_1.requireAuth, ideas_controller_1.likeIdea);

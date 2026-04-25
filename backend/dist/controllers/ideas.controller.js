@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.listIdeas = listIdeas;
 exports.getIdea = getIdea;
 exports.createIdea = createIdea;
+exports.updateIdea = updateIdea;
+exports.deleteIdea = deleteIdea;
 exports.joinIdea = joinIdea;
 exports.respondJoin = respondJoin;
 exports.convertIdea = convertIdea;
@@ -106,16 +108,69 @@ async function createIdea(req, res) {
             .populate('author', 'username name avatarUrl skills');
         // Check for badge awards
         try {
+            console.log('Checking badges for idea creation...');
             await badgeService_1.BadgeService.checkAndAwardBadges(userId, 'idea_created', idea._id.toString());
+            console.log('Badge check completed successfully');
         }
         catch (badgeError) {
             console.error('Error checking badges for idea creation:', badgeError);
+            console.error('Badge error details:', badgeError.message);
+            console.error('Badge error stack:', badgeError.stack);
         }
         return res.status(201).json({ success: true, data: populatedIdea });
     }
     catch (error) {
         console.error('Create idea error:', error);
         res.status(500).json({ success: false, error: 'Failed to create idea' });
+    }
+}
+async function updateIdea(req, res) {
+    try {
+        const userId = req.user?.id;
+        const idea = await Idea_1.Idea.findById(req.params.id);
+        if (!idea) {
+            return res.status(404).json({ success: false, error: 'Idea not found' });
+        }
+        // Check if user is the author
+        if (String(idea.author) !== String(userId)) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+        // Update the idea
+        Object.assign(idea, req.body);
+        await idea.save();
+        const populatedIdea = await Idea_1.Idea.findById(idea._id)
+            .populate('author', 'username name avatarUrl skills');
+        return res.json({ success: true, data: populatedIdea });
+    }
+    catch (error) {
+        console.error('Update idea error:', error);
+        return res.status(500).json({ success: false, error: 'Failed to update idea' });
+    }
+}
+async function deleteIdea(req, res) {
+    try {
+        const userId = req.user?.id;
+        const idea = await Idea_1.Idea.findById(req.params.id);
+        if (!idea) {
+            return res.status(404).json({ success: false, error: 'Idea not found' });
+        }
+        // Check if user is the author
+        if (String(idea.author) !== String(userId)) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+        // Delete associated comments
+        await Comment_1.Comment.deleteMany({ targetType: 'idea', targetId: idea._id });
+        // Update user's stats
+        await User_1.User.findByIdAndUpdate(userId, {
+            $inc: { 'stats.ideasPosted': -1 }
+        });
+        // Delete the idea
+        await Idea_1.Idea.findByIdAndDelete(req.params.id);
+        return res.json({ success: true, message: 'Idea deleted successfully' });
+    }
+    catch (error) {
+        console.error('Error deleting idea:', error);
+        return res.status(500).json({ success: false, error: 'Failed to delete idea' });
     }
 }
 async function joinIdea(req, res) {

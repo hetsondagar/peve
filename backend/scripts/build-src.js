@@ -30,6 +30,3 @@ function run(command) {
 const ignoreDeprecations = getIgnoreDeprecationsValue();
 
 run(`tsc -p tsconfig.production.json --ignoreDeprecations ${ignoreDeprecations}`);
-run(
-  `tsc -p tsconfig.index-clean.json --ignoreDeprecations ${ignoreDeprecations}`
-);
