@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.analyzeGithubRepository = analyzeGithubRepository;
+exports.getRepositoryInsights = getRepositoryInsights;
 exports.listProjects = listProjects;
 exports.getProjectsByContributor = getProjectsByContributor;
 exports.getProject = getProject;
@@ -19,6 +21,105 @@ const Comment_1 = require("../models/Comment");
 const CollaborationRequest_1 = require("../models/CollaborationRequest");
 const Notification_1 = require("../models/Notification");
 const badgeService_1 = require("../services/badgeService");
+const githubRepoAnalysis_service_1 = require("../services/githubRepoAnalysis.service");
+const mlIntelligenceClient_1 = require("../services/mlIntelligenceClient");
+const projectPayloadSanitize_1 = require("../utils/projectPayloadSanitize");
+async function analyzeGithubRepository(req, res) {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
+        const { repoUrl } = req.body || {};
+        if (!repoUrl || typeof repoUrl !== 'string') {
+            return res.status(400).json({ success: false, error: 'repoUrl is required' });
+        }
+        const token = process.env.GITHUB_TOKEN || process.env.GITHUB_REPO_ANALYSIS_TOKEN || '';
+        const { autofill, readmeExcerpt } = await (0, githubRepoAnalysis_service_1.fetchGithubRepoAutofill)(repoUrl, token || undefined);
+        const parsed = (0, githubRepoAnalysis_service_1.parseGithubRepoUrl)(autofill.githubRepo);
+        const activity = parsed
+            ? await (0, githubRepoAnalysis_service_1.fetchGithubRepoActivity)(parsed.owner, parsed.repo, token || undefined)
+            : { commitTimeline: [], contributorLeaders: [], commitMessageSample: '' };
+        const autofillForMl = {
+            ...autofill,
+            commitMessageSample: activity.commitMessageSample,
+        };
+        const intelligence = await (0, mlIntelligenceClient_1.fetchMlRepositoryIntelligence)(autofillForMl, readmeExcerpt);
+        const data = {
+            ...autofill,
+            ...activity,
+            intelligence: intelligence ?? null,
+        };
+        return res.json({
+            success: true,
+            data,
+        });
+    }
+    catch (error) {
+        console.error('analyzeGithubRepository:', error);
+        return res.status(400).json({
+            success: false,
+            error: error?.message || 'Failed to analyze repository',
+        });
+    }
+}
+async function getRepositoryInsights(req, res) {
+    try {
+        const { id } = req.params;
+        const project = await Project_1.Project.findById(id).lean();
+        if (!project) {
+            return res.status(404).json({ success: false, error: 'Project not found' });
+        }
+        const viewerId = req.user?.id;
+        const isAuthor = viewerId && String(project.author) === String(viewerId);
+        if (project.visibility === 'private' && !isAuthor) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+        if (project.visibility === 'friends-only' && !isAuthor) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+        const repoUrl = project.links?.githubRepo;
+        if (!repoUrl || !(0, githubRepoAnalysis_service_1.parseGithubRepoUrl)(repoUrl)) {
+            return res.json({
+                success: true,
+                data: null,
+                message: 'Add a GitHub repository URL to this project to unlock repository intelligence.',
+            });
+        }
+        const token = process.env.GITHUB_TOKEN || process.env.GITHUB_REPO_ANALYSIS_TOKEN || '';
+        const { autofill, readmeExcerpt } = await (0, githubRepoAnalysis_service_1.fetchGithubRepoAutofill)(repoUrl, token || undefined);
+        const parsed = (0, githubRepoAnalysis_service_1.parseGithubRepoUrl)(autofill.githubRepo);
+        const activity = parsed
+            ? await (0, githubRepoAnalysis_service_1.fetchGithubRepoActivity)(parsed.owner, parsed.repo, token || undefined)
+            : { commitTimeline: [], contributorLeaders: [], commitMessageSample: '' };
+        const autofillForMl = {
+            ...autofill,
+            commitMessageSample: activity.commitMessageSample,
+        };
+        const baseInsights = (0, githubRepoAnalysis_service_1.buildRepositoryInsights)(autofill, autofill.githubRepo);
+        const intelligence = await (0, mlIntelligenceClient_1.fetchMlRepositoryIntelligence)(autofillForMl, readmeExcerpt);
+        let data = {
+            ...baseInsights,
+            ...activity,
+            intelligence: intelligence ?? null,
+        };
+        if (intelligence) {
+            data = {
+                ...data,
+                peveScorePreview: (0, mlIntelligenceClient_1.blendPeveScore)(baseInsights.peveScorePreview, intelligence.peve_score_ml),
+                scoreRationale: `${baseInsights.scoreRationale} Blended with ML repository intelligence (embeddings + tabular scoring).`,
+            };
+        }
+        return res.json({ success: true, data });
+    }
+    catch (error) {
+        console.error('getRepositoryInsights:', error);
+        return res.status(400).json({
+            success: false,
+            error: error?.message || 'Failed to load repository insights',
+        });
+    }
+}
 async function listProjects(req, res) {
     try {
         const { page = '1', limit = '20', tech, author, status, featured, sortBy = 'createdAt', sortOrder = 'desc', search } = req.query;
@@ -140,6 +241,7 @@ async function createProject(req, res) {
         }
         // Process contributors and teammates
         const projectData = { ...req.body };
+        (0, projectPayloadSanitize_1.stripEphemeralProjectFields)(projectData);
         // Initialize contributors array
         projectData.contributors = [];
         // Handle contributors (from frontend collaborators field)
@@ -254,6 +356,7 @@ async function updateProject(req, res) {
             return res.status(403).json({ success: false, error: 'Forbidden' });
         // Process contributors and teammates
         const updateData = { ...req.body };
+        (0, projectPayloadSanitize_1.stripEphemeralProjectFields)(updateData);
         // Initialize contributors array
         updateData.contributors = [];
         // Handle contributors (from frontend collaborators field)

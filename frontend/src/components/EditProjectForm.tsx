@@ -3,8 +3,9 @@ import { GlowButton } from '@/components/ui/glow-button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { apiFetch } from '@/lib/api';
-import { X, Users } from 'lucide-react';
+import { X, Users, Sparkles, Loader2, Github, Lock } from 'lucide-react';
 import UsernameAutocomplete from './UsernameAutocomplete';
 import UsernameTag from './UsernameTag';
 
@@ -31,6 +32,41 @@ const DEVELOPMENT_STAGES = [
   { value: 'prototype', label: 'Prototype' },
   { value: 'ongoing', label: 'Ongoing' },
   { value: 'completed', label: 'Completed' }
+];
+
+type FieldLockKey =
+  | 'title'
+  | 'tagline'
+  | 'category'
+  | 'description'
+  | 'keyFeatures'
+  | 'techStack'
+  | 'difficultyLevel'
+  | 'developmentStage'
+  | 'githubRepo';
+
+const DEFAULT_FIELD_LOCKS: Record<FieldLockKey, boolean> = {
+  title: false,
+  tagline: false,
+  category: false,
+  description: false,
+  keyFeatures: false,
+  techStack: false,
+  difficultyLevel: false,
+  developmentStage: false,
+  githubRepo: false,
+};
+
+const LOCK_LABELS: { key: FieldLockKey; label: string }[] = [
+  { key: 'title', label: 'Title' },
+  { key: 'tagline', label: 'Tagline' },
+  { key: 'category', label: 'Category' },
+  { key: 'description', label: 'Description' },
+  { key: 'keyFeatures', label: 'Features' },
+  { key: 'techStack', label: 'Stack' },
+  { key: 'difficultyLevel', label: 'Difficulty' },
+  { key: 'developmentStage', label: 'Stage' },
+  { key: 'githubRepo', label: 'GitHub URL' },
 ];
 
 export default function EditProjectForm({ project, onSave, onCancel }: EditProjectFormProps) {
@@ -61,6 +97,94 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
   const [newTech, setNewTech] = useState('');
   const [newFeature, setNewFeature] = useState('');
   const [newTag, setNewTag] = useState('');
+  const [githubAutofillUrl, setGithubAutofillUrl] = useState('');
+  const [githubAutofillLoading, setGithubAutofillLoading] = useState(false);
+  const [fieldLocks, setFieldLocks] = useState<Record<FieldLockKey, boolean>>({ ...DEFAULT_FIELD_LOCKS });
+  const [autofillPreview, setAutofillPreview] = useState<{
+    intelligence?: unknown;
+    commitTimeline?: { sha: string; message: string; date: string; author?: string }[];
+  } | null>(null);
+
+  useEffect(() => {
+    setGithubAutofillUrl(project?.links?.githubRepo || '');
+    setAutofillPreview(null);
+    setFieldLocks({ ...DEFAULT_FIELD_LOCKS });
+  }, [project?._id, project?.links?.githubRepo]);
+
+  const applyGithubAutofill = async () => {
+    const url = githubAutofillUrl.trim();
+    if (!url) {
+      setError('Enter a GitHub repository URL first.');
+      return;
+    }
+    setGithubAutofillLoading(true);
+    setError('');
+    try {
+      const res = await apiFetch('/api/projects/analyze-github-repo', {
+        method: 'POST',
+        body: JSON.stringify({ repoUrl: url }),
+      });
+      const d = res.data as {
+        title: string;
+        tagline: string;
+        category: string;
+        description: string;
+        keyFeatures: string[];
+        techStack: string[];
+        difficultyLevel: string;
+        developmentStage: string;
+        githubRepo: string;
+        topics?: string[];
+        intelligence?: unknown;
+        commitTimeline?: { sha: string; message: string; date: string; author?: string }[];
+      };
+      setAutofillPreview({
+        intelligence: d.intelligence,
+        commitTimeline: d.commitTimeline,
+      });
+      const category = PROJECT_CATEGORIES.includes(d.category)
+        ? d.category
+        : 'Web Application';
+      const topicTags = (d.topics || []).slice(0, 10).map((t) => t.replace(/-/g, ' '));
+      const L = fieldLocks;
+      setFormData((prev) => ({
+        ...prev,
+        title: L.title ? prev.title : d.title || prev.title,
+        tagline: L.tagline ? prev.tagline : d.tagline || prev.tagline,
+        category: L.category ? prev.category : category,
+        description: L.description ? prev.description : d.description || prev.description,
+        keyFeatures: L.keyFeatures
+          ? prev.keyFeatures
+          : d.keyFeatures?.length
+            ? d.keyFeatures
+            : prev.keyFeatures,
+        techStack: L.techStack
+          ? prev.techStack
+          : d.techStack?.length
+            ? [...new Set(d.techStack)]
+            : prev.techStack,
+        difficultyLevel: L.difficultyLevel
+          ? prev.difficultyLevel
+          : (['beginner', 'intermediate', 'advanced'].includes(d.difficultyLevel)
+              ? d.difficultyLevel
+              : prev.difficultyLevel) as typeof prev.difficultyLevel,
+        developmentStage: L.developmentStage
+          ? prev.developmentStage
+          : (['idea', 'prototype', 'ongoing', 'completed'].includes(d.developmentStage)
+              ? d.developmentStage
+              : prev.developmentStage) as typeof prev.developmentStage,
+        tags: [...new Set([...prev.tags, ...topicTags])].slice(0, 20),
+        links: {
+          ...prev.links,
+          githubRepo: L.githubRepo ? prev.links.githubRepo : d.githubRepo || prev.links.githubRepo,
+        },
+      }));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Autofill failed');
+    } finally {
+      setGithubAutofillLoading(false);
+    }
+  };
 
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
@@ -131,12 +255,81 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
   };
 
   return (
-    <div className="space-y-6 max-h-96 overflow-y-auto">
+    <div className="space-y-6 max-h-[min(70vh,32rem)] overflow-y-auto">
       {error && (
         <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm">
           {error}
         </div>
       )}
+
+      <div className="rounded-xl border border-primary/25 bg-gradient-to-br from-primary/10 to-transparent p-4 space-y-3">
+        <div className="flex items-center gap-2 text-primary">
+          <Sparkles className="w-5 h-5 shrink-0" />
+          <span className="font-semibold text-foreground">Autofill from GitHub repo</span>
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Re-analyze a public repo to refresh fields. Locks prevent overwriting sensitive edits.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Input
+            placeholder="https://github.com/owner/repository"
+            value={githubAutofillUrl}
+            onChange={(e) => setGithubAutofillUrl(e.target.value)}
+            className="bg-card-secondary border-primary/20 rounded-xl h-11 flex-1"
+          />
+          <GlowButton
+            type="button"
+            variant="outline"
+            disabled={githubAutofillLoading}
+            onClick={() => void applyGithubAutofill()}
+            className="shrink-0 gap-2 border-primary/40"
+          >
+            {githubAutofillLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Github className="w-4 h-4" />
+            )}
+            Analyze &amp; autofill
+          </GlowButton>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-card-secondary/40 p-3 space-y-2">
+          <p className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5" />
+            Lock fields
+          </p>
+          <div className="flex flex-wrap gap-x-3 gap-y-2">
+            {LOCK_LABELS.map(({ key, label }) => (
+              <label
+                key={key}
+                className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer"
+              >
+                <Checkbox
+                  checked={fieldLocks[key]}
+                  onCheckedChange={(v) =>
+                    setFieldLocks((prev) => ({ ...prev, [key]: Boolean(v) }))
+                  }
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </div>
+        {autofillPreview?.intelligence && (
+          <div className="rounded-lg border border-secondary/30 bg-secondary/5 p-3 text-[11px]">
+            <p className="font-semibold text-secondary flex items-center gap-1 mb-1">
+              <Sparkles className="w-3.5 h-3.5" />
+              ML preview
+            </p>
+            <p className="text-muted-foreground">
+              Score:{' '}
+              <span className="text-foreground font-mono">
+                {(autofillPreview.intelligence as { peve_score_ml?: number }).peve_score_ml ?? '—'}
+              </span>
+              /100
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Basic Info */}
       <div className="space-y-4">
@@ -191,6 +384,37 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
               <option key={category} value={category}>{category}</option>
             ))}
           </select>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-2">Difficulty</label>
+            <select
+              value={formData.difficultyLevel}
+              onChange={(e) => handleInputChange('difficultyLevel', e.target.value)}
+              className="w-full p-3 bg-card-secondary border border-primary/20 rounded-lg focus:border-primary focus:outline-none"
+            >
+              {DIFFICULTY_LEVELS.map((d) => (
+                <option key={d.value} value={d.value}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-2">Development stage</label>
+            <select
+              value={formData.developmentStage}
+              onChange={(e) => handleInputChange('developmentStage', e.target.value)}
+              className="w-full p-3 bg-card-secondary border border-primary/20 rounded-lg focus:border-primary focus:outline-none"
+            >
+              {DEVELOPMENT_STAGES.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

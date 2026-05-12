@@ -17,6 +17,8 @@ export const env = {
     clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
   },
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  mlServiceUrl: process.env.ML_SERVICE_URL || '',
+  mlServiceApiKey: process.env.ML_SERVICE_API_KEY || '',
 };
 
 

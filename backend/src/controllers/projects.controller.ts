@@ -5,6 +5,116 @@ import { Comment } from '../models/Comment';
 import { CollaborationRequest } from '../models/CollaborationRequest';
 import { Notification } from '../models/Notification';
 import { BadgeService } from '../services/badgeService';
+import {
+  fetchGithubRepoAutofill,
+  buildRepositoryInsights,
+  parseGithubRepoUrl,
+  fetchGithubRepoActivity,
+} from '../services/githubRepoAnalysis.service';
+import { blendPeveScore, fetchMlRepositoryIntelligence } from '../services/mlIntelligenceClient';
+import { stripEphemeralProjectFields } from '../utils/projectPayloadSanitize';
+
+export async function analyzeGithubRepository(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    const { repoUrl } = req.body || {};
+    if (!repoUrl || typeof repoUrl !== 'string') {
+      return res.status(400).json({ success: false, error: 'repoUrl is required' });
+    }
+    const token = process.env.GITHUB_TOKEN || process.env.GITHUB_REPO_ANALYSIS_TOKEN || '';
+    const { autofill, readmeExcerpt } = await fetchGithubRepoAutofill(repoUrl, token || undefined);
+    const parsed = parseGithubRepoUrl(autofill.githubRepo);
+    const activity = parsed
+      ? await fetchGithubRepoActivity(parsed.owner, parsed.repo, token || undefined)
+      : { commitTimeline: [], contributorLeaders: [], commitMessageSample: '' };
+    const autofillForMl = {
+      ...autofill,
+      commitMessageSample: activity.commitMessageSample,
+    };
+    const intelligence = await fetchMlRepositoryIntelligence(autofillForMl, readmeExcerpt);
+    const data = {
+      ...autofill,
+      ...activity,
+      intelligence: intelligence ?? null,
+    };
+    return res.json({
+      success: true,
+      data,
+    });
+  } catch (error: any) {
+    console.error('analyzeGithubRepository:', error);
+    return res.status(400).json({
+      success: false,
+      error: error?.message || 'Failed to analyze repository',
+    });
+  }
+}
+
+export async function getRepositoryInsights(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const project = await Project.findById(id).lean();
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+
+    const viewerId = (req as any).user?.id;
+    const isAuthor = viewerId && String(project.author) === String(viewerId);
+    if (project.visibility === 'private' && !isAuthor) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+    if (project.visibility === 'friends-only' && !isAuthor) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+
+    const repoUrl = project.links?.githubRepo;
+    if (!repoUrl || !parseGithubRepoUrl(repoUrl)) {
+      return res.json({
+        success: true,
+        data: null,
+        message:
+          'Add a GitHub repository URL to this project to unlock repository intelligence.',
+      });
+    }
+
+    const token = process.env.GITHUB_TOKEN || process.env.GITHUB_REPO_ANALYSIS_TOKEN || '';
+    const { autofill, readmeExcerpt } = await fetchGithubRepoAutofill(repoUrl, token || undefined);
+    const parsed = parseGithubRepoUrl(autofill.githubRepo);
+    const activity = parsed
+      ? await fetchGithubRepoActivity(parsed.owner, parsed.repo, token || undefined)
+      : { commitTimeline: [], contributorLeaders: [], commitMessageSample: '' };
+    const autofillForMl = {
+      ...autofill,
+      commitMessageSample: activity.commitMessageSample,
+    };
+    const baseInsights = buildRepositoryInsights(autofill, autofill.githubRepo);
+    const intelligence = await fetchMlRepositoryIntelligence(autofillForMl, readmeExcerpt);
+
+    let data: Record<string, unknown> = {
+      ...baseInsights,
+      ...activity,
+      intelligence: intelligence ?? null,
+    };
+    if (intelligence) {
+      data = {
+        ...data,
+        peveScorePreview: blendPeveScore(baseInsights.peveScorePreview, intelligence.peve_score_ml),
+        scoreRationale: `${baseInsights.scoreRationale} Blended with ML repository intelligence (embeddings + tabular scoring).`,
+      };
+    }
+
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    console.error('getRepositoryInsights:', error);
+    return res.status(400).json({
+      success: false,
+      error: error?.message || 'Failed to load repository insights',
+    });
+  }
+}
 
 export async function listProjects(req: Request, res: Response) {
   try {
@@ -145,8 +255,9 @@ export async function createProject(req: Request, res: Response) {
       });
     }
 
-    // Process contributors and teammates
-    const projectData = { ...req.body };
+    // Process contributors and teammates (loose shape from client; strip analyze-only keys)
+    const projectData = { ...req.body } as Record<string, any>;
+    stripEphemeralProjectFields(projectData as Record<string, unknown>);
     
     // Initialize contributors array
     projectData.contributors = [];
@@ -263,8 +374,9 @@ export async function updateProject(req: Request, res: Response) {
     if (!project) return res.status(404).json({ success: false, error: 'Not found' });
     if (String(project.author) !== String(userId)) return res.status(403).json({ success: false, error: 'Forbidden' });
 
-    // Process contributors and teammates
-    const updateData = { ...req.body };
+    // Process contributors and teammates (loose shape from client; strip analyze-only keys)
+    const updateData = { ...req.body } as Record<string, any>;
+    stripEphemeralProjectFields(updateData as Record<string, unknown>);
     
     // Initialize contributors array
     updateData.contributors = [];

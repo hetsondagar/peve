@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Plus, Upload, ChevronLeft, ChevronRight, 
   Github, Globe, FileText, Play, Users, Tag,
-  Check, AlertCircle
+  Check, AlertCircle, Sparkles, Loader2, Lock
 } from 'lucide-react';
 import { GlowButton } from '@/components/ui/glow-button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { apiFetch } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import UsernameTag from '@/components/UsernameTag';
@@ -47,6 +48,41 @@ const COLLABORATION_ROLES = [
 const VISIBILITY_OPTIONS = [
   { value: 'public', label: 'Public', description: 'Visible to everyone' },
   { value: 'private', label: 'Private', description: 'Only you can see' }
+];
+
+type FieldLockKey =
+  | 'title'
+  | 'tagline'
+  | 'category'
+  | 'description'
+  | 'keyFeatures'
+  | 'techStack'
+  | 'difficultyLevel'
+  | 'developmentStage'
+  | 'githubRepo';
+
+const DEFAULT_FIELD_LOCKS: Record<FieldLockKey, boolean> = {
+  title: false,
+  tagline: false,
+  category: false,
+  description: false,
+  keyFeatures: false,
+  techStack: false,
+  difficultyLevel: false,
+  developmentStage: false,
+  githubRepo: false,
+};
+
+const LOCK_LABELS: { key: FieldLockKey; label: string }[] = [
+  { key: 'title', label: 'Title' },
+  { key: 'tagline', label: 'Tagline' },
+  { key: 'category', label: 'Category' },
+  { key: 'description', label: 'Description' },
+  { key: 'keyFeatures', label: 'Features' },
+  { key: 'techStack', label: 'Stack' },
+  { key: 'difficultyLevel', label: 'Difficulty' },
+  { key: 'developmentStage', label: 'Stage' },
+  { key: 'githubRepo', label: 'GitHub URL' },
 ];
 
 export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmissionFormProps) {
@@ -98,8 +134,23 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
   const [newTag, setNewTag] = useState('');
   const [newCollaboratorName, setNewCollaboratorName] = useState('');
   const [newCollaboratorRole, setNewCollaboratorRole] = useState('');
+  const [githubAutofillUrl, setGithubAutofillUrl] = useState('');
+  const [githubAutofillLoading, setGithubAutofillLoading] = useState(false);
+  const [fieldLocks, setFieldLocks] = useState<Record<FieldLockKey, boolean>>({ ...DEFAULT_FIELD_LOCKS });
+  const [autofillPreview, setAutofillPreview] = useState<{
+    intelligence?: unknown;
+    commitTimeline?: { sha: string; message: string; date: string; author?: string }[];
+    contributorLeaders?: { login: string; contributions: number; avatarUrl?: string }[];
+  } | null>(null);
 
   const totalSteps = 5;
+
+  useEffect(() => {
+    if (!isOpen) {
+      setAutofillPreview(null);
+      setFieldLocks({ ...DEFAULT_FIELD_LOCKS });
+    }
+  }, [isOpen]);
 
 
   const handleFileUpload = async (file: File) => {
@@ -185,6 +236,88 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
         [field]: currentArray.filter((_, i) => i !== index)
       };
     });
+  };
+
+  const applyGithubAutofill = async () => {
+    const url = githubAutofillUrl.trim();
+    if (!url) {
+      setError('Enter a GitHub repository URL first.');
+      return;
+    }
+    setGithubAutofillLoading(true);
+    setError('');
+    try {
+      const res = await apiFetch('/api/projects/analyze-github-repo', {
+        method: 'POST',
+        body: JSON.stringify({ repoUrl: url }),
+      });
+      const d = res.data as {
+        title: string;
+        tagline: string;
+        category: string;
+        description: string;
+        keyFeatures: string[];
+        techStack: string[];
+        difficultyLevel: string;
+        developmentStage: string;
+        githubRepo: string;
+        topics?: string[];
+        intelligence?: unknown;
+        commitTimeline?: { sha: string; message: string; date: string; author?: string }[];
+        contributorLeaders?: { login: string; contributions: number; avatarUrl?: string }[];
+      };
+      setAutofillPreview({
+        intelligence: d.intelligence,
+        commitTimeline: d.commitTimeline,
+        contributorLeaders: d.contributorLeaders,
+      });
+      const category = PROJECT_CATEGORIES.includes(d.category)
+        ? d.category
+        : 'Web Application';
+      const topicTags = (d.topics || []).slice(0, 10).map((t) =>
+        t.replace(/-/g, ' ')
+      );
+      const L = fieldLocks;
+      setFormData((prev) => ({
+        ...prev,
+        title: L.title ? prev.title : d.title || prev.title,
+        tagline: L.tagline ? prev.tagline : d.tagline || prev.tagline,
+        category: L.category ? prev.category : category,
+        description: L.description ? prev.description : d.description || prev.description,
+        keyFeatures:
+          L.keyFeatures
+            ? prev.keyFeatures
+            : d.keyFeatures && d.keyFeatures.length > 0
+              ? d.keyFeatures
+              : prev.keyFeatures,
+        techStack:
+          L.techStack
+            ? prev.techStack
+            : d.techStack && d.techStack.length > 0
+              ? [...new Set(d.techStack)]
+              : prev.techStack,
+        difficultyLevel: L.difficultyLevel
+          ? prev.difficultyLevel
+          : (['beginner', 'intermediate', 'advanced'].includes(d.difficultyLevel)
+              ? d.difficultyLevel
+              : prev.difficultyLevel) as typeof prev.difficultyLevel,
+        developmentStage: L.developmentStage
+          ? prev.developmentStage
+          : (['idea', 'prototype', 'ongoing', 'completed'].includes(d.developmentStage)
+              ? d.developmentStage
+              : prev.developmentStage) as typeof prev.developmentStage,
+        links: {
+          ...prev.links,
+          githubRepo: L.githubRepo ? prev.links.githubRepo : d.githubRepo || prev.links.githubRepo,
+        },
+        tags: [...new Set([...prev.tags, ...topicTags])].slice(0, 20),
+      }));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Autofill failed';
+      setError(msg);
+    } finally {
+      setGithubAutofillLoading(false);
+    }
   };
 
 
@@ -329,6 +462,88 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-6"
               >
+                <div className="rounded-xl border border-primary/25 bg-gradient-to-br from-primary/10 to-transparent p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Sparkles className="w-5 h-5 shrink-0" />
+                    <span className="font-semibold text-foreground">Autofill from GitHub repo</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Paste a public GitHub URL. We pull README, languages, topics, and repo metadata only — no permanent
+                    source storage. You can edit or clear any field afterward.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      placeholder="https://github.com/owner/repository"
+                      value={githubAutofillUrl}
+                      onChange={(e) => setGithubAutofillUrl(e.target.value)}
+                      className="bg-card-secondary border-primary/20 focus:border-primary focus:glow-subtle rounded-xl h-11 flex-1"
+                    />
+                    <GlowButton
+                      type="button"
+                      variant="outline"
+                      disabled={githubAutofillLoading}
+                      onClick={() => void applyGithubAutofill()}
+                      className="shrink-0 gap-2 border-primary/40"
+                    >
+                      {githubAutofillLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Github className="w-4 h-4" />
+                      )}
+                      Analyze &amp; autofill
+                    </GlowButton>
+                  </div>
+                  <div className="rounded-lg border border-border/60 bg-card-secondary/40 p-3 space-y-2">
+                    <p className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5" />
+                      Lock fields (skipped on autofill)
+                    </p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-2">
+                      {LOCK_LABELS.map(({ key, label }) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={fieldLocks[key]}
+                            onCheckedChange={(v) =>
+                              setFieldLocks((prev) => ({ ...prev, [key]: Boolean(v) }))
+                            }
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  {autofillPreview?.intelligence && (
+                    <div className="rounded-lg border border-secondary/30 bg-secondary/5 p-3 text-[11px] space-y-1">
+                      <p className="font-semibold text-secondary flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        ML preview
+                      </p>
+                      <p className="text-muted-foreground">
+                        Peve ML score:{' '}
+                        <span className="text-foreground font-mono">
+                          {(autofillPreview.intelligence as { peve_score_ml?: number }).peve_score_ml ?? '—'}
+                        </span>
+                        /100 — shown again on the project page after publish.
+                      </p>
+                    </div>
+                  )}
+                  {(autofillPreview?.commitTimeline?.length || 0) > 0 && (
+                    <div className="rounded-lg border border-border/60 bg-card-secondary/30 p-3">
+                      <p className="text-[11px] font-semibold text-foreground mb-2">Latest commits (preview)</p>
+                      <ul className="space-y-1.5 text-[11px] text-muted-foreground max-h-28 overflow-y-auto">
+                        {autofillPreview!.commitTimeline!.slice(0, 5).map((c, i) => (
+                          <li key={`${c.sha}-${i}`} className="truncate">
+                            <span className="font-mono text-primary/90">{c.sha}</span> {c.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
                 <h3 className="text-xl font-semibold text-foreground">Basic Information</h3>
                 
                 <div className="space-y-4">

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { 
   createProject, 
   forkProject, 
@@ -12,15 +13,33 @@ import {
   bookmarkProject,
   shareProject,
   requestCollaboration,
-  getProjectsByContributor
+  getProjectsByContributor,
+  analyzeGithubRepository,
+  getRepositoryInsights
 } from '../controllers/projects.controller';
 import { requireAuth } from '../middlewares/auth';
+
+const analyzeGithubLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const repositoryInsightsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const router = Router();
 
 router.get('/', listProjects);
 router.get('/trending', getTrendingProjects);
 router.get('/contributor/:userId', getProjectsByContributor);
+router.post('/analyze-github-repo', analyzeGithubLimiter, requireAuth, analyzeGithubRepository);
+router.get('/:id/repository-insights', repositoryInsightsLimiter, getRepositoryInsights);
 router.get('/:id', getProject);
 router.post('/', requireAuth, createProject);
 router.put('/:id', requireAuth, updateProject);

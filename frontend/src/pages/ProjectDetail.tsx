@@ -5,7 +5,7 @@ import {
   Bell, User, X, Heart, Bookmark, Share2, MessageCircle, 
   ExternalLink, Github, Users, Eye, Calendar,
   Award, Tag, Code, Zap, Globe, FileText, Play, BarChart3,
-  Edit3, Trash2
+  Edit3, Trash2, Sparkles, Loader2, RefreshCw, GitCommit
 } from 'lucide-react';
 import { NetworkBackground } from '@/components/NetworkBackground';
 import UsernameLink from '@/components/UsernameLink';
@@ -23,6 +23,15 @@ import { requireAuth } from '@/utils/auth';
 import { CommentComponent } from '@/components/CommentComponent';
 import UsernameTag from '@/components/UsernameTag';
 import UsernameWithAvatar from '@/components/UsernameWithAvatar';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts';
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -43,6 +52,10 @@ export default function ProjectDetail() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showRepoIntelModal, setShowRepoIntelModal] = useState(false);
+  const [repoIntelLoading, setRepoIntelLoading] = useState(false);
+  const [repoIntelData, setRepoIntelData] = useState<any>(null);
+  const [repoIntelMessage, setRepoIntelMessage] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchProject = useCallback(async () => {
@@ -193,6 +206,37 @@ export default function ProjectDetail() {
   const handleEditProject = () => {
     // Open edit modal instead of navigating
     setShowEditModal(true);
+  };
+
+  const loadRepositoryIntelligence = useCallback(async (options?: { keepPrevious?: boolean }) => {
+    if (!id) return;
+    setRepoIntelLoading(true);
+    if (!options?.keepPrevious) {
+      setRepoIntelData(null);
+    }
+    setRepoIntelMessage('');
+    try {
+      const res = (await apiFetch(`/api/projects/${id}/repository-insights`)) as {
+        data?: unknown;
+        message?: string;
+      };
+      setRepoIntelData(res.data ?? null);
+      setRepoIntelMessage(typeof res.message === 'string' ? res.message : '');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not load repository intelligence';
+      setRepoIntelMessage(msg);
+    } finally {
+      setRepoIntelLoading(false);
+    }
+  }, [id]);
+
+  const openRepositoryIntelligence = () => {
+    setShowRepoIntelModal(true);
+    void loadRepositoryIntelligence();
+  };
+
+  const refreshRepositoryIntelligence = () => {
+    void loadRepositoryIntelligence({ keepPrevious: true });
   };
 
   const handleDeleteProject = async () => {
@@ -444,6 +488,19 @@ export default function ProjectDetail() {
                     <Eye className="w-4 h-4" />
                     {project.metrics?.views || 0} views
                   </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <GlowButton
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={openRepositoryIntelligence}
+                    className="gap-2 border-primary/40 bg-primary/5 hover:bg-primary/10"
+                  >
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Repository intelligence
+                  </GlowButton>
                 </div>
               </div>
 
@@ -947,6 +1004,367 @@ export default function ProjectDetail() {
           </div>
         </div>
       </div>
+
+      {/* Repository intelligence — live GitHub signals (no code stored) */}
+      <Dialog open={showRepoIntelModal} onOpenChange={setShowRepoIntelModal}>
+        <DialogContent className="glass border-primary/20 max-w-3xl max-h-[90vh] overflow-y-auto text-left">
+          <DialogHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:pr-8">
+              <div>
+                <DialogTitle className="flex items-center gap-2 text-foreground">
+                  <Sparkles className="w-5 h-5 text-primary shrink-0" />
+                  Repository intelligence
+                </DialogTitle>
+                <DialogDescription>
+                  Signals derived from public GitHub metadata and README. Source code is not persisted on Peve.
+                </DialogDescription>
+              </div>
+              {repoIntelData && (
+                <GlowButton
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 gap-2"
+                  disabled={repoIntelLoading}
+                  onClick={() => refreshRepositoryIntelligence()}
+                >
+                  {repoIntelLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  Refresh
+                </GlowButton>
+              )}
+            </div>
+          </DialogHeader>
+
+          {repoIntelLoading && (
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-sm">Pulling repository structure and languages…</p>
+            </div>
+          )}
+
+          {!repoIntelLoading && !repoIntelData && (
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-muted-foreground">
+                {repoIntelMessage ||
+                  'Link a GitHub repository on this project to unlock intelligence visualizations.'}
+              </p>
+              {project.links?.githubRepo && (
+                <p className="text-xs text-muted-foreground break-all">
+                  Current link: {project.links.githubRepo}
+                </p>
+              )}
+            </div>
+          )}
+
+          {!repoIntelLoading && repoIntelData && (
+            <div className="space-y-6 text-foreground">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                    Peve score preview
+                  </p>
+                  <p className="mt-1 text-4xl font-bold tabular-nums">
+                    {repoIntelData.peveScorePreview}
+                    <span className="text-lg font-normal text-muted-foreground">/100</span>
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                    {repoIntelData.scoreRationale}
+                  </p>
+                  {repoIntelData.intelligence && (
+                    <p className="mt-2 text-[10px] text-primary/90 leading-snug">
+                      Headline score blends heuristic GitHub signals with the ML service when{' '}
+                      <code className="text-primary/80">ML_SERVICE_URL</code> is configured on the API.
+                    </p>
+                  )}
+                </div>
+                <div className="rounded-xl border border-border bg-card-secondary/50 p-4 space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Repository pulse</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Stars</span>
+                      <p className="font-semibold">{Number(repoIntelData.stars || 0).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Forks</span>
+                      <p className="font-semibold">{Number(repoIntelData.forks || 0).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Open issues</span>
+                      <p className="font-semibold">{Number(repoIntelData.openIssues || 0).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Watchers</span>
+                      <p className="font-semibold">{Number(repoIntelData.watchers || 0).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Default branch:{' '}
+                    <span className="text-foreground font-mono">{repoIntelData.defaultBranch}</span>
+                  </p>
+                  {repoIntelData.repoCreatedAt && (
+                    <p className="text-xs text-muted-foreground">
+                      Repo created:{' '}
+                      <span className="text-foreground">
+                        {new Date(repoIntelData.repoCreatedAt as string).toLocaleDateString()}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {repoIntelData.intelligence && (
+                <div className="space-y-4 rounded-xl border border-secondary/25 bg-secondary/5 p-4">
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-secondary" />
+                    ML layer (Peve ML service)
+                  </h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Sentence Transformers embeddings, sklearn scoring, optional summarization, and Matplotlib
+                    chart — no full source tree stored.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Model-assisted score</p>
+                      <p className="text-2xl font-bold text-secondary tabular-nums">
+                        {(repoIntelData.intelligence as { peve_score_ml?: number }).peve_score_ml ?? '—'}
+                        <span className="text-sm font-normal text-muted-foreground">/100</span>
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                        {(repoIntelData.intelligence as { score_rationale_ml?: string }).score_rationale_ml}
+                      </p>
+                    </div>
+                    {(repoIntelData.intelligence as { score_breakdown?: Record<string, number> }).score_breakdown && (
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                        {Object.entries(
+                          (repoIntelData.intelligence as { score_breakdown: Record<string, number> }).score_breakdown
+                        ).map(([k, v]) => (
+                          <div key={k} className="flex justify-between gap-2 border-b border-border/50 pb-1">
+                            <span className="text-muted-foreground capitalize">{k.replace(/_/g, ' ')}</span>
+                            <span className="font-mono text-foreground">{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {(repoIntelData.intelligence as { technical_summary?: string | null }).technical_summary && (
+                    <div>
+                      <p className="text-xs font-semibold text-foreground mb-1">Technical summary</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {(repoIntelData.intelligence as { technical_summary: string }).technical_summary}
+                      </p>
+                    </div>
+                  )}
+                  {(repoIntelData.intelligence as { project_soul?: string[] }).project_soul?.length ? (
+                    <div>
+                      <p className="text-xs font-semibold text-foreground mb-2">Project soul</p>
+                      <ul className="space-y-2">
+                        {(repoIntelData.intelligence as { project_soul: string[] }).project_soul.map(
+                          (line: string, i: number) => (
+                            <li key={i} className="text-sm text-muted-foreground leading-relaxed border-l-2 border-secondary/40 pl-3">
+                              {line}
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {(repoIntelData.intelligence as { architecture_hints?: string[] }).architecture_hints?.length ? (
+                    <div>
+                      <p className="text-xs font-semibold text-foreground mb-2">Architecture hints</p>
+                      <ul className="space-y-1">
+                        {(repoIntelData.intelligence as { architecture_hints: string[] }).architecture_hints.map(
+                          (line: string, i: number) => (
+                            <li key={i} className="text-xs text-muted-foreground flex gap-2">
+                              <span className="text-secondary shrink-0">→</span>
+                              <span>{line}</span>
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {(repoIntelData.intelligence as { chart_language_mix_png_base64?: string | null })
+                    .chart_language_mix_png_base64 && (
+                    <div>
+                      <p className="text-xs font-semibold text-foreground mb-2">ML language chart (Matplotlib)</p>
+                      <img
+                        src={`data:image/png;base64,${(repoIntelData.intelligence as { chart_language_mix_png_base64: string }).chart_language_mix_png_base64}`}
+                        alt="Language mix"
+                        className="w-full max-h-48 object-contain rounded-lg border border-border bg-card-secondary/40"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                  Language mix (bytes)
+                </h4>
+                <div className="h-64 w-full min-w-0 rounded-xl border border-border bg-card-secondary/30 p-2">
+                  {(() => {
+                    const chartData = Object.entries(repoIntelData.languageBytes || {})
+                      .map(([name, value]) => ({ name, value: Number(value) || 0 }))
+                      .sort((a, b) => b.value - a.value)
+                      .slice(0, 12);
+                    if (chartData.length === 0) {
+                      return (
+                        <p className="text-sm text-muted-foreground p-4">No language data from GitHub.</p>
+                      );
+                    }
+                    return (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart layout="vertical" data={chartData} margin={{ left: 4, right: 12, top: 8, bottom: 8 }}>
+                          <XAxis type="number" hide />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            width={88}
+                            tick={{ fill: 'hsl(0 0% 78%)', fontSize: 11 }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <Tooltip
+                            formatter={(v: number) => [`${v.toLocaleString()} bytes`, '']}
+                            contentStyle={{
+                              background: 'hsl(210 20% 10%)',
+                              border: '1px solid hsl(210 20% 22%)',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                            }}
+                          />
+                          <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                            {chartData.map((_, i) => (
+                              <Cell
+                                key={i}
+                                fill={`hsl(180 100% ${Math.max(28, 52 - i * 3)}% / 0.9)`}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Engineering signals</h4>
+                <ul className="space-y-2">
+                  {(repoIntelData.networkSignals || []).length ? (
+                    repoIntelData.networkSignals.map((line: string, i: number) => (
+                      <li key={i} className="flex gap-2 text-sm text-muted-foreground">
+                        <span className="text-primary shrink-0">▹</span>
+                        <span>{line}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-sm text-muted-foreground">No extra structural signals detected.</li>
+                  )}
+                </ul>
+              </div>
+
+              {(repoIntelData.commitTimeline || []).length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <GitCommit className="w-4 h-4 text-primary" />
+                    Recent evolution (commits)
+                  </h4>
+                  <div className="relative ml-2.5 space-y-4 border-l-2 border-primary/25 py-1 pl-5">
+                    {(
+                      repoIntelData.commitTimeline as {
+                        sha: string;
+                        message: string;
+                        date: string;
+                        author?: string;
+                      }[]
+                    )
+                      .slice(0, 14)
+                      .map((c, i) => (
+                        <div key={`${c.sha}-${i}`} className="relative">
+                          <span className="absolute -left-[25px] top-1.5 h-2.5 w-2.5 rounded-full border border-primary/40 bg-primary/80 shadow-[0_0_10px_hsl(180_100%_46%/0.45)]" />
+                          <p className="text-[11px] font-mono text-muted-foreground">
+                            {c.sha}
+                            {c.date ? ` · ${new Date(c.date).toLocaleDateString()}` : ''}
+                          </p>
+                          <p className="text-sm text-foreground leading-snug">{c.message}</p>
+                          {c.author ? (
+                            <p className="text-xs text-muted-foreground mt-0.5">{c.author}</p>
+                          ) : null}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {(repoIntelData.contributorLeaders || []).length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-primary" />
+                    Top contributors (GitHub)
+                  </h4>
+                  <div className="flex flex-wrap gap-3">
+                    {(
+                      repoIntelData.contributorLeaders as {
+                        login: string;
+                        contributions: number;
+                        avatarUrl?: string;
+                      }[]
+                    )
+                      .slice(0, 10)
+                      .map((u) => (
+                        <a
+                          key={u.login}
+                          href={`https://github.com/${u.login}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 rounded-lg border border-border bg-card-secondary/40 px-2 py-1.5 text-xs text-foreground transition-colors hover:border-primary/40"
+                        >
+                          {u.avatarUrl ? (
+                            <img src={u.avatarUrl} alt="" className="h-7 w-7 rounded-full" />
+                          ) : (
+                            <div className="h-7 w-7 rounded-full bg-primary/20" />
+                          )}
+                          <span className="font-medium">{u.login}</span>
+                          <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                            {u.contributions}
+                          </Badge>
+                        </a>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2 items-center justify-between border-t border-border pt-4">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="capitalize">
+                    {repoIntelData.difficultyLevel}
+                  </Badge>
+                  <Badge variant="teal" className="capitalize">
+                    {repoIntelData.developmentStage}
+                  </Badge>
+                  {(repoIntelData.topics || []).slice(0, 8).map((t: string) => (
+                    <Badge key={t} variant="secondary" className="text-xs">
+                      {t}
+                    </Badge>
+                  ))}
+                </div>
+                <GlowButton variant="outline" size="sm" asChild>
+                  <a href={repoIntelData.htmlUrl} target="_blank" rel="noopener noreferrer" className="gap-2">
+                    <Github className="w-4 h-4" />
+                    Open on GitHub
+                  </a>
+                </GlowButton>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Collaboration Modal */}
       <Dialog open={showCollaborationModal} onOpenChange={setShowCollaborationModal}>
