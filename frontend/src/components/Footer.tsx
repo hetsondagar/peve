@@ -89,7 +89,7 @@ export default function Footer() {
             className="pt-2 border-t border-primary/10"
           >
             <p className="text-xs text-muted-foreground">
-              © 2025 <span className="brand-peve font-semibold">peve</span>. Made with 💻 and a healthy dose of caffeine. 
+              © 2026 <span className="brand-peve font-semibold">peve</span>. Made with 💻 and a healthy dose of caffeine. 
               <span className="text-primary/60 block mt-1">
                 "Code is poetry written in logic" - Some wise developer probably
               </span>

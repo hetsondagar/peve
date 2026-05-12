@@ -351,24 +351,25 @@ export default function ProjectDetail() {
         </div>
       </nav>
 
-      <div className="relative z-10 container mx-auto px-6 py-12">
-        <div className="grid lg:grid-cols-3 gap-8">
+      <div className="relative z-10 container mx-auto min-w-0 px-6 py-12">
+        <div className="grid min-w-0 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="min-w-0 lg:col-span-2 space-y-8">
             {/* Project Header */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
+              className="min-w-0 space-y-6"
             >
-              {/* Cover Image */}
+              {/* Cover Image — min-w-0 + max-w-full avoids grid overflow clipping */}
               {project.coverImage?.url && (
-                <img 
-                  src={project.coverImage.url} 
-                  alt={project.title}
-                  className="w-full h-auto rounded-2xl"
-                  style={{ maxWidth: '100%', height: 'auto' }}
-                />
+                <div className="flex w-full min-w-0 justify-center">
+                  <img
+                    src={project.coverImage.url}
+                    alt={project.title}
+                    className="block h-auto w-auto max-w-full rounded-2xl"
+                  />
+                </div>
               )}
 
               {/* Title & Tagline */}
@@ -785,7 +786,7 @@ export default function ProjectDetail() {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="min-w-0 lg:col-span-1 space-y-6">
             {/* Project Info */}
             <Card className="glass border-border">
               <CardHeader>
