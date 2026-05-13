@@ -30,7 +30,7 @@ class ScoreModelResult:
     rationale: str
 
 
-def _bootstrap_training_frame(seed: int = 7, size: int = 1400) -> pd.DataFrame:
+def _bootstrap_training_frame(seed: int = 7, size: int = 900) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     rows: list[dict[str, float]] = []
     for _ in range(size):
@@ -88,10 +88,10 @@ def build_score_model(historical_rows: list[dict[str, Any]] | None = None) -> Ra
             bootstrap = pd.concat([bootstrap, hist[FEATURE_COLUMNS + ["label"]]], ignore_index=True)
 
     model = RandomForestRegressor(
-        n_estimators=160,
+        n_estimators=96,
         random_state=7,
         min_samples_leaf=3,
-        n_jobs=-1,
+        n_jobs=1,
     )
     model.fit(bootstrap[FEATURE_COLUMNS], bootstrap["label"])
     return model

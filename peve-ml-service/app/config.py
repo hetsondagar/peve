@@ -12,15 +12,17 @@ class Settings(BaseSettings):
     redis_url: str | None = None
     cache_ttl_seconds: int = 3600
     embedding_store_path: str = "data/repository_embeddings.sqlite3"
-    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    embedding_model: str = "sentence-transformers/paraphrase-MiniLM-L3-v2"
     summarizer_model: str = "sshleifer/distilbart-cnn-12-6"
-    skip_summarization: bool = False
-    extractive_summary_fallback: bool = False
-    embedding_encode_batch_size: int = 32
+    skip_summarization: bool = True
+    extractive_summary_fallback: bool = True
+    embedding_encode_batch_size: int = 4
+    """Disable SentenceTransformer runtime entirely; keeps traditional sklearn scoring active."""
+    disable_embedding_model: bool = True
     """Skip Matplotlib language chart (saves RAM on 512Mi-class hosts)."""
-    skip_language_chart: bool = False
+    skip_language_chart: bool = True
     """Cap rows read for semantic neighbor search (full table scan OOMs at scale)."""
-    neighbor_search_pool: int = 600
+    neighbor_search_pool: int = 120
     api_key: str | None = None
 
     @field_validator("api_key", "redis_url", mode="before")

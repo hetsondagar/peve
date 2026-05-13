@@ -117,6 +117,7 @@ export default function ProjectShowcase() {
   const [insightMsg, setInsightMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+  const [shareStatus, setShareStatus] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -184,9 +185,28 @@ export default function ProjectShowcase() {
   const copyShare = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
+      setShareStatus('Link copied. Anyone with this URL can open the showcase.');
     } catch {
-      /* ignore */
+      setShareStatus('Could not copy automatically. Copy the link from the field below.');
     }
+  };
+
+  const shareShowcase = async () => {
+    if (!shareUrl) return;
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: project?.title || 'Peve showcase',
+          text: `Check out this Peve showcase: ${project?.title || ''}`,
+          url: shareUrl,
+        });
+        setShareStatus('Share menu opened.');
+        return;
+      } catch {
+        // fall back to copy
+      }
+    }
+    await copyShare();
   };
 
   if (loading) {
@@ -255,9 +275,12 @@ export default function ProjectShowcase() {
             Back to project
           </Link>
           <div className="flex flex-wrap gap-2">
-            <GlowButton type="button" variant="outline" size="sm" className="gap-2 bg-card" onClick={() => void copyShare()}>
+            <GlowButton type="button" variant="outline" size="sm" className="gap-2 bg-card" onClick={() => void shareShowcase()}>
               <Share2 className="h-4 w-4" />
-              Copy share link
+              Share
+            </GlowButton>
+            <GlowButton type="button" variant="outline" size="sm" className="gap-2 bg-card" onClick={() => void copyShare()}>
+              Copy link
             </GlowButton>
             {project.links?.githubRepo && (
               <GlowButton type="button" variant="outline" size="sm" className="gap-2 bg-card" asChild>
@@ -298,7 +321,13 @@ export default function ProjectShowcase() {
                   {project.developmentStage}
                 </Badge>
               </div>
-              <p className="max-w-2xl pt-4 font-mono text-xs text-muted-foreground break-all">{shareUrl}</p>
+              <div className="max-w-3xl pt-4">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Public share link</p>
+                <div className="rounded-lg border border-border/80 bg-background/70 px-3 py-2 font-mono text-xs text-foreground break-all">
+                  {shareUrl}
+                </div>
+                {shareStatus && <p className="mt-2 text-xs text-primary">{shareStatus}</p>}
+              </div>
             </div>
             {previewScore != null && (
               <div className="mx-auto w-full max-w-[220px] rounded-2xl border border-border/70 bg-background/50 p-4 lg:mx-0">

@@ -10,7 +10,7 @@ from app.schemas import RepositorySignals
 def _infer_signal_narratives(signals: RepositorySignals) -> list[str]:
     """
     Deterministic, repo-grounded lines (topics, stack, activity, README depth).
-    Complements embedding archetypes — specific, not generic therapy-speak.
+    Complements embedding archetypes - specific, not generic output.
     """
     lines: list[str] = []
     topics_blob = " ".join(signals.topics).lower()
@@ -30,7 +30,7 @@ def _infer_signal_narratives(signals: RepositorySignals) -> list[str]:
         )
     elif stars >= 80:
         lines.append(
-            "The repo has meaningful attention — enough signal that quality and usefulness are being validated in the open."
+            "The repo has meaningful attention - enough signal that quality and usefulness are being validated in the open."
         )
     elif stars < 8 and readme_len > 800:
         lines.append(
@@ -39,7 +39,7 @@ def _infer_signal_narratives(signals: RepositorySignals) -> list[str]:
 
     if forks >= 30:
         lines.append(
-            "Fork volume suggests others extend or ship variants — a sign the design is legible enough to build on."
+            "Fork volume suggests others extend or ship variants - a sign the design is legible enough to build on."
         )
 
     if issues >= 25:
@@ -69,7 +69,7 @@ def _infer_signal_narratives(signals: RepositorySignals) -> list[str]:
         )
     if any(x in blob for x in ("test", "jest", "vitest", "pytest", "playwright", "cypress")):
         lines.append(
-            "Testing-adjacent signals hint at verification habits — engineering maturity shows up in how change is guarded."
+            "Testing-adjacent signals hint at verification habits - engineering maturity shows up in how change is guarded."
         )
     if any(x in blob for x in ("github-actions", "gitlab-ci", "circleci")):
         lines.append(
@@ -87,7 +87,7 @@ def _infer_signal_narratives(signals: RepositorySignals) -> list[str]:
         )
     elif stage == "prototype":
         lines.append(
-            "Prototype-stage labeling reads as velocity-first exploration — useful when validating direction before hardening."
+            "Prototype-stage labeling reads as velocity-first exploration - useful when validating direction before hardening."
         )
 
     if diff == "advanced" and len(signals.tech_stack) >= 6:
@@ -142,6 +142,23 @@ def infer_project_soul(
 
     if not merged:
         merged.append(
-            "The README signal is still forming a clear narrative — iterate on intent, users, and constraints."
+            "The README signal is still forming a clear narrative - iterate on intent, users, and constraints."
         )
     return merged
+
+
+def infer_project_soul_without_embeddings(
+    signals: RepositorySignals,
+    *,
+    max_lines: int = 8,
+) -> list[str]:
+    """
+    Low-memory fallback used when embedding model is disabled.
+    Keeps showcase narrative usable with deterministic repo signals only.
+    """
+    lines = _infer_signal_narratives(signals)
+    if not lines:
+        lines = [
+            "The repository metadata suggests an early-stage build; add richer README and topics for deeper intelligence."
+        ]
+    return lines[:max_lines]

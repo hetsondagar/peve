@@ -20,7 +20,7 @@ from app.pipelines.charts import language_mix_png_base64
 from app.pipelines.embeddings import encode_texts, projection_preview
 from app.pipelines.features import signals_to_feature_frame
 from app.pipelines.score_model import build_score_model, compute_ml_peve_score
-from app.pipelines.soul_engine import infer_project_soul
+from app.pipelines.soul_engine import infer_project_soul, infer_project_soul_without_embeddings
 from app.pipelines.vector_store import RepositoryVectorStore
 from app.pipelines.summarization import summarize_readme
 from app.schemas import RepositoryIntelligenceResponse, RepositorySignals
@@ -63,12 +63,31 @@ def architecture_hints(signals: RepositorySignals) -> list[str]:
 
 def _ensure_ml_runtime_loaded(settings: Settings) -> None:
     """Load Torch + SentenceTransformer + score head once (after HTTP port is open)."""
-    if state.st_model is not None and state.archetype_embeddings is not None:
+    if state.score_model is not None and (
+        settings.disable_embedding_model
+        or (state.st_model is not None and state.archetype_embeddings is not None)
+    ):
         return
     with _ml_load_lock:
-        if state.st_model is not None and state.archetype_embeddings is not None:
+        if state.score_model is not None and (
+            settings.disable_embedding_model
+            or (state.st_model is not None and state.archetype_embeddings is not None)
+        ):
             return
         try:
+            state.vector_store = RepositoryVectorStore(settings.embedding_store_path)
+            historical_rows = state.vector_store.fetch_training_rows(limit=600) if state.vector_store else []
+            state.score_model = build_score_model(historical_rows)
+
+            if settings.disable_embedding_model:
+                state.st_model = None
+                state.archetype_embeddings = None
+                state.archetype_keys = []
+                state.summarizer = None
+                gc.collect()
+                logger.info("ML runtime ready in low-memory mode (embeddings disabled).")
+                return
+
             import torch
 
             torch.set_num_threads(1)
@@ -78,14 +97,10 @@ def _ensure_ml_runtime_loaded(settings: Settings) -> None:
 
             logger.info("Lazy-loading embedding model: %s", settings.embedding_model)
             state.st_model = SentenceTransformer(settings.embedding_model, device="cpu")
-            state.vector_store = RepositoryVectorStore(settings.embedding_store_path)
             state.archetype_keys = [k for k, _ in ARCHETYPES]
             texts = [t for _, t in ARCHETYPES]
             bs = settings.embedding_encode_batch_size
             state.archetype_embeddings = encode_texts(state.st_model, texts, batch_size=bs)
-
-            historical_rows = state.vector_store.fetch_training_rows(limit=1200) if state.vector_store else []
-            state.score_model = build_score_model(historical_rows)
 
             if not settings.skip_summarization:
                 logger.info("Loading summarization pipeline: %s", settings.summarizer_model)
@@ -140,8 +155,8 @@ def _cache_key(body: RepositorySignals) -> str:
 
 
 def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryIntelligenceResponse:
-    if state.st_model is None or state.archetype_embeddings is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
+    if state.score_model is None:
+        raise HTTPException(status_code=503, detail="Score model not loaded")
 
     readme_text = (body.readme_excerpt or "").strip()
     commits_tail = (body.commit_messages_sample or "").strip()
@@ -163,53 +178,61 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
         if part.strip()
     ).strip() or "repository overview unavailable"
 
+    has_embeddings = state.st_model is not None and state.archetype_embeddings is not None
     bs = settings.embedding_encode_batch_size
-    readme_only_emb = encode_texts(state.st_model, [combined_text], batch_size=bs)[0]
-    desc_emb = encode_texts(state.st_model, [desc_text or " "], batch_size=bs)[0]
-
-    arch_space = build_architecture_space(
-        state.st_model,
-        readme_only_emb,
-        list(body.topics),
-        list(body.tech_stack),
-        batch_size=bs,
-    )
-
-    if desc_text:
-        sem_mass = float(
-            np.clip(
-                cosine_similarity(
-                    readme_only_emb.reshape(1, -1),
-                    desc_emb.reshape(1, -1),
-                )[0, 0],
-                0,
-                1,
-            )
-        )
-    else:
-        sem_mass = float(np.clip(len(readme_text) / 6000.0, 0, 1))
-
-    neighbor_similarity = 0.0
+    readme_only_emb: np.ndarray | None = None
+    arch_space = []
+    proj: list[float] = []
     similar_repos = []
-    if state.vector_store is not None:
-        similar_repos = state.vector_store.search_similar(
+    neighbor_similarity = 0.0
+    sem_mass = float(np.clip(len(readme_text) / 6000.0, 0, 1))
+
+    if has_embeddings:
+        readme_only_emb = encode_texts(state.st_model, [combined_text], batch_size=bs)[0]
+        desc_emb = encode_texts(state.st_model, [desc_text or " "], batch_size=bs)[0]
+        arch_space = build_architecture_space(
+            state.st_model,
             readme_only_emb,
-            limit=3,
-            exclude_repo_url=body.repo_url,
-            max_candidates=settings.neighbor_search_pool,
+            list(body.topics),
+            list(body.tech_stack),
+            batch_size=bs,
         )
-        if similar_repos:
-            neighbor_similarity = similar_repos[0].similarity
+
+        if desc_text:
+            sem_mass = float(
+                np.clip(
+                    cosine_similarity(
+                        readme_only_emb.reshape(1, -1),
+                        desc_emb.reshape(1, -1),
+                    )[0, 0],
+                    0,
+                    1,
+                )
+            )
+
+        if state.vector_store is not None:
+            similar_repos = state.vector_store.search_similar(
+                readme_only_emb,
+                limit=3,
+                exclude_repo_url=body.repo_url,
+                max_candidates=settings.neighbor_search_pool,
+            )
+            if similar_repos:
+                neighbor_similarity = similar_repos[0].similarity
 
     df = signals_to_feature_frame(body, semantic_mass=sem_mass, neighbor_similarity=neighbor_similarity)
     score, breakdown, rationale = compute_ml_peve_score(df, state.score_model)
 
-    soul = infer_project_soul(
-        readme_only_emb,
-        state.archetype_embeddings,
-        state.archetype_keys,
-        body,
-    )
+    if has_embeddings and readme_only_emb is not None and state.archetype_embeddings is not None:
+        soul = infer_project_soul(
+            readme_only_emb,
+            state.archetype_embeddings,
+            state.archetype_keys,
+            body,
+        )
+        proj = projection_preview(readme_only_emb, 8)
+    else:
+        soul = infer_project_soul_without_embeddings(body)
 
     tech_summary = summarize_readme(
         state.summarizer,
@@ -220,9 +243,7 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
         chart_b64 = None
     else:
         chart_b64 = language_mix_png_base64(body.languages or {})
-    proj = projection_preview(readme_only_emb, 8)
-
-    if state.vector_store is not None:
+    if state.vector_store is not None and readme_only_emb is not None:
         parsed_repo = parse_github_repo_url(body.repo_url)
         state.vector_store.upsert_analysis(
             repo_url=body.repo_url,
@@ -267,7 +288,9 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
             for item in similar_repos
         ],
         model_versions={
-            "sentence_transformers": settings.embedding_model,
+            "sentence_transformers": (
+                settings.embedding_model if has_embeddings else "disabled-low-memory"
+            ),
             "summarizer": (
                 settings.summarizer_model
                 if state.summarizer
@@ -297,7 +320,13 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     def health() -> dict[str, str]:
-        return {"status": "ok", "models": "loaded" if state.st_model else "loading"}
+        if state.score_model is None:
+            return {"status": "ok", "models": "loading"}
+        return {
+            "status": "ok",
+            "models": "loaded",
+            "mode": "full" if state.st_model else "low-memory",
+        }
 
     @app.post("/v1/repository-intelligence", response_model=RepositoryIntelligenceResponse)
     def repository_intelligence(

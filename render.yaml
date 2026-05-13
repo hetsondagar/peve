@@ -32,6 +32,8 @@ services:
         value: your_cloudinary_api_secret
       - key: BCRYPT_ROUNDS
         value: 12
+      - key: ML_FETCH_TIMEOUT_MS
+        value: 45000
     healthCheckPath: /health
     autoDeploy: true
     branch: main
@@ -55,12 +57,14 @@ services:
         value: "true"
       - key: EXTRACTIVE_SUMMARY_FALLBACK
         value: "true"
+      - key: DISABLE_EMBEDDING_MODEL
+        value: "true"
       - key: EMBEDDING_ENCODE_BATCH_SIZE
         value: "4"
       - key: SKIP_LANGUAGE_CHART
         value: "true"
       - key: NEIGHBOR_SEARCH_POOL
-        value: "250"
+        value: "120"
       - key: OMP_NUM_THREADS
         value: "1"
       - key: MKL_NUM_THREADS
