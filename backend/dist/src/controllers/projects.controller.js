@@ -45,11 +45,11 @@ async function analyzeGithubRepository(req, res) {
             ...autofill,
             commitMessageSample: activity.commitMessageSample,
         };
-        const intelligence = await (0, mlIntelligenceClient_1.fetchMlRepositoryIntelligence)(autofillForMl, readmeExcerpt);
+        const { intelligence, fetchFailure } = await (0, mlIntelligenceClient_1.fetchMlRepositoryIntelligence)(autofillForMl, readmeExcerpt);
         const mlUrlConfigured = Boolean(env_1.env.mlServiceUrl?.trim());
         const mlMessage = intelligence == null
             ? mlUrlConfigured
-                ? 'GitHub metadata is loaded, but the ML service did not return intelligence. Check ML_SERVICE_URL reachability, cold start, and ML_SERVICE_API_KEY vs ML service API_KEY.'
+                ? (0, mlIntelligenceClient_1.formatMlMissingUserMessage)('analyze', fetchFailure)
                 : 'Set ML_SERVICE_URL on this API to your Peve ML service base URL (SentenceTransformers + sklearn; no LLM API key required).'
             : undefined;
         const data = {
@@ -105,7 +105,7 @@ async function getRepositoryInsights(req, res) {
             commitMessageSample: activity.commitMessageSample,
         };
         const baseInsights = (0, githubRepoAnalysis_service_1.buildRepositoryInsights)(autofill, autofill.githubRepo);
-        const intelligence = await (0, mlIntelligenceClient_1.fetchMlRepositoryIntelligence)(autofillForMl, readmeExcerpt);
+        const { intelligence, fetchFailure } = await (0, mlIntelligenceClient_1.fetchMlRepositoryIntelligence)(autofillForMl, readmeExcerpt);
         let data = {
             ...baseInsights,
             ...activity,
@@ -121,7 +121,7 @@ async function getRepositoryInsights(req, res) {
         const mlUrlConfigured = Boolean(env_1.env.mlServiceUrl?.trim());
         const message = intelligence == null
             ? mlUrlConfigured
-                ? 'GitHub metadata is loaded, but the ML service did not return intelligence. Check that the API can reach ML_SERVICE_URL, the first request finished model load (cold start), and ML_SERVICE_API_KEY matches the ML service API_KEY when the service enforces keys.'
+                ? (0, mlIntelligenceClient_1.formatMlMissingUserMessage)('project', fetchFailure)
                 : 'GitHub is linked. Set ML_SERVICE_URL on this API to the base URL of your Peve ML service (traditional ML: SentenceTransformers + sklearn — no LLM API key required).'
             : undefined;
         return res.json({ success: true, data, ...(message ? { message } : {}) });

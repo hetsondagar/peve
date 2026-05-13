@@ -62,6 +62,8 @@ mongoose_1.default.connect(MONGO_URI)
     .catch(err => console.error('❌ MongoDB connection error:', err));
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
+// Render / Vercel / other reverse proxies send X-Forwarded-For; required for express-rate-limit
+app.set('trust proxy', 1);
 // Security middleware
 app.use((0, helmet_1.default)({
     contentSecurityPolicy: {

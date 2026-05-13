@@ -69,6 +69,9 @@ mongoose.connect(MONGO_URI)
 const app = express();
 const server = http.createServer(app);
 
+// Render / Vercel / other reverse proxies send X-Forwarded-For; required for express-rate-limit
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {

@@ -105,6 +105,9 @@ async function start() {
   const app = express();
   const server = http.createServer(app);
 
+  // Render / Vercel / other reverse proxies send X-Forwarded-For; required for express-rate-limit
+  app.set('trust proxy', 1);
+
   // Enhanced security middleware
   app.use(helmet({
     contentSecurityPolicy: {
