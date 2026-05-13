@@ -20,6 +20,8 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  PieChart,
+  Pie,
   XAxis,
   YAxis,
   Tooltip,
@@ -214,6 +216,17 @@ export default function ProjectShowcase() {
 
   const intel = insights?.intelligence;
   const soul = intel?.project_soul?.length ? intel.project_soul : [];
+  const previewScore = typeof insights?.peveScorePreview === 'number'
+    ? Math.max(0, Math.min(100, Math.round(insights.peveScorePreview)))
+    : typeof intel?.peve_score_ml === 'number'
+      ? Math.max(0, Math.min(100, Math.round(intel.peve_score_ml)))
+      : null;
+  const previewPieData = previewScore == null
+    ? []
+    : [
+        { name: 'Score', value: previewScore },
+        { name: 'Remaining', value: 100 - previewScore },
+      ];
 
   return (
     <div className="relative min-h-screen overflow-hidden text-foreground">
@@ -264,27 +277,55 @@ export default function ProjectShowcase() {
           className="relative overflow-hidden rounded-3xl border border-border bg-card p-8 shadow-xl sm:p-12"
         >
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-cyan-500/10" />
-          <div className="relative space-y-4">
-            <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary">
-              Peve showcase
-            </Badge>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{project.title}</h1>
-            <p className="max-w-3xl text-xl text-muted-foreground">{project.tagline}</p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <Badge variant="secondary">{project.category}</Badge>
-              {typeof intel?.peve_score_ml === 'number' && (
-                <Badge className="bg-secondary/80 text-secondary-foreground">
-                  ML score {intel.peve_score_ml.toFixed(0)}/100
-                </Badge>
-              )}
-              {typeof insights?.peveScorePreview === 'number' && (
-                <Badge variant="outline">Heuristic preview {Math.round(insights.peveScorePreview)}/100</Badge>
-              )}
-              <Badge variant="outline" className="capitalize">
-                {project.developmentStage}
+          <div className="relative grid items-start gap-8 lg:grid-cols-[1fr_auto]">
+            <div className="space-y-4">
+              <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary">
+                Peve showcase
               </Badge>
+              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{project.title}</h1>
+              <p className="max-w-3xl text-xl text-muted-foreground">{project.tagline}</p>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Badge variant="secondary">{project.category}</Badge>
+                {typeof intel?.peve_score_ml === 'number' && (
+                  <Badge className="bg-secondary/80 text-secondary-foreground">
+                    ML score {intel.peve_score_ml.toFixed(0)}/100
+                  </Badge>
+                )}
+                {typeof insights?.peveScorePreview === 'number' && (
+                  <Badge variant="outline">Heuristic preview {Math.round(insights.peveScorePreview)}/100</Badge>
+                )}
+                <Badge variant="outline" className="capitalize">
+                  {project.developmentStage}
+                </Badge>
+              </div>
+              <p className="max-w-2xl pt-4 font-mono text-xs text-muted-foreground break-all">{shareUrl}</p>
             </div>
-            <p className="max-w-2xl pt-4 font-mono text-xs text-muted-foreground break-all">{shareUrl}</p>
+            {previewScore != null && (
+              <div className="mx-auto w-full max-w-[220px] rounded-2xl border border-border/70 bg-background/50 p-4 lg:mx-0">
+                <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Peve preview score
+                </p>
+                <div className="mx-auto h-40 w-40">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={previewPieData}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={42}
+                        outerRadius={62}
+                        stroke="none"
+                      >
+                        <Cell fill="#14b8a6" />
+                        <Cell fill="#334155" />
+                      </Pie>
+                      <Tooltip contentStyle={{ background: '#0f1419', border: '1px solid #2a3340' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <p className="mt-1 text-center text-2xl font-bold text-foreground">{previewScore}/100</p>
+              </div>
+            )}
           </div>
         </motion.header>
 
