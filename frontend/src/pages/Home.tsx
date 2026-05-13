@@ -172,7 +172,6 @@ export default function Home() {
                          onLike={handleLikeProject}
                          onComment={handleOpenCommentModal}
                          isLiked={likedProjects.has(project._id)}
-                         showShowcaseButton
                        />
               </motion.div>
             ))}
