@@ -17,6 +17,7 @@ import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
 import DevCards from "./pages/DevCards";
 import SearchResults from "./pages/SearchResults";
+import ProjectShowcase from "./pages/ProjectShowcase";
 import NotFound from "./pages/NotFound";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -56,7 +57,9 @@ const App = () => {
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/hive-guide" element={<HiveGuide />} />
-              
+              {/* Public shareable portfolio (no auth — public projects only for full data) */}
+              <Route path="/showcase/:id" element={<ProjectShowcase />} />
+
               {/* Protected Routes - Require Authentication */}
               <Route path="/home" element={
                 <ProtectedRoute>

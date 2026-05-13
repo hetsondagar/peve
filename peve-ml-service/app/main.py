@@ -15,6 +15,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from app.config import Settings, get_settings
 from app.pipelines.archetypes import ARCHETYPES
+from app.pipelines.architecture_space import build_architecture_space
 from app.pipelines.charts import language_mix_png_base64
 from app.pipelines.embeddings import encode_texts, projection_preview
 from app.pipelines.features import signals_to_feature_frame
@@ -166,6 +167,14 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
     readme_only_emb = encode_texts(state.st_model, [combined_text], batch_size=bs)[0]
     desc_emb = encode_texts(state.st_model, [desc_text or " "], batch_size=bs)[0]
 
+    arch_space = build_architecture_space(
+        state.st_model,
+        readme_only_emb,
+        list(body.topics),
+        list(body.tech_stack),
+        batch_size=bs,
+    )
+
     if desc_text:
         sem_mass = float(
             np.clip(
@@ -199,6 +208,7 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
         readme_only_emb,
         state.archetype_embeddings,
         state.archetype_keys,
+        body,
     )
 
     tech_summary = summarize_readme(
@@ -230,6 +240,7 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
                 "technical_summary": tech_summary,
                 "architecture_hints": architecture_hints(body),
                 "embedding_projection": proj,
+                "architecture_space": arch_space,
             },
         )
 
@@ -241,6 +252,7 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
         technical_summary=tech_summary,
         architecture_hints=architecture_hints(body),
         embedding_projection=proj,
+        architecture_space=arch_space,
         chart_language_mix_png_base64=chart_b64,
         semantic_neighbors=[
             {

@@ -435,7 +435,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="glass rounded-2xl border border-border w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="rounded-2xl border border-border bg-card w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">

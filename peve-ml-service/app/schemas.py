@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -39,6 +41,15 @@ class SemanticNeighbor(BaseModel):
     updated_at: str
 
 
+class ArchitectureSpacePoint(BaseModel):
+    """2D PCA of SentenceTransformer vectors — topics, tech, repo + semantic anchors."""
+
+    label: str
+    x: float
+    y: float
+    kind: Literal["repo", "topic", "tech", "anchor"] = "tech"
+
+
 class RepositoryIntelligenceResponse(BaseModel):
     peve_score_ml: float = Field(..., description="Model-assisted score 0–100")
     score_breakdown: ScoreBreakdown
@@ -49,6 +60,10 @@ class RepositoryIntelligenceResponse(BaseModel):
     embedding_projection: list[float] = Field(
         default_factory=list,
         description="8-dim PCA-style projection for UI (not full embedding)",
+    )
+    architecture_space: list[ArchitectureSpacePoint] = Field(
+        default_factory=list,
+        description="PCA 2D map of repo + topic + tech embeddings vs semantic anchors (real ML)",
     )
     chart_language_mix_png_base64: str | None = None
     semantic_neighbors: list[SemanticNeighbor] = Field(default_factory=list)

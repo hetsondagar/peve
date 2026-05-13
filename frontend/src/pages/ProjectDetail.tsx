@@ -31,6 +31,9 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  ScatterChart,
+  Scatter,
+  ZAxis,
 } from 'recharts';
 
 export default function ProjectDetail() {
@@ -439,23 +442,35 @@ export default function ProjectDetail() {
           {/* Main Content */}
           <div className="min-w-0 lg:col-span-2 space-y-8">
             {project.links?.githubRepo && (
-              <Card className="glass border-primary/25">
+              <Card className="border border-primary/25 bg-card shadow-lg">
                 <CardHeader className="pb-2">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <Sparkles className="w-5 h-5 text-primary shrink-0" />
                       Repository intelligence
                     </CardTitle>
-                    <GlowButton
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={openRepositoryIntelligence}
-                      className="shrink-0 gap-2 border-primary/40"
-                    >
-                      <BarChart3 className="w-4 h-4" />
-                      Full visualization
-                    </GlowButton>
+                    <div className="flex flex-wrap gap-2">
+                      <GlowButton
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => id && navigate(`/showcase/${id}`)}
+                        className="shrink-0 gap-2 border-primary/40 bg-card"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Developer showcase
+                      </GlowButton>
+                      <GlowButton
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={openRepositoryIntelligence}
+                        className="shrink-0 gap-2 border-primary/40 bg-card"
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        Full visualization
+                      </GlowButton>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground pt-1">
                     Pulled from your linked GitHub repository. Open the full panel for charts, neighbors, and ML
@@ -1361,6 +1376,73 @@ export default function ProjectDetail() {
                       </ul>
                     </div>
                   ) : null}
+                  {(() => {
+                    const space = (
+                      repoIntelData.intelligence as {
+                        architecture_space?: Array<{ label: string; x: number; y: number; kind: string }>;
+                      }
+                    ).architecture_space;
+                    if (!space?.length) return null;
+                    const fill = (k: string) =>
+                      k === 'repo'
+                        ? '#2dd4bf'
+                        : k === 'topic'
+                          ? '#a78bfa'
+                          : k === 'tech'
+                            ? '#38bdf8'
+                            : '#64748b';
+                    return (
+                      <div>
+                        <p className="text-xs font-semibold text-foreground mb-2">
+                          Architecture space (SentenceTransformer + PCA)
+                        </p>
+                        <p className="mb-2 text-[10px] text-muted-foreground leading-snug">
+                          Same embedding model as scoring: 2D PCA of repository, topics, technologies, and fixed
+                          semantic anchors — no LLM.
+                        </p>
+                        <div className="h-52 w-full min-w-0">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+                              <XAxis
+                                type="number"
+                                dataKey="x"
+                                name="PC1"
+                                stroke="#94a3b8"
+                                fontSize={10}
+                                domain={['auto', 'auto']}
+                              />
+                              <YAxis
+                                type="number"
+                                dataKey="y"
+                                name="PC2"
+                                stroke="#94a3b8"
+                                fontSize={10}
+                                domain={['auto', 'auto']}
+                              />
+                              <ZAxis range={[80, 80]} />
+                              <Tooltip
+                                content={({ active, payload }) => {
+                                  if (!active || !payload?.[0]) return null;
+                                  const p = payload[0].payload as { label: string; kind: string };
+                                  return (
+                                    <div className="rounded-md border border-border bg-card px-2 py-1 text-xs shadow-md">
+                                      <p className="font-semibold text-foreground">{p.label}</p>
+                                      <p className="capitalize text-muted-foreground">{p.kind}</p>
+                                    </div>
+                                  );
+                                }}
+                              />
+                              <Scatter data={space}>
+                                {space.map((pt, i) => (
+                                  <Cell key={`${pt.label}-${i}`} fill={fill(pt.kind)} />
+                                ))}
+                              </Scatter>
+                            </ScatterChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {(repoIntelData.intelligence as { chart_language_mix_png_base64?: string | null })
                     .chart_language_mix_png_base64 && (
                     <div>

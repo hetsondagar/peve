@@ -15,6 +15,7 @@ export type MLIntelligenceBlock = {
   technical_summary: string | null;
   architecture_hints: string[];
   embedding_projection: number[];
+  architecture_space?: Array<{ label: string; x: number; y: number; kind: string }>;
   chart_language_mix_png_base64: string | null;
   model_versions: Record<string, string>;
 };
