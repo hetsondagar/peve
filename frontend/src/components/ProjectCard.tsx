@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
-import { Heart, MessageCircle, Users } from 'lucide-react';
+import { Heart, MessageCircle, Users, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { InteractionButtons } from '@/components/InteractionButtons';
+import { GlowButton } from '@/components/ui/glow-button';
 import Avatar from './Avatar';
 import UsernameWithAvatar from './UsernameWithAvatar';
 
@@ -32,6 +33,8 @@ interface ProjectCardProps {
   onComment?: (project: any) => void;
   isLiked?: boolean;
   isSaved?: boolean;
+  /** Opens public /showcase/:id (e.g. from Explore / Projects grids). */
+  showShowcaseButton?: boolean;
 }
 
 export const ProjectCard = ({
@@ -52,6 +55,7 @@ export const ProjectCard = ({
   onComment,
   isLiked = false,
   isSaved = false,
+  showShowcaseButton = false,
 }: ProjectCardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -103,10 +107,25 @@ export const ProjectCard = ({
       whileHover={{ y: -8 }}
       onClick={handleClick}
       className={cn(
-        "group relative overflow-hidden rounded-2xl bg-card border border-border hover-glow cursor-pointer transition-all duration-300",
+        'group relative overflow-hidden rounded-2xl bg-card border border-border hover-glow cursor-pointer transition-all duration-300',
         className
       )}
     >
+      {showShowcaseButton && id ? (
+        <div className="absolute right-3 top-3 z-20" onClick={(e) => e.stopPropagation()}>
+          <GlowButton
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1 border-primary/50 bg-card/95 px-2 text-xs shadow-md backdrop-blur-sm"
+            onClick={() => navigate(`/showcase/${id}`)}
+            title="Open public developer showcase"
+          >
+            <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <span className="hidden sm:inline">Showcase</span>
+          </GlowButton>
+        </div>
+      ) : null}
       {/* Image/Thumbnail */}
       {(coverImage || image) ? (
         <div className="w-full h-48 overflow-hidden bg-gradient-primary">

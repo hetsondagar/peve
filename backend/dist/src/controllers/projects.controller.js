@@ -22,6 +22,7 @@ const CollaborationRequest_1 = require("../models/CollaborationRequest");
 const Notification_1 = require("../models/Notification");
 const badgeService_1 = require("../services/badgeService");
 const githubRepoAnalysis_service_1 = require("../services/githubRepoAnalysis.service");
+const env_1 = require("../config/env");
 const mlIntelligenceClient_1 = require("../services/mlIntelligenceClient");
 const projectPayloadSanitize_1 = require("../utils/projectPayloadSanitize");
 async function analyzeGithubRepository(req, res) {
@@ -45,6 +46,12 @@ async function analyzeGithubRepository(req, res) {
             commitMessageSample: activity.commitMessageSample,
         };
         const intelligence = await (0, mlIntelligenceClient_1.fetchMlRepositoryIntelligence)(autofillForMl, readmeExcerpt);
+        const mlUrlConfigured = Boolean(env_1.env.mlServiceUrl?.trim());
+        const mlMessage = intelligence == null
+            ? mlUrlConfigured
+                ? 'GitHub metadata is loaded, but the ML service did not return intelligence. Check ML_SERVICE_URL reachability, cold start, and ML_SERVICE_API_KEY vs ML service API_KEY.'
+                : 'Set ML_SERVICE_URL on this API to your Peve ML service base URL (SentenceTransformers + sklearn; no LLM API key required).'
+            : undefined;
         const data = {
             ...autofill,
             ...activity,
@@ -53,6 +60,7 @@ async function analyzeGithubRepository(req, res) {
         return res.json({
             success: true,
             data,
+            ...(mlMessage ? { message: mlMessage } : {}),
         });
     }
     catch (error) {
@@ -110,7 +118,13 @@ async function getRepositoryInsights(req, res) {
                 scoreRationale: `${baseInsights.scoreRationale} Blended with ML repository intelligence (embeddings + tabular scoring).`,
             };
         }
-        return res.json({ success: true, data });
+        const mlUrlConfigured = Boolean(env_1.env.mlServiceUrl?.trim());
+        const message = intelligence == null
+            ? mlUrlConfigured
+                ? 'GitHub metadata is loaded, but the ML service did not return intelligence. Check that the API can reach ML_SERVICE_URL, the first request finished model load (cold start), and ML_SERVICE_API_KEY matches the ML service API_KEY when the service enforces keys.'
+                : 'GitHub is linked. Set ML_SERVICE_URL on this API to the base URL of your Peve ML service (traditional ML: SentenceTransformers + sklearn — no LLM API key required).'
+            : undefined;
+        return res.json({ success: true, data, ...(message ? { message } : {}) });
     }
     catch (error) {
         console.error('getRepositoryInsights:', error);
@@ -239,7 +253,7 @@ async function createProject(req, res) {
                 error: 'Missing required fields: title, tagline, description, category, and githubRepo are required'
             });
         }
-        // Process contributors and teammates
+        // Process contributors and teammates (loose shape from client; strip analyze-only keys)
         const projectData = { ...req.body };
         (0, projectPayloadSanitize_1.stripEphemeralProjectFields)(projectData);
         // Initialize contributors array
@@ -354,7 +368,7 @@ async function updateProject(req, res) {
             return res.status(404).json({ success: false, error: 'Not found' });
         if (String(project.author) !== String(userId))
             return res.status(403).json({ success: false, error: 'Forbidden' });
-        // Process contributors and teammates
+        // Process contributors and teammates (loose shape from client; strip analyze-only keys)
         const updateData = { ...req.body };
         (0, projectPayloadSanitize_1.stripEphemeralProjectFields)(updateData);
         // Initialize contributors array

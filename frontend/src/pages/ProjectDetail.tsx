@@ -478,6 +478,13 @@ export default function ProjectDetail() {
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
+                  {repoIntelData &&
+                    !(repoIntelData as { intelligence?: unknown }).intelligence && (
+                      <div className="rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs leading-snug text-amber-100">
+                        {repoIntelMessage ||
+                          'ML intelligence was not included in this response. Confirm ML_SERVICE_URL on the API and that the ML service is reachable.'}
+                      </div>
+                    )}
                   {repoIntelLoading && !repoIntelData && (
                     <div className="flex items-center gap-2 text-muted-foreground py-2">
                       <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -590,12 +597,23 @@ export default function ProjectDetail() {
 
               {/* Title & Tagline */}
               <div className="space-y-4">
-                <div className="flex items-start justify-between">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-2">
                     <h1 className="text-4xl font-bold text-foreground">{project.title}</h1>
                     <p className="text-xl text-muted-foreground">{project.tagline}</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <GlowButton
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => id && navigate(`/showcase/${id}`)}
+                      className="flex shrink-0 items-center gap-2 border-primary/40"
+                      title="Public developer showcase"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      Showcase
+                    </GlowButton>
                     <GlowButton
                       variant={isLiked ? "default" : "outline"}
                       size="sm"
@@ -1251,6 +1269,12 @@ export default function ProjectDetail() {
 
           {!repoIntelLoading && repoIntelData && (
             <div className="space-y-6 text-foreground">
+              {!(repoIntelData as { intelligence?: unknown }).intelligence && (
+                <div className="rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs leading-snug text-amber-100">
+                  {repoIntelMessage ||
+                    'ML intelligence was not included in this response. Confirm ML_SERVICE_URL on the API and that the ML service is reachable.'}
+                </div>
+              )}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary">

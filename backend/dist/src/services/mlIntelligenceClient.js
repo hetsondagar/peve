@@ -49,7 +49,15 @@ async function fetchMlRepositoryIntelligence(autofill, readmeExcerpt) {
         clearTimeout(timer);
         if (!res.ok) {
             const txt = await res.text();
-            console.warn('[ml] HTTP', res.status, txt.slice(0, 200));
+            if (res.status === 401) {
+                console.warn('[ml] 401 from ML service — set ML_SERVICE_API_KEY to match the ML service API_KEY (or disable API_KEY on the ML service).');
+            }
+            else if (res.status === 503) {
+                console.warn('[ml] 503 — ML weights may still be loading or failed to load; retry after the first request completes.');
+            }
+            else {
+                console.warn('[ml] HTTP', res.status, txt.slice(0, 200));
+            }
             return null;
         }
         return (await res.json());

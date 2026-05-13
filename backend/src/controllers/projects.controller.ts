@@ -11,6 +11,7 @@ import {
   parseGithubRepoUrl,
   fetchGithubRepoActivity,
 } from '../services/githubRepoAnalysis.service';
+import { env } from '../config/env';
 import { blendPeveScore, fetchMlRepositoryIntelligence } from '../services/mlIntelligenceClient';
 import { stripEphemeralProjectFields } from '../utils/projectPayloadSanitize';
 
@@ -35,6 +36,13 @@ export async function analyzeGithubRepository(req: Request, res: Response) {
       commitMessageSample: activity.commitMessageSample,
     };
     const intelligence = await fetchMlRepositoryIntelligence(autofillForMl, readmeExcerpt);
+    const mlUrlConfigured = Boolean(env.mlServiceUrl?.trim());
+    const mlMessage =
+      intelligence == null
+        ? mlUrlConfigured
+          ? 'GitHub metadata is loaded, but the ML service did not return intelligence. Check ML_SERVICE_URL reachability, cold start, and ML_SERVICE_API_KEY vs ML service API_KEY.'
+          : 'Set ML_SERVICE_URL on this API to your Peve ML service base URL (SentenceTransformers + sklearn; no LLM API key required).'
+        : undefined;
     const data = {
       ...autofill,
       ...activity,
@@ -43,6 +51,7 @@ export async function analyzeGithubRepository(req: Request, res: Response) {
     return res.json({
       success: true,
       data,
+      ...(mlMessage ? { message: mlMessage } : {}),
     });
   } catch (error: any) {
     console.error('analyzeGithubRepository:', error);
@@ -106,7 +115,15 @@ export async function getRepositoryInsights(req: Request, res: Response) {
       };
     }
 
-    return res.json({ success: true, data });
+    const mlUrlConfigured = Boolean(env.mlServiceUrl?.trim());
+    const message =
+      intelligence == null
+        ? mlUrlConfigured
+          ? 'GitHub metadata is loaded, but the ML service did not return intelligence. Check that the API can reach ML_SERVICE_URL, the first request finished model load (cold start), and ML_SERVICE_API_KEY matches the ML service API_KEY when the service enforces keys.'
+          : 'GitHub is linked. Set ML_SERVICE_URL on this API to the base URL of your Peve ML service (traditional ML: SentenceTransformers + sklearn — no LLM API key required).'
+        : undefined;
+
+    return res.json({ success: true, data, ...(message ? { message } : {}) });
   } catch (error: any) {
     console.error('getRepositoryInsights:', error);
     return res.status(400).json({

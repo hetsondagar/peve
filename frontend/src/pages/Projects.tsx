@@ -157,6 +157,7 @@ export default function Projects() {
                        onComment={handleOpenCommentModal}
                        isLiked={likedProjects.has(project._id)}
                        isSaved={savedProjects.has(project._id)}
+                       showShowcaseButton
                      />
             ))}
           </div>

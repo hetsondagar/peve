@@ -20,6 +20,8 @@ exports.env = {
         clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
     },
     frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+    /** Base URL of peve-ml-service, e.g. https://your-ml.onrender.com (no trailing path). */
     mlServiceUrl: process.env.ML_SERVICE_URL || '',
+    /** Sent as X-API-Key; must equal ML service `API_KEY` when that service requires auth. */
     mlServiceApiKey: process.env.ML_SERVICE_API_KEY || '',
 };
