@@ -497,9 +497,10 @@ export default function ProjectDetail() {
                     size="sm"
                     onClick={openRepositoryIntelligence}
                     className="gap-2 border-primary/40 bg-primary/5 hover:bg-primary/10"
+                    title="Open the AI-generated project visualization"
                   >
                     <Sparkles className="w-4 h-4 text-primary" />
-                    Repository intelligence
+                    Project visualization
                   </GlowButton>
                 </div>
               </div>
@@ -1013,7 +1014,7 @@ export default function ProjectDetail() {
               <div>
                 <DialogTitle className="flex items-center gap-2 text-foreground">
                   <Sparkles className="w-5 h-5 text-primary shrink-0" />
-                  Repository intelligence
+                  Project visualization
                 </DialogTitle>
                 <DialogDescription>
                   Signals derived from public GitHub metadata and README. Source code is not persisted on Peve.
@@ -1200,6 +1201,71 @@ export default function ProjectDetail() {
                   )}
                 </div>
               )}
+
+              {repoIntelData.semantic_neighbors?.length ? (
+                <div className="space-y-4 rounded-xl border border-border bg-card-secondary/25 p-4">
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Semantic neighbors
+                  </h4>
+                  <div className="space-y-3">
+                    {repoIntelData.semantic_neighbors.map((neighbor: any, index: number) => (
+                      <a
+                        key={`${neighbor.repo_url}-${index}`}
+                        href={neighbor.repo_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block rounded-lg border border-border/70 bg-background/40 p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{neighbor.title}</p>
+                            <p className="text-xs text-muted-foreground">{neighbor.category}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground">Similarity</p>
+                            <p className="font-mono text-sm text-primary">{Number(neighbor.similarity).toFixed(2)}</p>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{neighbor.tagline}</p>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {repoIntelData.embedding_projection?.length ? (
+                <div className="space-y-3 rounded-xl border border-border bg-card-secondary/25 p-4">
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-primary" />
+                    Embedding projection
+                  </h4>
+                  <div className="h-56 w-full min-w-0 rounded-xl border border-border bg-card-secondary/20 p-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={(repoIntelData.embedding_projection as number[]).map((value, index) => ({
+                          name: `d${index + 1}`,
+                          value,
+                        }))}
+                        margin={{ left: 4, right: 12, top: 8, bottom: 8 }}
+                      >
+                        <XAxis dataKey="name" tick={{ fill: 'hsl(0 0% 78%)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fill: 'hsl(0 0% 78%)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <Tooltip
+                          formatter={(v: number) => [Number(v).toFixed(3), 'Value']}
+                          contentStyle={{
+                            background: 'hsl(222 15% 10%)',
+                            border: '1px solid hsl(222 15% 24%)',
+                            borderRadius: 12,
+                            color: 'hsl(0 0% 98%)',
+                          }}
+                        />
+                        <Bar dataKey="value" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              ) : null}
 
               <div>
                 <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">

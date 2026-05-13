@@ -29,6 +29,16 @@ class ScoreBreakdown(BaseModel):
     innovation: float
 
 
+class SemanticNeighbor(BaseModel):
+    repo_url: str
+    title: str
+    tagline: str
+    category: str
+    peve_score_ml: float
+    similarity: float = Field(..., description="Cosine similarity to the current repository")
+    updated_at: str
+
+
 class RepositoryIntelligenceResponse(BaseModel):
     peve_score_ml: float = Field(..., description="Model-assisted score 0–100")
     score_breakdown: ScoreBreakdown
@@ -41,4 +51,5 @@ class RepositoryIntelligenceResponse(BaseModel):
         description="8-dim PCA-style projection for UI (not full embedding)",
     )
     chart_language_mix_png_base64: str | None = None
+    semantic_neighbors: list[SemanticNeighbor] = Field(default_factory=list)
     model_versions: dict[str, str] = Field(default_factory=dict)

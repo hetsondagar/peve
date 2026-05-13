@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     port: int = 8090
     redis_url: str | None = None
     cache_ttl_seconds: int = 3600
+    embedding_store_path: str = "data/repository_embeddings.sqlite3"
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     summarizer_model: str = "sshleifer/distilbart-cnn-12-6"
     skip_summarization: bool = False

@@ -18,8 +18,9 @@ from app.pipelines.archetypes import ARCHETYPES
 from app.pipelines.charts import language_mix_png_base64
 from app.pipelines.embeddings import encode_texts, projection_preview
 from app.pipelines.features import signals_to_feature_frame
-from app.pipelines.scoring import compute_ml_peve_score
+from app.pipelines.score_model import build_score_model, compute_ml_peve_score
 from app.pipelines.soul_engine import infer_project_soul
+from app.pipelines.vector_store import RepositoryVectorStore
 from app.pipelines.summarization import summarize_readme
 from app.schemas import RepositoryIntelligenceResponse, RepositorySignals
 
@@ -31,6 +32,8 @@ class AppState:
     archetype_embeddings: np.ndarray | None = None
     archetype_keys: list[str] = []
     summarizer: Any = None
+    vector_store: RepositoryVectorStore | None = None
+    score_model: Any = None
 
 
 state = AppState()
@@ -57,9 +60,13 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     logger.info("Loading sentence-transformers model: %s", settings.embedding_model)
     state.st_model = SentenceTransformer(settings.embedding_model)
+    state.vector_store = RepositoryVectorStore(settings.embedding_store_path)
     state.archetype_keys = [k for k, _ in ARCHETYPES]
     texts = [t for _, t in ARCHETYPES]
     state.archetype_embeddings = encode_texts(state.st_model, texts)
+
+    historical_rows = state.vector_store.fetch_training_rows(limit=1200) if state.vector_store else []
+    state.score_model = build_score_model(historical_rows)
 
     if not settings.skip_summarization:
         logger.info("Loading summarization pipeline: %s", settings.summarizer_model)
@@ -80,6 +87,8 @@ async def lifespan(app: FastAPI):
     state.summarizer = None
     state.st_model = None
     state.archetype_embeddings = None
+    state.vector_store = None
+    state.score_model = None
 
 
 def verify_api_key(
@@ -106,8 +115,20 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
             f"{readme_text}\n\nRecent commit subjects (public metadata only):\n{commits_tail[:3000]}"
         ).strip()
     desc_text = (body.description or "").strip()
+    combined_text = "\n\n".join(
+        part
+        for part in [
+            body.category.strip(),
+            " ".join(body.topics),
+            " ".join(body.key_features),
+            " ".join(body.tech_stack),
+            desc_text,
+            readme_text,
+        ]
+        if part.strip()
+    ).strip() or "repository overview unavailable"
 
-    readme_only_emb = encode_texts(state.st_model, [readme_text or "overview unavailable"])[0]
+    readme_only_emb = encode_texts(state.st_model, [combined_text])[0]
     desc_emb = encode_texts(state.st_model, [desc_text or " "])[0]
 
     if desc_text:
@@ -124,8 +145,19 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
     else:
         sem_mass = float(np.clip(len(readme_text) / 6000.0, 0, 1))
 
-    df = signals_to_feature_frame(body)
-    score, breakdown, rationale = compute_ml_peve_score(df, sem_mass)
+    neighbor_similarity = 0.0
+    similar_repos = []
+    if state.vector_store is not None:
+        similar_repos = state.vector_store.search_similar(
+            readme_only_emb,
+            limit=3,
+            exclude_repo_url=body.repo_url,
+        )
+        if similar_repos:
+            neighbor_similarity = similar_repos[0].similarity
+
+    df = signals_to_feature_frame(body, semantic_mass=sem_mass, neighbor_similarity=neighbor_similarity)
+    score, breakdown, rationale = compute_ml_peve_score(df, state.score_model)
 
     soul = infer_project_soul(
         readme_only_emb,
@@ -137,6 +169,27 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
     chart_b64 = language_mix_png_base64(body.languages or {})
     proj = projection_preview(readme_only_emb, 8)
 
+    if state.vector_store is not None:
+        parsed_repo = parseGithubRepoUrl(body.repo_url)
+        state.vector_store.upsert_analysis(
+            repo_url=body.repo_url,
+            title=(parsed_repo.repo if parsed_repo else body.repo_url.rsplit('/', 1)[-1]) or body.repo_url,
+            tagline=(body.description[:240] or body.category or body.repo_url),
+            category=body.category or "Web Application",
+            peve_score_ml=score,
+            embedding=readme_only_emb,
+            feature_row=df.iloc[0].to_dict(),
+            intelligence={
+                "peve_score_ml": score,
+                "score_breakdown": breakdown,
+                "score_rationale_ml": rationale,
+                "project_soul": soul,
+                "technical_summary": tech_summary,
+                "architecture_hints": architecture_hints(body),
+                "embedding_projection": proj,
+            },
+        )
+
     return RepositoryIntelligenceResponse(
         peve_score_ml=score,
         score_breakdown=breakdown,
@@ -146,9 +199,23 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
         architecture_hints=architecture_hints(body),
         embedding_projection=proj,
         chart_language_mix_png_base64=chart_b64,
+        semantic_neighbors=[
+            {
+                "repo_url": item.repo_url,
+                "title": item.title,
+                "tagline": item.tagline,
+                "category": item.category,
+                "peve_score_ml": item.peve_score_ml,
+                "similarity": item.similarity,
+                "updated_at": item.updated_at,
+            }
+            for item in similar_repos
+        ],
         model_versions={
             "sentence_transformers": settings.embedding_model,
             "summarizer": settings.summarizer_model if state.summarizer else "disabled",
+            "score_model": "RandomForestRegressor(calibrated)",
+            "embedding_store": settings.embedding_store_path,
         },
     )
 

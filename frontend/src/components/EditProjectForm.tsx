@@ -265,6 +265,9 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
       <div className="rounded-xl border border-primary/25 bg-gradient-to-br from-primary/10 to-transparent p-4 space-y-3">
         <div className="flex items-center gap-2 text-primary">
           <Sparkles className="w-5 h-5 shrink-0" />
+          <Badge variant="outline" className="border-primary/30 bg-primary/10 text-[10px] uppercase tracking-[0.24em] text-primary">
+            Start here
+          </Badge>
           <span className="font-semibold text-foreground">Autofill from GitHub repo</span>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">
