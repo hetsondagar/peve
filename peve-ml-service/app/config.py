@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     skip_summarization: bool = False
     extractive_summary_fallback: bool = False
     embedding_encode_batch_size: int = 32
+    """Skip Matplotlib language chart (saves RAM on 512Mi-class hosts)."""
+    skip_language_chart: bool = False
+    """Cap rows read for semantic neighbor search (full table scan OOMs at scale)."""
+    neighbor_search_pool: int = 600
     api_key: str | None = None
 
     @field_validator("api_key", "redis_url", mode="before")

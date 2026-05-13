@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -230,9 +230,18 @@ export default function ProjectDetail() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (!id || !project?.links?.githubRepo?.trim()) {
+      setRepoIntelData(null);
+      setRepoIntelMessage('');
+      return;
+    }
+    void loadRepositoryIntelligence();
+  }, [id, project?._id, project?.links?.githubRepo, loadRepositoryIntelligence]);
+
   const openRepositoryIntelligence = () => {
     setShowRepoIntelModal(true);
-    void loadRepositoryIntelligence();
+    void loadRepositoryIntelligence({ keepPrevious: Boolean(repoIntelData) });
   };
 
   const refreshRepositoryIntelligence = () => {
@@ -320,6 +329,25 @@ export default function ProjectDetail() {
     }
   };
 
+  const matchedListingTags = useMemo(() => {
+    if (!project || !repoIntelData) return [] as string[];
+    const liveTopics =
+      ((repoIntelData as Record<string, unknown>).topics as string[] | undefined) || [];
+    const norm = (s: string) =>
+      s.trim().toLowerCase().replace(/^#/, '').replace(/-/g, ' ').replace(/\s+/g, ' ');
+    const tags = project.tags || [];
+    return tags.filter((t: string) => liveTopics.some((topic) => norm(topic) === norm(t)));
+  }, [project, repoIntelData]);
+
+  const matchedListingTech = useMemo(() => {
+    if (!project || !repoIntelData) return [] as string[];
+    const live = ((repoIntelData as Record<string, unknown>).techStack as string[] | undefined) || [];
+    const stack = project.techStack || [];
+    return stack.filter((t: string) =>
+      live.some((x) => String(x).toLowerCase() === String(t).toLowerCase())
+    );
+  }, [project, repoIntelData]);
+
   if (loading) {
     return (
       <div className="relative min-h-screen overflow-hidden">
@@ -341,6 +369,17 @@ export default function ProjectDetail() {
       </div>
     );
   }
+
+  const liveIntel = repoIntelData as Record<string, unknown> | null;
+  const mlLayer = liveIntel?.intelligence as
+    | {
+        peve_score_ml?: number;
+        technical_summary?: string | null;
+        architecture_hints?: string[];
+        project_soul?: string[];
+        score_rationale_ml?: string;
+      }
+    | undefined;
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -399,6 +438,124 @@ export default function ProjectDetail() {
         <div className="grid min-w-0 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="min-w-0 lg:col-span-2 space-y-8">
+            {project.links?.githubRepo && (
+              <Card className="glass border-primary/25">
+                <CardHeader className="pb-2">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Sparkles className="w-5 h-5 text-primary shrink-0" />
+                      Repository intelligence
+                    </CardTitle>
+                    <GlowButton
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={openRepositoryIntelligence}
+                      className="shrink-0 gap-2 border-primary/40"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      Full visualization
+                    </GlowButton>
+                  </div>
+                  <p className="text-xs text-muted-foreground pt-1">
+                    Pulled from your linked GitHub repository. Open the full panel for charts, neighbors, and ML
+                    layers.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
+                  {repoIntelLoading && !repoIntelData && (
+                    <div className="flex items-center gap-2 text-muted-foreground py-2">
+                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                      Loading repository signals…
+                    </div>
+                  )}
+                  {!repoIntelLoading && repoIntelMessage && !repoIntelData && (
+                    <p className="text-sm text-muted-foreground">{repoIntelMessage}</p>
+                  )}
+                  {repoIntelData && (
+                    <>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+                            Peve preview score
+                          </p>
+                          <p className="text-2xl font-bold tabular-nums text-foreground">
+                            {Number((repoIntelData as { peveScorePreview?: number }).peveScorePreview ?? 0)}
+                            <span className="text-sm font-normal text-muted-foreground">/100</span>
+                          </p>
+                          {typeof mlLayer?.peve_score_ml === 'number' && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              ML-assisted:{' '}
+                              <span className="font-mono text-secondary">{mlLayer.peve_score_ml.toFixed(1)}</span>
+                              /100
+                            </p>
+                          )}
+                        </div>
+                        <div className="rounded-lg border border-border bg-card-secondary/40 p-3 text-xs space-y-1">
+                          <p className="font-semibold text-foreground">Repository pulse</p>
+                          <p className="text-muted-foreground">
+                            ★ {(repoIntelData as { stars?: number }).stars ?? 0} forks{' '}
+                            {(repoIntelData as { forks?: number }).forks ?? 0} · issues{' '}
+                            {(repoIntelData as { openIssues?: number }).openIssues ?? 0}
+                          </p>
+                          <p className="text-muted-foreground break-all">
+                            {(repoIntelData as { htmlUrl?: string }).htmlUrl || project.links.githubRepo}
+                          </p>
+                        </div>
+                      </div>
+                      {mlLayer?.technical_summary?.trim() && (
+                        <div>
+                          <p className="text-xs font-semibold text-foreground mb-1">README / ML gist</p>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {mlLayer.technical_summary}
+                          </p>
+                        </div>
+                      )}
+                      {mlLayer?.project_soul && mlLayer.project_soul.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-foreground mb-2">Project soul</p>
+                          <ul className="space-y-1.5">
+                            {mlLayer.project_soul.slice(0, 4).map((line, i) => (
+                              <li
+                                key={i}
+                                className="text-xs text-muted-foreground border-l-2 border-secondary/40 pl-2 leading-relaxed"
+                              >
+                                {line}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {(matchedListingTags.length > 0 || matchedListingTech.length > 0) && (
+                        <div className="rounded-lg border border-border/80 bg-card-secondary/30 p-3">
+                          <p className="text-xs font-semibold text-foreground mb-2">
+                            Confirmed against your listing
+                          </p>
+                          {matchedListingTags.length > 0 && (
+                            <p className="text-xs text-muted-foreground mb-1">
+                              <span className="text-foreground font-medium">Tags</span> also on GitHub:{' '}
+                              {matchedListingTags.map((t) => (
+                                <Badge key={t} variant="outline" className="mr-1 mt-1 text-[10px]">
+                                  #{t}
+                                </Badge>
+                              ))}
+                            </p>
+                          )}
+                          {matchedListingTech.length > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              <span className="text-foreground font-medium">Tech stack</span> still detected on
+                              GitHub:{' '}
+                              {matchedListingTech.join(', ')}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Project Header */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -490,19 +647,6 @@ export default function ProjectDetail() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <GlowButton
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={openRepositoryIntelligence}
-                    className="gap-2 border-primary/40 bg-primary/5 hover:bg-primary/10"
-                    title="Open the AI-generated project visualization"
-                  >
-                    <Sparkles className="w-4 h-4 text-primary" />
-                    Project visualization
-                  </GlowButton>
-                </div>
               </div>
 
               {/* Contributors */}
@@ -636,8 +780,37 @@ export default function ProjectDetail() {
                     Overview
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <p className="text-muted-foreground leading-relaxed">{project.description}</p>
+                  {mlLayer?.score_rationale_ml && (
+                    <div className="rounded-lg border border-secondary/25 bg-secondary/5 p-3">
+                      <p className="text-xs font-semibold text-secondary mb-1">ML score rationale</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{mlLayer.score_rationale_ml}</p>
+                    </div>
+                  )}
+                  {(mlLayer?.architecture_hints?.length || 0) > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-foreground mb-2">
+                        Live architecture hints (not already in your feature list)
+                      </p>
+                      <ul className="space-y-1.5">
+                        {(mlLayer!.architecture_hints || [])
+                          .filter(
+                            (h) =>
+                              !(project.keyFeatures || []).some((f: string) =>
+                                f.toLowerCase().includes(h.toLowerCase().slice(0, 28))
+                              )
+                          )
+                          .slice(0, 5)
+                          .map((line, i) => (
+                            <li key={i} className="text-xs text-muted-foreground flex gap-2">
+                              <span className="text-secondary shrink-0">→</span>
+                              <span>{line}</span>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

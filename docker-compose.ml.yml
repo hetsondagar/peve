@@ -20,6 +20,8 @@ services:
       REDIS_URL: redis://redis-ml:6379/0
       CACHE_TTL_SECONDS: 3600
       SKIP_SUMMARIZATION: "false"
+      SKIP_LANGUAGE_CHART: "false"
+      NEIGHBOR_SEARCH_POOL: "600"
       API_KEY: ${ML_SERVICE_API_KEY:-}
     depends_on:
       - redis-ml

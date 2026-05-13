@@ -1,17 +1,17 @@
 from __future__ import annotations
 
+import gc
 import hashlib
 import json
 import logging
+import threading
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
 import numpy as np
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-from transformers import pipeline
 
 from app.config import Settings, get_settings
 from app.pipelines.archetypes import ARCHETYPES
@@ -27,9 +27,13 @@ from app.util_github import parse_github_repo_url
 
 logger = logging.getLogger("peve_ml")
 
+_ml_load_lock = threading.Lock()
+
 
 class AppState:
-    st_model: SentenceTransformer | None = None
+    """Heavy models load lazily so Uvicorn can bind $PORT before Torch/ST (512Mi-safe deploy)."""
+
+    st_model: Any = None
     archetype_embeddings: np.ndarray | None = None
     archetype_keys: list[str] = []
     summarizer: Any = None
@@ -56,36 +60,64 @@ def architecture_hints(signals: RepositorySignals) -> list[str]:
     return hints[:6]
 
 
+def _ensure_ml_runtime_loaded(settings: Settings) -> None:
+    """Load Torch + SentenceTransformer + score head once (after HTTP port is open)."""
+    if state.st_model is not None and state.archetype_embeddings is not None:
+        return
+    with _ml_load_lock:
+        if state.st_model is not None and state.archetype_embeddings is not None:
+            return
+        try:
+            import torch
+
+            torch.set_num_threads(1)
+            torch.set_num_interop_threads(1)
+
+            from sentence_transformers import SentenceTransformer
+
+            logger.info("Lazy-loading embedding model: %s", settings.embedding_model)
+            state.st_model = SentenceTransformer(settings.embedding_model, device="cpu")
+            state.vector_store = RepositoryVectorStore(settings.embedding_store_path)
+            state.archetype_keys = [k for k, _ in ARCHETYPES]
+            texts = [t for _, t in ARCHETYPES]
+            bs = settings.embedding_encode_batch_size
+            state.archetype_embeddings = encode_texts(state.st_model, texts, batch_size=bs)
+
+            historical_rows = state.vector_store.fetch_training_rows(limit=1200) if state.vector_store else []
+            state.score_model = build_score_model(historical_rows)
+
+            if not settings.skip_summarization:
+                logger.info("Loading summarization pipeline: %s", settings.summarizer_model)
+                try:
+                    from transformers import pipeline
+
+                    state.summarizer = pipeline(
+                        "summarization",
+                        model=settings.summarizer_model,
+                        device=-1,
+                    )
+                except Exception as e:
+                    logger.warning("Summarization disabled after load error: %s", e)
+                    state.summarizer = None
+            else:
+                state.summarizer = None
+
+            gc.collect()
+            logger.info("ML runtime ready.")
+        except Exception as e:
+            logger.exception("ML runtime load failed: %s", e)
+            state.st_model = None
+            state.archetype_embeddings = None
+            state.score_model = None
+            state.summarizer = None
+            raise HTTPException(status_code=503, detail=f"Model load failed: {e!s}") from e
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    settings = get_settings()
-    logger.info("Loading sentence-transformers model: %s", settings.embedding_model)
-    state.st_model = SentenceTransformer(settings.embedding_model)
-    state.vector_store = RepositoryVectorStore(settings.embedding_store_path)
-    state.archetype_keys = [k for k, _ in ARCHETYPES]
-    texts = [t for _, t in ARCHETYPES]
-    bs = settings.embedding_encode_batch_size
-    state.archetype_embeddings = encode_texts(state.st_model, texts, batch_size=bs)
-
-    historical_rows = state.vector_store.fetch_training_rows(limit=1200) if state.vector_store else []
-    state.score_model = build_score_model(historical_rows)
-
-    if not settings.skip_summarization:
-        logger.info("Loading summarization pipeline: %s", settings.summarizer_model)
-        try:
-            state.summarizer = pipeline(
-                "summarization",
-                model=settings.summarizer_model,
-                device=-1,
-            )
-        except Exception as e:
-            logger.warning("Summarization disabled after load error: %s", e)
-            state.summarizer = None
-    else:
-        state.summarizer = None
-
+    """Do not load Torch here — Render health checks need an open port before model RAM spikes."""
+    logger.info("Startup complete; ML weights load on first /v1/repository-intelligence request.")
     yield
-
     state.summarizer = None
     state.st_model = None
     state.archetype_embeddings = None
@@ -155,6 +187,7 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
             readme_only_emb,
             limit=3,
             exclude_repo_url=body.repo_url,
+            max_candidates=settings.neighbor_search_pool,
         )
         if similar_repos:
             neighbor_similarity = similar_repos[0].similarity
@@ -173,14 +206,17 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
         readme_text,
         extractive_fallback=settings.extractive_summary_fallback,
     )
-    chart_b64 = language_mix_png_base64(body.languages or {})
+    if settings.skip_language_chart:
+        chart_b64 = None
+    else:
+        chart_b64 = language_mix_png_base64(body.languages or {})
     proj = projection_preview(readme_only_emb, 8)
 
     if state.vector_store is not None:
         parsed_repo = parse_github_repo_url(body.repo_url)
         state.vector_store.upsert_analysis(
             repo_url=body.repo_url,
-            title=(parsed_repo.repo if parsed_repo else body.repo_url.rsplit('/', 1)[-1]) or body.repo_url,
+            title=(parsed_repo.repo if parsed_repo else body.repo_url.rsplit("/", 1)[-1]) or body.repo_url,
             tagline=(body.description[:240] or body.category or body.repo_url),
             category=body.category or "Web Application",
             peve_score_ml=score,
@@ -275,6 +311,7 @@ def create_app() -> FastAPI:
             except Exception as e:
                 logger.warning("Redis get failed: %s", e)
 
+        _ensure_ml_runtime_loaded(settings)
         out = run_intelligence(body, settings)
 
         if redis_client:

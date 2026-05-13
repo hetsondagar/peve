@@ -1,23 +1,27 @@
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 
 def encode_texts(
-    model: SentenceTransformer,
+    model: Any,
     texts: list[str],
     *,
     batch_size: int = 32,
 ) -> np.ndarray:
     """L2-normalized sentence embeddings (NumPy-backed tensor → array)."""
+    import torch
+
     clean = [t.strip()[:8000] or " " for t in texts]
-    emb = model.encode(
-        clean,
-        normalize_embeddings=True,
-        show_progress_bar=False,
-        batch_size=max(1, batch_size),
-    )
+    with torch.inference_mode():
+        emb = model.encode(
+            clean,
+            normalize_embeddings=True,
+            show_progress_bar=False,
+            batch_size=max(1, batch_size),
+        )
     return np.asarray(emb, dtype=np.float32)
 
 

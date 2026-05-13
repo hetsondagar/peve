@@ -56,7 +56,17 @@ services:
       - key: EXTRACTIVE_SUMMARY_FALLBACK
         value: "true"
       - key: EMBEDDING_ENCODE_BATCH_SIZE
-        value: "8"
+        value: "4"
+      - key: SKIP_LANGUAGE_CHART
+        value: "true"
+      - key: NEIGHBOR_SEARCH_POOL
+        value: "250"
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: MKL_NUM_THREADS
+        value: "1"
+      - key: TOKENIZERS_PARALLELISM
+        value: "false"
       - key: API_KEY
         generateValue: true
 

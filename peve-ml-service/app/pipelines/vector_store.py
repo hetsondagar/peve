@@ -148,10 +148,17 @@ class RepositoryVectorStore:
         *,
         limit: int = 3,
         exclude_repo_url: str | None = None,
+        max_candidates: int = 600,
     ) -> list[StoredNeighbor]:
-        query = "SELECT repo_url, title, tagline, category, peve_score_ml, embedding, updated_at FROM repo_embeddings"
+        pool = max(50, min(int(max_candidates), 5000))
+        query = """
+            SELECT repo_url, title, tagline, category, peve_score_ml, embedding, updated_at
+            FROM repo_embeddings
+            ORDER BY updated_at DESC
+            LIMIT ?
+        """
         with self._connect() as conn:
-            rows = conn.execute(query).fetchall()
+            rows = conn.execute(query, (pool,)).fetchall()
 
         if not rows:
             return []

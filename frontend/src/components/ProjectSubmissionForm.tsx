@@ -11,6 +11,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { apiFetch } from '@/lib/api';
+import {
+  payloadFromAnalyzeGithubResponse,
+  applyIntelligenceToAutofillFields,
+} from '@/lib/githubRepoAnalyze';
 import { useNavigate } from 'react-router-dom';
 import UsernameTag from '@/components/UsernameTag';
 import UsernameAutocomplete from '@/components/UsernameAutocomplete';
@@ -143,6 +147,9 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
     contributorLeaders?: { login: string; contributions: number; avatarUrl?: string }[];
   } | null>(null);
 
+  const resolveGithubAnalyzeUrl = () =>
+    githubAutofillUrl.trim() || formData.links.githubRepo.trim();
+
   const totalSteps = 5;
 
   useEffect(() => {
@@ -214,6 +221,10 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
         [field]: value
       }
     }));
+    if (parent === 'links' && field === 'githubRepo' && typeof value === 'string') {
+      const v = value.trim();
+      if (v) setGithubAutofillUrl(v);
+    }
   };
 
   const addArrayItem = (field: string, value: string) => {
@@ -239,9 +250,9 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
   };
 
   const applyGithubAutofill = async () => {
-    const url = githubAutofillUrl.trim();
+    const url = resolveGithubAnalyzeUrl();
     if (!url) {
-      setError('Enter a GitHub repository URL first.');
+      setError('Enter a GitHub repository URL on step 1 or step 3, then analyze.');
       return;
     }
     setGithubAutofillLoading(true);
@@ -251,21 +262,12 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
         method: 'POST',
         body: JSON.stringify({ repoUrl: url }),
       });
-      const d = res.data as {
-        title: string;
-        tagline: string;
-        category: string;
-        description: string;
-        keyFeatures: string[];
-        techStack: string[];
-        difficultyLevel: string;
-        developmentStage: string;
-        githubRepo: string;
-        topics?: string[];
-        intelligence?: unknown;
-        commitTimeline?: { sha: string; message: string; date: string; author?: string }[];
-        contributorLeaders?: { login: string; contributions: number; avatarUrl?: string }[];
-      };
+      const d = payloadFromAnalyzeGithubResponse(res);
+      if (!d) {
+        setError('Unexpected response from the server. Try again.');
+        return;
+      }
+      setGithubAutofillUrl(d.githubRepo || url);
       setAutofillPreview({
         intelligence: d.intelligence,
         commitTimeline: d.commitTimeline,
@@ -278,40 +280,58 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
         t.replace(/-/g, ' ')
       );
       const L = fieldLocks;
-      setFormData((prev) => ({
-        ...prev,
-        title: L.title ? prev.title : d.title || prev.title,
-        tagline: L.tagline ? prev.tagline : d.tagline || prev.tagline,
-        category: L.category ? prev.category : category,
-        description: L.description ? prev.description : d.description || prev.description,
-        keyFeatures:
+      setFormData((prev) => {
+        let title = L.title ? prev.title : d.title || prev.title;
+        let tagline = L.tagline ? prev.tagline : d.tagline || prev.tagline;
+        let description = L.description ? prev.description : d.description || prev.description;
+        let keyFeatures =
           L.keyFeatures
             ? prev.keyFeatures
             : d.keyFeatures && d.keyFeatures.length > 0
               ? d.keyFeatures
-              : prev.keyFeatures,
-        techStack:
-          L.techStack
-            ? prev.techStack
-            : d.techStack && d.techStack.length > 0
-              ? [...new Set(d.techStack)]
-              : prev.techStack,
-        difficultyLevel: L.difficultyLevel
-          ? prev.difficultyLevel
-          : (['beginner', 'intermediate', 'advanced'].includes(d.difficultyLevel)
-              ? d.difficultyLevel
-              : prev.difficultyLevel) as typeof prev.difficultyLevel,
-        developmentStage: L.developmentStage
-          ? prev.developmentStage
-          : (['idea', 'prototype', 'ongoing', 'completed'].includes(d.developmentStage)
-              ? d.developmentStage
-              : prev.developmentStage) as typeof prev.developmentStage,
-        links: {
-          ...prev.links,
-          githubRepo: L.githubRepo ? prev.links.githubRepo : d.githubRepo || prev.links.githubRepo,
-        },
-        tags: [...new Set([...prev.tags, ...topicTags])].slice(0, 20),
-      }));
+              : prev.keyFeatures;
+        const enriched = applyIntelligenceToAutofillFields(
+          { description, keyFeatures, tagline },
+          d.intelligence ?? null,
+          {
+            description: L.description,
+            keyFeatures: L.keyFeatures,
+            tagline: L.tagline,
+          },
+        );
+        description = enriched.description;
+        keyFeatures = enriched.keyFeatures;
+        tagline = enriched.tagline;
+        return {
+          ...prev,
+          title,
+          tagline,
+          category: L.category ? prev.category : category,
+          description,
+          keyFeatures,
+          techStack:
+            L.techStack
+              ? prev.techStack
+              : d.techStack && d.techStack.length > 0
+                ? [...new Set(d.techStack)]
+                : prev.techStack,
+          difficultyLevel: L.difficultyLevel
+            ? prev.difficultyLevel
+            : (['beginner', 'intermediate', 'advanced'].includes(d.difficultyLevel)
+                ? d.difficultyLevel
+                : prev.difficultyLevel) as typeof prev.difficultyLevel,
+          developmentStage: L.developmentStage
+            ? prev.developmentStage
+            : (['idea', 'prototype', 'ongoing', 'completed'].includes(d.developmentStage)
+                ? d.developmentStage
+                : prev.developmentStage) as typeof prev.developmentStage,
+          links: {
+            ...prev.links,
+            githubRepo: L.githubRepo ? prev.links.githubRepo : d.githubRepo || prev.links.githubRepo,
+          },
+          tags: [...new Set([...prev.tags, ...topicTags])].slice(0, 20),
+        };
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Autofill failed';
       setError(msg);
@@ -350,12 +370,18 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
         body: JSON.stringify(projectData)
       });
 
+      const created = (response as { data?: { _id?: string } }).data;
+      const newId = created?._id;
+      if (!newId) {
+        throw new Error('Server did not return a project id.');
+      }
+
       // Show success message
       alert('Project created successfully!');
       
       // Close modal and navigate to project detail
       onClose();
-      navigate(`/projects/${response.data._id}`);
+      navigate(`/projects/${newId}`);
       
     } catch (err: any) {
       console.error('Project creation error:', err);
@@ -463,6 +489,21 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                 className="space-y-6"
               >
                 <div className="rounded-xl border border-primary/25 bg-gradient-to-br from-primary/10 to-transparent p-4 space-y-3">
+                  {autofillPreview?.intelligence && (
+                    <div className="rounded-lg border border-secondary/30 bg-secondary/5 p-3 text-[11px] space-y-1">
+                      <p className="font-semibold text-secondary flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Repository intelligence (preview)
+                      </p>
+                      <p className="text-muted-foreground">
+                        Peve ML score:{' '}
+                        <span className="text-foreground font-mono">
+                          {(autofillPreview.intelligence as { peve_score_ml?: number }).peve_score_ml ?? '—'}
+                        </span>
+                        /100 — merged into your form where fields match (description, features, tagline when thin).
+                      </p>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 text-primary">
                     <Sparkles className="w-5 h-5 shrink-0" />
                     <Badge variant="outline" className="border-primary/30 bg-primary/10 text-[10px] uppercase tracking-[0.24em] text-primary">
@@ -471,8 +512,8 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                     <span className="font-semibold text-foreground">Autofill from GitHub repo</span>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Paste a public GitHub URL. We pull README, languages, topics, and repo metadata only — no permanent
-                    source storage. You can edit or clear any field afterward.
+                    Paste a public GitHub URL below or on step 3 — both are analyzed. We pull README, languages,
+                    topics, and repo metadata only — no permanent source storage. You can edit any field afterward.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Input
@@ -518,19 +559,17 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                       ))}
                     </div>
                   </div>
-                  {autofillPreview?.intelligence && (
-                    <div className="rounded-lg border border-secondary/30 bg-secondary/5 p-3 text-[11px] space-y-1">
-                      <p className="font-semibold text-secondary flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        ML preview
-                      </p>
-                      <p className="text-muted-foreground">
-                        Peve ML score:{' '}
-                        <span className="text-foreground font-mono">
-                          {(autofillPreview.intelligence as { peve_score_ml?: number }).peve_score_ml ?? '—'}
-                        </span>
-                        /100 — shown again on the project page after publish.
-                      </p>
+                  {(autofillPreview?.contributorLeaders?.length || 0) > 0 && (
+                    <div className="rounded-lg border border-border/60 bg-card-secondary/30 p-3">
+                      <p className="text-[11px] font-semibold text-foreground mb-2">Top contributors (preview)</p>
+                      <ul className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                        {autofillPreview!.contributorLeaders!.slice(0, 8).map((c) => (
+                          <li key={c.login} className="rounded-md border border-border/50 px-2 py-0.5">
+                            @{c.login}{' '}
+                            <span className="text-primary/90">({c.contributions})</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                   {(autofillPreview?.commitTimeline?.length || 0) > 0 && (
@@ -804,15 +843,35 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                     <label className="block text-sm font-semibold text-foreground mb-2">
                       GitHub Repository URL *
                     </label>
-                    <div className="flex items-center gap-3">
-                      <Github className="w-5 h-5 text-muted-foreground" />
-                      <Input
-                        placeholder="https://github.com/username/repository"
-                        value={formData.links.githubRepo}
-                        onChange={(e) => handleNestedInputChange('links', 'githubRepo', e.target.value)}
-                        className="bg-card-secondary border-primary/20 focus:border-primary focus:glow-subtle rounded-xl h-12"
-                      />
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <div className="flex flex-1 items-center gap-3 min-w-0">
+                        <Github className="w-5 h-5 text-muted-foreground shrink-0" />
+                        <Input
+                          placeholder="https://github.com/username/repository"
+                          value={formData.links.githubRepo}
+                          onChange={(e) => handleNestedInputChange('links', 'githubRepo', e.target.value)}
+                          className="bg-card-secondary border-primary/20 focus:border-primary focus:glow-subtle rounded-xl h-12 min-w-0"
+                        />
+                      </div>
+                      <GlowButton
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={githubAutofillLoading || !formData.links.githubRepo.trim()}
+                        onClick={() => void applyGithubAutofill()}
+                        className="shrink-0 gap-2 border-primary/40 whitespace-nowrap"
+                      >
+                        {githubAutofillLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4" />
+                        )}
+                        Fetch &amp; fill all fields
+                      </GlowButton>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Fills title, tagline, description, stack, features, tags, and repository intelligence hints from this repo.
+                    </p>
                   </div>
 
                   <div>

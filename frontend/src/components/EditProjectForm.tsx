@@ -5,6 +5,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { apiFetch } from '@/lib/api';
+import {
+  payloadFromAnalyzeGithubResponse,
+  applyIntelligenceToAutofillFields,
+} from '@/lib/githubRepoAnalyze';
 import { X, Users, Sparkles, Loader2, Github, Lock } from 'lucide-react';
 import UsernameAutocomplete from './UsernameAutocomplete';
 import UsernameTag from './UsernameTag';
@@ -103,6 +107,7 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
   const [autofillPreview, setAutofillPreview] = useState<{
     intelligence?: unknown;
     commitTimeline?: { sha: string; message: string; date: string; author?: string }[];
+    contributorLeaders?: { login: string; contributions: number; avatarUrl?: string }[];
   } | null>(null);
 
   useEffect(() => {
@@ -112,7 +117,7 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
   }, [project?._id, project?.links?.githubRepo]);
 
   const applyGithubAutofill = async () => {
-    const url = githubAutofillUrl.trim();
+    const url = githubAutofillUrl.trim() || formData.links.githubRepo.trim();
     if (!url) {
       setError('Enter a GitHub repository URL first.');
       return;
@@ -124,61 +129,72 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
         method: 'POST',
         body: JSON.stringify({ repoUrl: url }),
       });
-      const d = res.data as {
-        title: string;
-        tagline: string;
-        category: string;
-        description: string;
-        keyFeatures: string[];
-        techStack: string[];
-        difficultyLevel: string;
-        developmentStage: string;
-        githubRepo: string;
-        topics?: string[];
-        intelligence?: unknown;
-        commitTimeline?: { sha: string; message: string; date: string; author?: string }[];
-      };
+      const d = payloadFromAnalyzeGithubResponse(res);
+      if (!d) {
+        setError('Unexpected response from the server. Try again.');
+        return;
+      }
+      setGithubAutofillUrl(d.githubRepo || url);
       setAutofillPreview({
         intelligence: d.intelligence,
         commitTimeline: d.commitTimeline,
+        contributorLeaders: d.contributorLeaders,
       });
       const category = PROJECT_CATEGORIES.includes(d.category)
         ? d.category
         : 'Web Application';
       const topicTags = (d.topics || []).slice(0, 10).map((t) => t.replace(/-/g, ' '));
       const L = fieldLocks;
-      setFormData((prev) => ({
-        ...prev,
-        title: L.title ? prev.title : d.title || prev.title,
-        tagline: L.tagline ? prev.tagline : d.tagline || prev.tagline,
-        category: L.category ? prev.category : category,
-        description: L.description ? prev.description : d.description || prev.description,
-        keyFeatures: L.keyFeatures
+      setFormData((prev) => {
+        let title = L.title ? prev.title : d.title || prev.title;
+        let tagline = L.tagline ? prev.tagline : d.tagline || prev.tagline;
+        let description = L.description ? prev.description : d.description || prev.description;
+        let keyFeatures = L.keyFeatures
           ? prev.keyFeatures
           : d.keyFeatures?.length
             ? d.keyFeatures
-            : prev.keyFeatures,
-        techStack: L.techStack
-          ? prev.techStack
-          : d.techStack?.length
-            ? [...new Set(d.techStack)]
-            : prev.techStack,
-        difficultyLevel: L.difficultyLevel
-          ? prev.difficultyLevel
-          : (['beginner', 'intermediate', 'advanced'].includes(d.difficultyLevel)
-              ? d.difficultyLevel
-              : prev.difficultyLevel) as typeof prev.difficultyLevel,
-        developmentStage: L.developmentStage
-          ? prev.developmentStage
-          : (['idea', 'prototype', 'ongoing', 'completed'].includes(d.developmentStage)
-              ? d.developmentStage
-              : prev.developmentStage) as typeof prev.developmentStage,
-        tags: [...new Set([...prev.tags, ...topicTags])].slice(0, 20),
-        links: {
-          ...prev.links,
-          githubRepo: L.githubRepo ? prev.links.githubRepo : d.githubRepo || prev.links.githubRepo,
-        },
-      }));
+            : prev.keyFeatures;
+        const enriched = applyIntelligenceToAutofillFields(
+          { description, keyFeatures, tagline },
+          d.intelligence ?? null,
+          {
+            description: L.description,
+            keyFeatures: L.keyFeatures,
+            tagline: L.tagline,
+          },
+        );
+        description = enriched.description;
+        keyFeatures = enriched.keyFeatures;
+        tagline = enriched.tagline;
+        return {
+          ...prev,
+          title,
+          tagline,
+          category: L.category ? prev.category : category,
+          description,
+          keyFeatures,
+          techStack: L.techStack
+            ? prev.techStack
+            : d.techStack?.length
+              ? [...new Set(d.techStack)]
+              : prev.techStack,
+          difficultyLevel: L.difficultyLevel
+            ? prev.difficultyLevel
+            : (['beginner', 'intermediate', 'advanced'].includes(d.difficultyLevel)
+                ? d.difficultyLevel
+                : prev.difficultyLevel) as typeof prev.difficultyLevel,
+          developmentStage: L.developmentStage
+            ? prev.developmentStage
+            : (['idea', 'prototype', 'ongoing', 'completed'].includes(d.developmentStage)
+                ? d.developmentStage
+                : prev.developmentStage) as typeof prev.developmentStage,
+          tags: [...new Set([...prev.tags, ...topicTags])].slice(0, 20),
+          links: {
+            ...prev.links,
+            githubRepo: L.githubRepo ? prev.links.githubRepo : d.githubRepo || prev.links.githubRepo,
+          },
+        };
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Autofill failed');
     } finally {
@@ -196,6 +212,9 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
           [child]: value
         }
       }));
+      if (field === 'links.githubRepo' && typeof value === 'string' && value.trim()) {
+        setGithubAutofillUrl(value.trim());
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -263,6 +282,21 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
       )}
 
       <div className="rounded-xl border border-primary/25 bg-gradient-to-br from-primary/10 to-transparent p-4 space-y-3">
+        {autofillPreview?.intelligence && (
+          <div className="rounded-lg border border-secondary/30 bg-secondary/5 p-3 text-[11px]">
+            <p className="font-semibold text-secondary flex items-center gap-1 mb-1">
+              <Sparkles className="w-3.5 h-3.5" />
+              Repository intelligence (preview)
+            </p>
+            <p className="text-muted-foreground">
+              Score:{' '}
+              <span className="text-foreground font-mono">
+                {(autofillPreview.intelligence as { peve_score_ml?: number }).peve_score_ml ?? '—'}
+              </span>
+              /100 — merged into unlocked fields where they match.
+            </p>
+          </div>
+        )}
         <div className="flex items-center gap-2 text-primary">
           <Sparkles className="w-5 h-5 shrink-0" />
           <Badge variant="outline" className="border-primary/30 bg-primary/10 text-[10px] uppercase tracking-[0.24em] text-primary">
@@ -317,19 +351,16 @@ export default function EditProjectForm({ project, onSave, onCancel }: EditProje
             ))}
           </div>
         </div>
-        {autofillPreview?.intelligence && (
-          <div className="rounded-lg border border-secondary/30 bg-secondary/5 p-3 text-[11px]">
-            <p className="font-semibold text-secondary flex items-center gap-1 mb-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              ML preview
-            </p>
-            <p className="text-muted-foreground">
-              Score:{' '}
-              <span className="text-foreground font-mono">
-                {(autofillPreview.intelligence as { peve_score_ml?: number }).peve_score_ml ?? '—'}
-              </span>
-              /100
-            </p>
+        {(autofillPreview?.contributorLeaders?.length || 0) > 0 && (
+          <div className="rounded-lg border border-border/60 bg-card-secondary/30 p-3 text-[11px]">
+            <p className="font-semibold text-foreground mb-2">Top contributors</p>
+            <ul className="flex flex-wrap gap-2 text-muted-foreground">
+              {autofillPreview!.contributorLeaders!.slice(0, 8).map((c) => (
+                <li key={c.login} className="rounded-md border border-border/50 px-2 py-0.5">
+                  @{c.login} <span className="text-primary/90">({c.contributions})</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
