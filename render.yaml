@@ -36,6 +36,30 @@ services:
     autoDeploy: true
     branch: main
 
+  # Repository intelligence (SentenceTransformers + SQLite neighbors). Free tier: CPU wheels,
+  # no seq2seq summarizer, extractive README gist — copy API_KEY into backend ML_SERVICE_API_KEY.
+  - type: web
+    name: peve-ml-service
+    env: python
+    plan: free
+    rootDir: peve-ml-service
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+    startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    branch: main
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: SKIP_SUMMARIZATION
+        value: "true"
+      - key: EXTRACTIVE_SUMMARY_FALLBACK
+        value: "true"
+      - key: EMBEDDING_ENCODE_BATCH_SIZE
+        value: "8"
+      - key: API_KEY
+        generateValue: true
+
 databases:
   - name: peve-db
     plan: free

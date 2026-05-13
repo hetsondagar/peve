@@ -23,6 +23,7 @@ from app.pipelines.soul_engine import infer_project_soul
 from app.pipelines.vector_store import RepositoryVectorStore
 from app.pipelines.summarization import summarize_readme
 from app.schemas import RepositoryIntelligenceResponse, RepositorySignals
+from app.util_github import parse_github_repo_url
 
 logger = logging.getLogger("peve_ml")
 
@@ -63,7 +64,8 @@ async def lifespan(app: FastAPI):
     state.vector_store = RepositoryVectorStore(settings.embedding_store_path)
     state.archetype_keys = [k for k, _ in ARCHETYPES]
     texts = [t for _, t in ARCHETYPES]
-    state.archetype_embeddings = encode_texts(state.st_model, texts)
+    bs = settings.embedding_encode_batch_size
+    state.archetype_embeddings = encode_texts(state.st_model, texts, batch_size=bs)
 
     historical_rows = state.vector_store.fetch_training_rows(limit=1200) if state.vector_store else []
     state.score_model = build_score_model(historical_rows)
@@ -128,8 +130,9 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
         if part.strip()
     ).strip() or "repository overview unavailable"
 
-    readme_only_emb = encode_texts(state.st_model, [combined_text])[0]
-    desc_emb = encode_texts(state.st_model, [desc_text or " "])[0]
+    bs = settings.embedding_encode_batch_size
+    readme_only_emb = encode_texts(state.st_model, [combined_text], batch_size=bs)[0]
+    desc_emb = encode_texts(state.st_model, [desc_text or " "], batch_size=bs)[0]
 
     if desc_text:
         sem_mass = float(
@@ -165,12 +168,16 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
         state.archetype_keys,
     )
 
-    tech_summary = summarize_readme(state.summarizer, readme_text)
+    tech_summary = summarize_readme(
+        state.summarizer,
+        readme_text,
+        extractive_fallback=settings.extractive_summary_fallback,
+    )
     chart_b64 = language_mix_png_base64(body.languages or {})
     proj = projection_preview(readme_only_emb, 8)
 
     if state.vector_store is not None:
-        parsed_repo = parseGithubRepoUrl(body.repo_url)
+        parsed_repo = parse_github_repo_url(body.repo_url)
         state.vector_store.upsert_analysis(
             repo_url=body.repo_url,
             title=(parsed_repo.repo if parsed_repo else body.repo_url.rsplit('/', 1)[-1]) or body.repo_url,
@@ -213,7 +220,15 @@ def run_intelligence(body: RepositorySignals, settings: Settings) -> RepositoryI
         ],
         model_versions={
             "sentence_transformers": settings.embedding_model,
-            "summarizer": settings.summarizer_model if state.summarizer else "disabled",
+            "summarizer": (
+                settings.summarizer_model
+                if state.summarizer
+                else (
+                    "extractive-heuristic"
+                    if settings.extractive_summary_fallback
+                    else "disabled"
+                )
+            ),
             "score_model": "RandomForestRegressor(calibrated)",
             "embedding_store": settings.embedding_store_path,
         },

@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     summarizer_model: str = "sshleifer/distilbart-cnn-12-6"
     skip_summarization: bool = False
+    extractive_summary_fallback: bool = False
+    embedding_encode_batch_size: int = 32
     api_key: str | None = None
 
     @field_validator("api_key", "redis_url", mode="before")
