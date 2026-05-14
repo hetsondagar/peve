@@ -61,43 +61,84 @@ function buildFallbackIntelligence(baseInsights, readmeExcerpt, commitTimeline =
     const hasCiSignal = /(github actions|ci|pipeline|workflow)/i.test(readme);
     const hasContainerSignal = /(docker|kubernetes|compose)/i.test(`${readme} ${techStack.join(' ')}`);
     const hasApiSignal = /(api|graphql|rest|endpoint)/i.test(`${desc} ${readme}`);
+    const stars = Number(baseInsights.stars) || 0;
+    const forks = Number(baseInsights.forks) || 0;
+    const openIssues = Number(baseInsights.openIssues) || 0;
+    const languageCount = Object.keys(baseInsights.languageBytes || {}).length;
+    const docsDepth = readme.length;
+    const issuePressure = stars > 0 ? openIssues / Math.max(1, stars) : openIssues > 0 ? 1 : 0;
+    const commitTokens = commits
+        .join(' ')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter((t) => t.length >= 3);
+    const stop = new Set([
+        'the', 'and', 'for', 'with', 'from', 'this', 'that', 'into', 'are', 'was', 'were', 'has', 'have', 'had',
+        'feat', 'fix', 'refactor', 'chore', 'docs', 'style', 'test', 'build', 'merge', 'update', 'add', 'remove',
+    ]);
+    const tokenFreq = new Map();
+    for (const t of commitTokens) {
+        if (stop.has(t))
+            continue;
+        tokenFreq.set(t, (tokenFreq.get(t) || 0) + 1);
+    }
+    const topCommitThemes = [...tokenFreq.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([k]) => k);
     const scoreBreakdown = {
         architecture: clampScore(40 + topics.length * 5 + (hasApiSignal ? 8 : 0)),
         documentation: clampScore(30 + Math.min(45, Math.floor(readme.length / 120))),
         stack_breadth: clampScore(25 + techStack.length * 6),
-        community: clampScore(20 + Math.log10((Number(baseInsights.stars) || 0) + 10) * 22),
+        community: clampScore(20 + Math.log10(stars + 10) * 22),
         innovation: clampScore(35 + (topics.length >= 5 ? 12 : 0) + (hasContainerSignal ? 8 : 0)),
     };
-    const technicalSummary = [
-        `Repository profile: ${baseInsights.category || 'Application'} built around ${techStack.slice(0, 5).join(', ') || 'the declared stack'}.`,
-        `Signals: ${topics.length} topic tags, ${Object.keys(baseInsights.languageBytes || {}).length} primary language buckets, ${Number(baseInsights.stars) || 0} stars, and ${Number(baseInsights.openIssues) || 0} open issues.`,
+    const strongest = Object.entries(scoreBreakdown).sort((a, b) => Number(b[1]) - Number(a[1]))[0];
+    const weakest = Object.entries(scoreBreakdown).sort((a, b) => Number(a[1]) - Number(b[1]))[0];
+    const evidenceLines = [
+        `Stack surface: ${techStack.slice(0, 6).join(', ') || 'limited stack metadata'}.`,
+        `Coverage signals: ${topics.length} topics, ${languageCount} primary language groups, README depth ${docsDepth} chars.`,
+        `Community pulse: ${stars} stars, ${forks} forks, ${openIssues} open issues${stars > 0 ? ` (${issuePressure.toFixed(2)} issues/star)` : ''}.`,
         commits.length
-            ? `Recent change trajectory: ${commits.slice(0, 5).join(' | ')}.`
-            : 'Recent change trajectory: commit metadata is limited, so trend confidence is moderate.',
+            ? `Recent implementation themes: ${topCommitThemes.length ? topCommitThemes.join(', ') : 'mixed changes'} (${commits.length} sampled commits).`
+            : 'Recent implementation themes: insufficient commit metadata for trend extraction.',
+    ];
+    const actionLines = [];
+    if (!hasTestsSignal)
+        actionLines.push('Publish test commands and scope (unit/integration/e2e) to improve reliability confidence.');
+    if (!hasCiSignal)
+        actionLines.push('Add CI workflow + status badge so delivery quality is visible without digging into code.');
+    if (docsDepth < 1200)
+        actionLines.push('Expand README architecture and operations sections (setup, module boundaries, deployment path).');
+    if (issuePressure > 0.35)
+        actionLines.push('Reduce issue pressure by triaging stale items and labeling roadmap vs defects.');
+    if (!hasContainerSignal)
+        actionLines.push('Document runtime topology (services, ports, data flow) even if no containerization is used.');
+    if (!actionLines.length) {
+        actionLines.push('Current signals are balanced; focus next on release notes and measurable reliability metrics.');
+    }
+    const technicalSummary = [
+        `Repository profile: ${baseInsights.category || 'Application'} in ${String(baseInsights.developmentStage || 'ongoing')} stage.`,
+        `Why this score: strongest dimension is ${strongest[0].replace(/_/g, ' ')} (${strongest[1]}/100), while the main drag is ${weakest[0].replace(/_/g, ' ')} (${weakest[1]}/100).`,
+        `Evidence: ${evidenceLines.join(' ')}`,
+        `Priority improvements: ${actionLines.slice(0, 3).join(' ')}`,
     ].join('\n\n');
     const architectureHints = [
-        hasApiSignal
-            ? 'API surface is an explicit architectural boundary; document contract/versioning expectations in README.'
-            : 'Define core module boundaries explicitly (domain, application, infrastructure) to tighten architecture narrative.',
-        hasTestsSignal
-            ? 'Testing/tooling signals are present; publish scope (unit/integration/e2e) to improve maintainability confidence.'
-            : 'Testing evidence is weak in metadata; add test strategy and commands to increase reliability signal.',
-        hasCiSignal
-            ? 'CI/workflow traces are visible; include quality gates and deployment policy in docs for stronger operability signal.'
-            : 'No clear CI/workflow signal from metadata; adding pipeline docs will improve delivery confidence.',
-        hasContainerSignal
-            ? 'Containerization signal exists; add runtime topology (services, ports, storage) for clearer deployment architecture.'
-            : 'Runtime packaging is unclear; include local/prod environment topology to reduce onboarding ambiguity.',
+        `Architecture signal (${scoreBreakdown.architecture}/100): ${hasApiSignal ? 'clear service/API boundaries detected' : 'service boundaries are not clearly documented'}.`,
+        `Documentation signal (${scoreBreakdown.documentation}/100): ${docsDepth >= 1200 ? 'good narrative depth' : 'docs are thin for architecture-level understanding'}.`,
+        `Delivery signal: ${hasCiSignal ? 'workflow automation is visible' : 'delivery pipeline visibility is missing'}${hasTestsSignal ? ', with test cues present.' : ', and test cues are weak.'}`,
+        `Operational clarity: ${hasContainerSignal ? 'runtime packaging cues exist' : 'runtime packaging/deployment topology is unclear from metadata'}.`,
     ];
     const projectSoul = [
-        `This project behaves like a ${String(baseInsights.developmentStage || 'live')} system: it is being shaped by frequent iteration rather than static documentation.`,
-        `Its center of gravity is ${topics.slice(0, 3).join(', ') || 'pragmatic product delivery'}, with engineering decisions encoded more in stack and commit flow than marketing language.`,
-        `The strongest maintainability lever now is tightening architectural docs around ${techStack.slice(0, 3).join(', ') || 'core modules'} and release workflow.`,
+        `The project’s center is ${topics.slice(0, 3).join(', ') || 'pragmatic product delivery'} with a build bias toward ${techStack.slice(0, 3).join(', ') || 'its core stack'}.`,
+        `Its momentum looks ${commits.length >= 8 ? 'active' : 'early/uneven'}: ${commits.length} recent commit subjects were available for signal extraction.`,
+        `Most likely value unlock next: ${actionLines[0]}`,
     ];
     return {
         peve_score_ml: clampScore((Number(baseInsights.peveScorePreview) || 60) + 4),
         score_breakdown: scoreBreakdown,
-        score_rationale_ml: 'Traditional local scoring fallback: deterministic heuristics over repository metadata, README text, commit subjects, and stack signals (no external LLM call).',
+        score_rationale_ml: `Score interpretation: strong in ${strongest[0].replace(/_/g, ' ')} (${strongest[1]}), weaker in ${weakest[0].replace(/_/g, ' ')} (${weakest[1]}). Recommended next step: ${actionLines[0]}`,
         project_soul: projectSoul,
         technical_summary: technicalSummary,
         architecture_hints: architectureHints,
