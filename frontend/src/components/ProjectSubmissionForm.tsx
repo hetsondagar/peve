@@ -496,7 +496,7 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
                         Repository intelligence (preview)
                       </p>
                       <p className="text-muted-foreground">
-                        Peve ML score:{' '}
+                        Project insight score:{' '}
                         <span className="text-foreground font-mono">
                           {(autofillPreview.intelligence as { peve_score_ml?: number }).peve_score_ml ?? '—'}
                         </span>
@@ -1195,3 +1195,4 @@ export default function ProjectSubmissionForm({ isOpen, onClose }: ProjectSubmis
     </div>
   );
 }
+

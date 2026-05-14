@@ -110,6 +110,59 @@ function strongestDecision(intel: Intel | null): string {
   return `Strongest signal in the scoring blend: ${label} — this dimension currently carries the most differentiated weight in the model-assisted view.`;
 }
 
+function renderRichText(text: string) {
+  const lines = (text || '').split(/\r?\n/).map((line) => line.trim());
+  const blocks: Array<{ type: 'p'; text: string } | { type: 'ul'; items: string[] }> = [];
+  let pBuf: string[] = [];
+  let lBuf: string[] = [];
+
+  const flushP = () => {
+    if (pBuf.length) {
+      blocks.push({ type: 'p', text: pBuf.join(' ') });
+      pBuf = [];
+    }
+  };
+  const flushL = () => {
+    if (lBuf.length) {
+      blocks.push({ type: 'ul', items: [...lBuf] });
+      lBuf = [];
+    }
+  };
+
+  lines.forEach((line) => {
+    if (!line) {
+      flushP();
+      flushL();
+      return;
+    }
+    const bullet = line.match(/^(?:[-*•]\s+|\d+\.\s+)(.+)$/);
+    if (bullet) {
+      flushP();
+      lBuf.push(bullet[1].trim());
+      return;
+    }
+    flushL();
+    pBuf.push(line);
+  });
+
+  flushP();
+  flushL();
+
+  if (!blocks.length) return <p>—</p>;
+
+  return blocks.map((b, i) =>
+    b.type === 'p' ? (
+      <p key={`rt-p-${i}`}>{b.text}</p>
+    ) : (
+      <ul key={`rt-u-${i}`} className="list-disc pl-5 space-y-1">
+        {b.items.map((item, j) => (
+          <li key={`rt-li-${i}-${j}`}>{item}</li>
+        ))}
+      </ul>
+    ),
+  );
+}
+
 export default function ProjectShowcase() {
   const { id } = useParams();
   const [project, setProject] = useState<any>(null);
@@ -311,11 +364,11 @@ export default function ProjectShowcase() {
                 <Badge variant="secondary">{project.category}</Badge>
                 {typeof intel?.peve_score_ml === 'number' && (
                   <Badge className="bg-secondary/80 text-secondary-foreground">
-                    ML score {intel.peve_score_ml.toFixed(0)}/100
+                    Project score {intel.peve_score_ml.toFixed(0)}/100
                   </Badge>
                 )}
                 {typeof insights?.peveScorePreview === 'number' && (
-                  <Badge variant="outline">Heuristic preview {Math.round(insights.peveScorePreview)}/100</Badge>
+                  <Badge variant="outline">Confidence preview {Math.round(insights.peveScorePreview)}/100</Badge>
                 )}
                 <Badge variant="outline" className="capitalize">
                   {project.developmentStage}
@@ -332,7 +385,7 @@ export default function ProjectShowcase() {
             {previewScore != null && (
               <div className="mx-auto w-full max-w-[220px] rounded-2xl border border-border/70 bg-background/50 p-4 lg:mx-0">
                 <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Peve preview score
+                  Project health preview
                 </p>
                 <div className="mx-auto h-40 w-40">
                   <ResponsiveContainer width="100%" height="100%">
@@ -370,7 +423,9 @@ export default function ProjectShowcase() {
             <CardContent className="space-y-6 text-sm leading-relaxed text-muted-foreground">
               <div>
                 <h3 className="mb-2 font-semibold text-foreground">Technical</h3>
-                <p>{intel?.technical_summary || project.description?.slice(0, 900) || '—'}</p>
+                <div className="space-y-2">
+                  {renderRichText(intel?.technical_summary || project.description?.slice(0, 900) || '—')}
+                </div>
               </div>
               <div>
                 <h3 className="mb-2 font-semibold text-foreground">Product</h3>
@@ -450,21 +505,20 @@ export default function ProjectShowcase() {
               ) : (
                 <p className="text-sm text-muted-foreground">
                   {insightMsg ||
-                    'Score dimensions come from the ML service (RandomForest score head over repository signals). Link GitHub on the project and set ML_SERVICE_URL on the API so this radar can populate.'}
+                    'These dimensions summarize architecture clarity, documentation quality, stack coverage, traction, and originality based on visible project signals.'}
                 </p>
               )}
             </CardContent>
           </Card>
         </section>
 
-        {/* Architecture space (SentenceTransformer + PCA from ML service) */}
+        {/* Architecture space */}
         <section className="mt-12">
           <Card className="border-border bg-card shadow-lg">
             <CardHeader>
               <CardTitle>Architecture space</CardTitle>
               <p className="text-xs text-muted-foreground">
-                2D PCA of the same embedding model used for scoring: repository README, topics, technologies, and
-                fixed semantic anchors — no LLM, no template flow diagram.
+                Visual map of how this project clusters around its themes, technologies, and architecture traits.
               </p>
             </CardHeader>
             <CardContent className="h-80">
@@ -510,7 +564,7 @@ export default function ProjectShowcase() {
               ) : (
                 <p className="text-sm text-muted-foreground">
                   {insightMsg ||
-                    'This map is built from SentenceTransformer embeddings and PCA in the ML service. Ensure the project has a GitHub URL and the API has ML_SERVICE_URL pointed at a healthy Peve ML deployment.'}
+                    'Architecture map is not available yet. Add richer project context (README, tags, and stack) to improve clustering.'}
                 </p>
               )}
             </CardContent>
@@ -591,7 +645,7 @@ export default function ProjectShowcase() {
               ) : (
                 <p className="text-muted-foreground">
                   {insightMsg ||
-                    'Project soul lines are generated by the ML service (embedding similarity to archetypes — no LLM). Link a public GitHub repo on the project and configure ML_SERVICE_URL on the Peve API.'}
+                    'Project soul appears once enough project context is available from your description, stack, and repository activity.'}
                 </p>
               )}
             </CardContent>
@@ -603,7 +657,7 @@ export default function ProjectShowcase() {
           {embeddingBars.length > 0 && (
             <Card className="border-border bg-card shadow-lg">
               <CardHeader>
-                <CardTitle>Embedding projection</CardTitle>
+                <CardTitle>Signal projection</CardTitle>
               </CardHeader>
               <CardContent className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
@@ -681,7 +735,7 @@ export default function ProjectShowcase() {
 
         <footer className="mt-16 border-t border-border pt-8 text-center text-xs text-muted-foreground">
           Unique showcase for <span className="text-foreground">{project.title}</span> · Generated by Peve from public
-          metadata and optional ML layers.
+          repository and project signals.
         </footer>
       </div>
     </div>

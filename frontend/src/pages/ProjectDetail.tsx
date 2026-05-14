@@ -36,6 +36,75 @@ import {
   ZAxis,
 } from 'recharts';
 
+function renderDescriptionContent(description: string) {
+  const lines = (description || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim());
+
+  const blocks: Array<{ type: 'paragraph'; text: string } | { type: 'list'; items: string[] }> = [];
+  let paragraphBuffer: string[] = [];
+  let listBuffer: string[] = [];
+
+  const flushParagraph = () => {
+    if (paragraphBuffer.length) {
+      blocks.push({ type: 'paragraph', text: paragraphBuffer.join(' ') });
+      paragraphBuffer = [];
+    }
+  };
+
+  const flushList = () => {
+    if (listBuffer.length) {
+      blocks.push({ type: 'list', items: [...listBuffer] });
+      listBuffer = [];
+    }
+  };
+
+  for (const line of lines) {
+    if (!line) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const bulletMatch = line.match(/^(?:[-*•]\s+|\d+\.\s+)(.+)$/);
+    if (bulletMatch) {
+      flushParagraph();
+      listBuffer.push(bulletMatch[1].trim());
+      continue;
+    }
+
+    flushList();
+    paragraphBuffer.push(line);
+  }
+
+  flushParagraph();
+  flushList();
+
+  if (!blocks.length) {
+    return (
+      <p className="text-muted-foreground leading-relaxed">
+        No description provided.
+      </p>
+    );
+  }
+
+  return blocks.map((block, index) =>
+    block.type === 'paragraph' ? (
+      <p key={`desc-p-${index}`} className="text-muted-foreground leading-relaxed">
+        {block.text}
+      </p>
+    ) : (
+      <ul key={`desc-l-${index}`} className="list-disc pl-6 space-y-1 text-muted-foreground">
+        {block.items.map((item, itemIndex) => (
+          <li key={`desc-li-${index}-${itemIndex}`} className="leading-relaxed">
+            {item}
+          </li>
+        ))}
+      </ul>
+    ),
+  );
+}
+
 export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -482,13 +551,13 @@ export default function ProjectDetail() {
                     !(repoIntelData as { intelligence?: unknown }).intelligence && (
                       <div className="rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs leading-snug text-amber-100">
                         {repoIntelMessage ||
-                          'ML intelligence was not included in this response. Confirm ML_SERVICE_URL on the API and that the ML service is reachable.'}
+                          'Deep project insights are not available in this response yet. Retry in a moment after repository analysis completes.'}
                       </div>
                     )}
                   {repoIntelLoading && !repoIntelData && (
                     <div className="flex items-center gap-2 text-muted-foreground py-2">
                       <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                      Loading repository signals…
+                      Loading project insights…
                     </div>
                   )}
                   {!repoIntelLoading && repoIntelMessage && !repoIntelData && (
@@ -499,7 +568,7 @@ export default function ProjectDetail() {
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
-                            Peve preview score
+                            Project confidence score
                           </p>
                           <p className="text-2xl font-bold tabular-nums text-foreground">
                             {Number((repoIntelData as { peveScorePreview?: number }).peveScorePreview ?? 0)}
@@ -814,10 +883,10 @@ export default function ProjectDetail() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-muted-foreground leading-relaxed">{project.description}</p>
+                  {renderDescriptionContent(project.description)}
                   {mlLayer?.score_rationale_ml && (
                     <div className="rounded-lg border border-secondary/25 bg-secondary/5 p-3">
-                      <p className="text-xs font-semibold text-secondary mb-1">ML score rationale</p>
+                      <p className="text-xs font-semibold text-secondary mb-1">Score rationale</p>
                       <p className="text-sm text-muted-foreground leading-relaxed">{mlLayer.score_rationale_ml}</p>
                     </div>
                   )}
@@ -1272,7 +1341,7 @@ export default function ProjectDetail() {
               {!(repoIntelData as { intelligence?: unknown }).intelligence && (
                 <div className="rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs leading-snug text-amber-100">
                   {repoIntelMessage ||
-                    'ML intelligence was not included in this response. Confirm ML_SERVICE_URL on the API and that the ML service is reachable.'}
+                    'Deep project insights are not available in this response yet. Retry once repository analysis is ready.'}
                 </div>
               )}
               <div className="grid gap-4 sm:grid-cols-2">
@@ -1289,8 +1358,7 @@ export default function ProjectDetail() {
                   </p>
                   {repoIntelData.intelligence && (
                     <p className="mt-2 text-[10px] text-primary/90 leading-snug">
-                      Headline score blends heuristic GitHub signals with the ML service when{' '}
-                      <code className="text-primary/80">ML_SERVICE_URL</code> is configured on the API.
+                    Headline score summarizes repository quality signals and project clarity from public project context.
                     </p>
                   )}
                 </div>
@@ -1333,15 +1401,15 @@ export default function ProjectDetail() {
                 <div className="space-y-4 rounded-xl border border-secondary/25 bg-secondary/5 p-4">
                   <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-secondary" />
-                    ML layer (Peve ML service)
+                    AI insights layer
                   </h4>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Sentence Transformers embeddings, sklearn scoring, optional summarization, and Matplotlib
-                    chart — no full source tree stored.
+                    This section explains what was inferred about technical direction, architecture quality,
+                    and product maturity from the available project signals.
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <p className="text-xs text-muted-foreground">Model-assisted score</p>
+                      <p className="text-xs text-muted-foreground">Project score</p>
                       <p className="text-2xl font-bold text-secondary tabular-nums">
                         {(repoIntelData.intelligence as { peve_score_ml?: number }).peve_score_ml ?? '—'}
                         <span className="text-sm font-normal text-muted-foreground">/100</span>
@@ -1418,11 +1486,10 @@ export default function ProjectDetail() {
                     return (
                       <div>
                         <p className="text-xs font-semibold text-foreground mb-2">
-                          Architecture space (SentenceTransformer + PCA)
+                          Architecture space
                         </p>
                         <p className="mb-2 text-[10px] text-muted-foreground leading-snug">
-                          Same embedding model as scoring: 2D PCA of repository, topics, technologies, and fixed
-                          semantic anchors — no LLM.
+                          2D relationship map between repository themes, stack choices, and architecture anchors.
                         </p>
                         <div className="h-52 w-full min-w-0">
                           <ResponsiveContainer width="100%" height="100%">
@@ -1470,7 +1537,7 @@ export default function ProjectDetail() {
                   {(repoIntelData.intelligence as { chart_language_mix_png_base64?: string | null })
                     .chart_language_mix_png_base64 && (
                     <div>
-                      <p className="text-xs font-semibold text-foreground mb-2">ML language chart (Matplotlib)</p>
+                      <p className="text-xs font-semibold text-foreground mb-2">Language chart</p>
                       <img
                         src={`data:image/png;base64,${(repoIntelData.intelligence as { chart_language_mix_png_base64: string }).chart_language_mix_png_base64}`}
                         alt="Language mix"
@@ -1517,7 +1584,7 @@ export default function ProjectDetail() {
                 <div className="space-y-3 rounded-xl border border-border bg-card-secondary/25 p-4">
                   <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-primary" />
-                    Embedding projection
+                    Signal projection
                   </h4>
                   <div className="h-56 w-full min-w-0 rounded-xl border border-border bg-card-secondary/20 p-2">
                     <ResponsiveContainer width="100%" height="100%">
