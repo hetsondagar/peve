@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import SearchBar from '@/components/SearchBar';
 import Avatar from '@/components/Avatar';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { apiFetch } from '@/lib/api';
 
 interface NavbarProps {
@@ -100,6 +101,7 @@ export default function Navbar({ currentPage = 'home' }: NavbarProps) {
 
           {/* User Actions */}
           <div className="flex items-center gap-1 md:gap-2">
+            <ThemeToggle />
             <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors touch-target">
               <Bell className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
             </button>

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Download, QrCode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const templates = [
   { id: 'classic', name: 'Classic', accent: 'primary' },
@@ -42,7 +43,10 @@ export default function DevCards() {
               <button onClick={() => navigate('/devcards')} className="text-primary">DevCards</button>
             </div>
           </div>
-          <div className="text-3xl">👤</div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <div className="text-3xl">👤</div>
+          </div>
         </div>
       </nav>
 

@@ -20,31 +20,43 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
+function readStoredTheme(storageKey: string, defaultTheme: Theme): Theme {
+  if (typeof window === 'undefined') return defaultTheme;
+  const stored =
+    localStorage.getItem(storageKey) ||
+    localStorage.getItem('peve-ui-theme');
+  if (stored === 'light' || stored === 'dark') return stored;
+  return defaultTheme;
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = 'dark',
-  storageKey = 'peve-ui-theme',
+  storageKey = 'theme',
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem(storageKey) as Theme) || defaultTheme;
-    }
-    return defaultTheme;
-  });
+  const [theme, setTheme] = useState<Theme>(() =>
+    readStoredTheme(storageKey, defaultTheme),
+  );
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     localStorage.setItem(storageKey, theme);
+
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.setAttribute(
+        'content',
+        theme === 'dark' ? '#0f172a' : '#ffffff',
+      );
+    }
   }, [theme, storageKey]);
 
   const value = {
     theme,
-    setTheme: (theme: Theme) => {
-      setTheme(theme);
-    },
+    setTheme: (next: Theme) => setTheme(next),
   };
 
   return (
@@ -57,7 +69,8 @@ export function ThemeProvider({
 export const useTheme = () => {
   const context = useContext(ThemeProviderContext);
 
-  if (context === undefined) throw new Error('useTheme must be used within a ThemeProvider');
+  if (context === undefined)
+    throw new Error('useTheme must be used within a ThemeProvider');
 
   return context;
 };

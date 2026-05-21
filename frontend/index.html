@@ -1,7 +1,15 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function () {
+        var stored = localStorage.getItem('theme') || localStorage.getItem('peve-ui-theme');
+        var theme = stored === 'light' || stored === 'dark' ? stored : 'dark';
+        document.documentElement.classList.remove('light', 'dark');
+        document.documentElement.classList.add(theme);
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
     <title>Peve - Join The Hive</title>
     <meta name="description" content="Connect with peers, share ideas, and build amazing projects together in the hive" />

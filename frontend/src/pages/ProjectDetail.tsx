@@ -35,6 +35,8 @@ import {
   Scatter,
   ZAxis,
 } from 'recharts';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useChartPalette, architectureSpaceColor } from '@/lib/chartTheme';
 
 function renderDescriptionContent(description: string) {
   const lines = (description || '')
@@ -108,6 +110,7 @@ function renderDescriptionContent(description: string) {
 export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const chart = useChartPalette();
   const [project, setProject] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -483,6 +486,7 @@ export default function ProjectDetail() {
 
             {/* User Actions */}
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
                 <Bell className="w-5 h-5 text-muted-foreground" />
               </button>
@@ -1475,14 +1479,7 @@ export default function ProjectDetail() {
                       }
                     ).architecture_space;
                     if (!space?.length) return null;
-                    const fill = (k: string) =>
-                      k === 'repo'
-                        ? '#2dd4bf'
-                        : k === 'topic'
-                          ? '#a78bfa'
-                          : k === 'tech'
-                            ? '#38bdf8'
-                            : '#64748b';
+                    const fill = (k: string) => architectureSpaceColor(k, chart);
                     return (
                       <div>
                         <p className="text-xs font-semibold text-foreground mb-2">
@@ -1498,7 +1495,7 @@ export default function ProjectDetail() {
                                 type="number"
                                 dataKey="x"
                                 name="PC1"
-                                stroke="#94a3b8"
+                                stroke={chart.axis}
                                 fontSize={10}
                                 domain={['auto', 'auto']}
                               />
@@ -1506,7 +1503,7 @@ export default function ProjectDetail() {
                                 type="number"
                                 dataKey="y"
                                 name="PC2"
-                                stroke="#94a3b8"
+                                stroke={chart.axis}
                                 fontSize={10}
                                 domain={['auto', 'auto']}
                               />
@@ -1595,16 +1592,11 @@ export default function ProjectDetail() {
                         }))}
                         margin={{ left: 4, right: 12, top: 8, bottom: 8 }}
                       >
-                        <XAxis dataKey="name" tick={{ fill: 'hsl(0 0% 78%)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fill: 'hsl(0 0% 78%)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <XAxis dataKey="name" tick={{ fill: chart.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fill: chart.axis, fontSize: 11 }} axisLine={false} tickLine={false} />
                         <Tooltip
                           formatter={(v: number) => [Number(v).toFixed(3), 'Value']}
-                          contentStyle={{
-                            background: 'hsl(222 15% 10%)',
-                            border: '1px solid hsl(222 15% 24%)',
-                            borderRadius: 12,
-                            color: 'hsl(0 0% 98%)',
-                          }}
+                          contentStyle={chart.tooltip}
                         />
                         <Bar dataKey="value" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))" />
                       </BarChart>
@@ -1637,18 +1629,13 @@ export default function ProjectDetail() {
                             type="category"
                             dataKey="name"
                             width={88}
-                            tick={{ fill: 'hsl(0 0% 78%)', fontSize: 11 }}
+                            tick={{ fill: chart.axis, fontSize: 11 }}
                             axisLine={false}
                             tickLine={false}
                           />
                           <Tooltip
                             formatter={(v: number) => [`${v.toLocaleString()} bytes`, '']}
-                            contentStyle={{
-                              background: 'hsl(210 20% 10%)',
-                              border: '1px solid hsl(210 20% 22%)',
-                              borderRadius: '8px',
-                              fontSize: '12px',
-                            }}
+                            contentStyle={chart.tooltip}
                           />
                           <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                             {chartData.map((_, i) => (

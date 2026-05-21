@@ -376,7 +376,7 @@ export default function CompatibilityWizard({ isOpen, onClose, onComplete }: Com
               max="40"
               value={formData.availabilityHours}
               onChange={(e) => handleInputChange('availabilityHours', parseInt(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
             />
             <div className="flex justify-between text-xs text-muted-foreground mt-1">
               <span>0 hours</span>

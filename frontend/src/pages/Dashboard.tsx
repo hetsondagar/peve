@@ -8,6 +8,7 @@ import { TrendingUp, Users, Lightbulb, Rocket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -111,6 +112,7 @@ export default function Dashboard() {
 
             {/* User Actions */}
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
                 <Bell className="w-5 h-5 text-muted-foreground" />
               </button>

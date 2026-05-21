@@ -11,6 +11,7 @@ import { apiFetch } from '@/lib/api';
 import SearchBar from '@/components/SearchBar';
 import UsernameLink from '@/components/UsernameLink';
 import Avatar from '@/components/Avatar';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function SearchResults() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -217,6 +218,7 @@ export default function SearchResults() {
 
             {/* User Actions */}
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <GlowButton onClick={() => navigate('/profile')} size="sm">
                 Profile
               </GlowButton>

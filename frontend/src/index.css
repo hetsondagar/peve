@@ -4,15 +4,92 @@
 @tailwind components;
 @tailwind utilities;
 
-/* peve Design System - Dark Futuristic Hive Aesthetic */
+/* peve Design System - Light & Dark Hive Aesthetic */
 
 @layer base {
   :root {
-    /* Dark Charcoal Foundation */
+    /* Light Mode Tokens */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 210 40% 98%;
+    --card-secondary: 210 40% 96%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Neon Accent Colors (brand preserved) */
+    --primary: 180 100% 46%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 180 100% 46%;
+
+    --radius: 1rem;
+
+    /* Sidebar */
+    --sidebar-background: 210 40% 98%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 180 100% 46%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 180 100% 46%;
+    --sidebar-muted: 215 16% 47%;
+
+    /* Surfaces & overlays */
+    --navbar-scrolled-bg: rgba(255, 255, 255, 0.85);
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --overlay: 222 47% 11%;
+
+    /* Chart (light) */
+    --chart-axis: 215 16% 47%;
+    --chart-grid: 214 32% 91%;
+    --chart-tooltip-bg: 0 0% 100%;
+    --chart-tooltip-border: 214 32% 91%;
+    --chart-teal: 174 72% 40%;
+    --chart-violet: 258 90% 66%;
+    --chart-sky: 199 89% 48%;
+    --chart-slate: 215 16% 47%;
+
+    /* Glow Effects */
+    --glow-turquoise: 0 0 20px hsl(180 100% 46% / 0.35);
+    --glow-violet: 0 0 20px hsl(270 100% 68% / 0.35);
+    --glow-amber: 0 0 20px hsl(45 100% 50% / 0.35);
+    --glow-subtle: 0 0 10px hsl(180 100% 46% / 0.15);
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(180 100% 46%), hsl(270 100% 68%));
+    --gradient-accent: linear-gradient(135deg, hsl(180 100% 46%), hsl(45 100% 50%));
+    --gradient-dark: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 98%));
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-glow: box-shadow 0.3s ease-in-out;
+
+    color-scheme: light;
+  }
+
+  .dark {
+    /* Dark Mode Tokens — preserved from original design */
     --background: 210 25% 6%;
     --foreground: 0 0% 95%;
 
-    /* Surface Layers */
     --card: 210 20% 8%;
     --card-secondary: 210 20% 10%;
     --card-foreground: 0 0% 95%;
@@ -20,17 +97,15 @@
     --popover: 210 20% 8%;
     --popover-foreground: 0 0% 95%;
 
-    /* Neon Accent Colors */
     --primary: 180 100% 46%;
     --primary-foreground: 210 25% 6%;
-    
+
     --secondary: 270 100% 68%;
     --secondary-foreground: 0 0% 95%;
-    
+
     --accent: 45 100% 50%;
     --accent-foreground: 210 25% 6%;
 
-    /* UI States */
     --muted: 210 20% 12%;
     --muted-foreground: 0 0% 75%;
 
@@ -41,52 +116,80 @@
     --input: 210 20% 12%;
     --ring: 180 100% 46%;
 
-    --radius: 1rem;
+    --sidebar-background: 210 20% 8%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 180 100% 46%;
+    --sidebar-primary-foreground: 210 25% 6%;
+    --sidebar-accent: 210 20% 12%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 210 20% 15%;
+    --sidebar-ring: 180 100% 46%;
+    --sidebar-muted: 0 0% 75%;
 
-    /* Glow Effects */
+    --navbar-scrolled-bg: rgba(16, 21, 29, 0.6);
+    --glass-bg: rgba(16, 21, 29, 0.6);
+    --overlay: 210 25% 6%;
+
+    --chart-axis: 215 16% 65%;
+    --chart-grid: 210 20% 15%;
+    --chart-tooltip-bg: 210 25% 6%;
+    --chart-tooltip-border: 210 20% 15%;
+    --chart-teal: 174 72% 56%;
+    --chart-violet: 258 90% 76%;
+    --chart-sky: 199 89% 58%;
+    --chart-slate: 215 16% 47%;
+
     --glow-turquoise: 0 0 20px hsl(180 100% 46% / 0.5);
     --glow-violet: 0 0 20px hsl(270 100% 68% / 0.5);
     --glow-amber: 0 0 20px hsl(45 100% 50% / 0.5);
     --glow-subtle: 0 0 10px hsl(180 100% 46% / 0.2);
-  }
 
-  .dark {
-    /* Ensure dark mode is always applied */
+    --gradient-primary: linear-gradient(135deg, hsl(180 100% 46%), hsl(270 100% 68%));
+    --gradient-accent: linear-gradient(135deg, hsl(180 100% 46%), hsl(45 100% 50%));
+    --gradient-dark: linear-gradient(180deg, hsl(210 25% 6%), hsl(210 20% 8%));
+
     color-scheme: dark;
   }
 
-  /* Force dark mode for all elements */
-  * {
-    color-scheme: dark;
+  .light input,
+  .light textarea,
+  .light select {
+    color-scheme: light;
   }
 
-  /* Enhanced input styling for dark mode */
-  input, textarea, select {
+  .dark input,
+  .dark textarea,
+  .dark select {
     color-scheme: dark;
     background-color: hsl(var(--input));
     color: hsl(var(--foreground));
   }
 
-  input::placeholder, textarea::placeholder {
+  input::placeholder,
+  textarea::placeholder {
     color: hsl(var(--muted-foreground));
   }
 
-  input:focus, textarea:focus, select:focus {
+  input:focus,
+  textarea:focus,
+  select:focus {
     outline: none;
     border-color: hsl(var(--ring));
     box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
   }
+}
 
-  :root {
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(180 100% 46%), hsl(270 100% 68%));
-    --gradient-accent: linear-gradient(135deg, hsl(180 100% 46%), hsl(45 100% 50%));
-    --gradient-dark: linear-gradient(180deg, hsl(210 25% 6%), hsl(210 20% 8%));
+/* Smooth theme transitions */
+*,
+*::before,
+*::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease;
+}
 
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-glow: box-shadow 0.3s ease-in-out;
-  }
+.no-transition,
+canvas,
+video {
+  transition: none !important;
 }
 
 @layer base {
@@ -105,7 +208,6 @@
     font-weight: 600;
   }
 
-  /* Custom Scrollbar */
   ::-webkit-scrollbar {
     width: 8px;
   }
@@ -124,7 +226,6 @@
 }
 
 @layer components {
-  /* Modern Navbar */
   .navbar {
     position: sticky;
     top: 0;
@@ -136,19 +237,18 @@
   }
 
   .navbar.scrolled {
-    background: rgba(16, 21, 29, 0.6);
+    background: var(--navbar-scrolled-bg);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid hsl(var(--border));
     box-shadow: 0 8px 30px hsl(180 100% 46% / 0.08);
   }
 
-  /* Brand: Orbitron font + teal color for the word PEVE */
   .brand-peve {
     font-family: 'Orbitron', 'Poppins', sans-serif;
     color: hsl(180 100% 35%);
     letter-spacing: 0.04em;
   }
-  /* Hive Glow Effects */
+
   .glow-turquoise {
     box-shadow: var(--glow-turquoise);
   }
@@ -165,21 +265,18 @@
     box-shadow: var(--glow-subtle);
   }
 
-  /* Animated Gradient Text - Only for brand words */
   .gradient-text {
     font-family: 'Orbitron', 'Poppins', sans-serif;
     color: hsl(180 100% 35%);
     letter-spacing: 0.04em;
   }
 
-  /* Glass Morphism */
   .glass {
-    background: rgba(16, 21, 29, 0.6);
+    background: var(--glass-bg);
     backdrop-filter: blur(10px);
     border: 1px solid hsl(var(--border));
   }
 
-  /* Hive Node Animation */
   @keyframes pulse-node {
     0%, 100% {
       opacity: 0.4;
@@ -195,7 +292,6 @@
     animation: pulse-node 3s ease-in-out infinite;
   }
 
-  /* Glowing Border on Hover */
   .hover-glow {
     transition: var(--transition-glow);
   }
@@ -205,7 +301,6 @@
                 inset 0 0 20px hsl(180 100% 46% / 0.1);
   }
 
-  /* Floating Animation */
   @keyframes float {
     0%, 100% {
       transform: translateY(0px);
@@ -219,7 +314,6 @@
     animation: float 6s ease-in-out infinite;
   }
 
-  /* Rotating Hive Logo */
   @keyframes rotate-slow {
     from {
       transform: rotate(0deg);
@@ -233,7 +327,6 @@
     animation: rotate-slow 20s linear infinite;
   }
 
-  /* Network Lines Animation */
   @keyframes draw-line {
     from {
       stroke-dashoffset: 1000;
@@ -243,68 +336,55 @@
     }
   }
 
-  /* Mobile Responsive Utilities */
   @media (max-width: 768px) {
     .mobile-padding {
       @apply px-4;
     }
-    
+
     .mobile-text-sm {
       @apply text-sm;
     }
-    
+
     .mobile-hidden {
       @apply hidden;
     }
-    
+
     .mobile-full-width {
       @apply w-full;
     }
-    
+
     .mobile-stack {
       @apply flex-col space-y-4 space-x-0;
     }
-    
+
     .mobile-center {
       @apply text-center;
     }
   }
 
-  /* Touch-friendly interactions */
   @media (hover: none) and (pointer: coarse) {
     .touch-target {
       @apply min-h-[44px] min-w-[44px];
     }
-    
+
     .touch-friendly {
       @apply p-3;
     }
   }
 
-  /* Safe area handling for mobile devices */
   .safe-area-top {
     padding-top: env(safe-area-inset-top);
   }
-  
+
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  
+
   .safe-area-left {
     padding-left: env(safe-area-inset-left);
   }
-  
+
   .safe-area-right {
     padding-right: env(safe-area-inset-right);
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
   }
 }

@@ -48,7 +48,7 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark" storageKey="peve-ui-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="theme">
         <TooltipProvider>
           <Toaster />
           <Sonner />

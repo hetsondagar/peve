@@ -40,6 +40,7 @@ import { GlowButton } from '@/components/ui/glow-button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiFetch } from '@/lib/api';
+import { useChartPalette, architectureSpaceColor } from '@/lib/chartTheme';
 
 type Intel = {
   peveScorePreview?: number;
@@ -85,21 +86,6 @@ function architectureNarrative(intel: Intel | null, category: string): string {
     return hints.slice(0, 4).join(' ');
   const cat = category || 'application';
   return `From declared metadata, this reads as a ${cat.toLowerCase()} with engineering choices visible through topics, stack, and repository signals rather than raw source inspection.`;
-}
-
-function architectureSpaceColor(kind: string): string {
-  switch (kind) {
-    case 'repo':
-      return '#2dd4bf';
-    case 'topic':
-      return '#a78bfa';
-    case 'tech':
-      return '#38bdf8';
-    case 'anchor':
-      return '#64748b';
-    default:
-      return '#94a3b8';
-  }
 }
 
 function strongestDecision(intel: Intel | null): string {
@@ -171,6 +157,7 @@ export default function ProjectShowcase() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [shareStatus, setShareStatus] = useState('');
+  const chart = useChartPalette();
 
   useEffect(() => {
     if (!id) return;
@@ -398,10 +385,10 @@ export default function ProjectShowcase() {
                         outerRadius={62}
                         stroke="none"
                       >
-                        <Cell fill="#14b8a6" />
-                        <Cell fill="#334155" />
+                        <Cell fill={chart.primary} />
+                        <Cell fill={chart.grid} />
                       </Pie>
-                      <Tooltip contentStyle={{ background: '#0f1419', border: '1px solid #2a3340' }} />
+                      <Tooltip contentStyle={chart.tooltip} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -453,10 +440,10 @@ export default function ProjectShowcase() {
                     { name: 'Issues', v: insights?.openIssues ?? 0 },
                   ]}
                 >
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
-                  <YAxis stroke="#94a3b8" fontSize={11} />
-                  <Tooltip contentStyle={{ background: '#0f1419', border: '1px solid #2a3340' }} />
-                  <Bar dataKey="v" fill="#14b8a6" radius={[6, 6, 0, 0]} />
+                  <XAxis dataKey="name" stroke={chart.axis} fontSize={11} />
+                  <YAxis stroke={chart.axis} fontSize={11} />
+                  <Tooltip contentStyle={chart.tooltip} />
+                  <Bar dataKey="v" fill={chart.primary} radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -477,9 +464,9 @@ export default function ProjectShowcase() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={techChartData} layout="vertical" margin={{ left: 8, right: 16 }}>
                     <XAxis type="number" hide />
-                    <YAxis type="category" dataKey="name" width={100} stroke="#94a3b8" fontSize={11} />
-                    <Tooltip contentStyle={{ background: '#0f1419', border: '1px solid #2a3340' }} />
-                    <Bar dataKey="weight" fill="#06b6d4" radius={[0, 6, 6, 0]} />
+                    <YAxis type="category" dataKey="name" width={100} stroke={chart.axis} fontSize={11} />
+                    <Tooltip contentStyle={chart.tooltip} />
+                    <Bar dataKey="weight" fill={chart.sky} radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -495,11 +482,11 @@ export default function ProjectShowcase() {
               {radarData.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={radarData}>
-                    <PolarGrid stroke="#2a3340" />
-                    <PolarAngleAxis dataKey="axis" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                    <PolarGrid stroke={chart.grid} />
+                    <PolarAngleAxis dataKey="axis" tick={{ fill: chart.axis, fontSize: 10 }} />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                    <Radar name="Score" dataKey="value" stroke="#2dd4bf" fill="#2dd4bf" fillOpacity={0.35} />
-                    <Tooltip contentStyle={{ background: '#0f1419', border: '1px solid #2a3340' }} />
+                    <Radar name="Score" dataKey="value" stroke={chart.teal} fill={chart.teal} fillOpacity={0.35} />
+                    <Tooltip contentStyle={chart.tooltip} />
                   </RadarChart>
                 </ResponsiveContainer>
               ) : (
@@ -529,7 +516,7 @@ export default function ProjectShowcase() {
                       type="number"
                       dataKey="x"
                       name="PC1"
-                      stroke="#94a3b8"
+                      stroke={chart.axis}
                       fontSize={11}
                       domain={['auto', 'auto']}
                     />
@@ -537,7 +524,7 @@ export default function ProjectShowcase() {
                       type="number"
                       dataKey="y"
                       name="PC2"
-                      stroke="#94a3b8"
+                      stroke={chart.axis}
                       fontSize={11}
                       domain={['auto', 'auto']}
                     />
@@ -556,7 +543,7 @@ export default function ProjectShowcase() {
                     />
                     <Scatter data={intel.architecture_space}>
                       {intel.architecture_space.map((pt, i) => (
-                        <Cell key={`${pt.label}-${i}`} fill={architectureSpaceColor(pt.kind)} />
+                        <Cell key={`${pt.label}-${i}`} fill={architectureSpaceColor(pt.kind, chart)} />
                       ))}
                     </Scatter>
                   </ScatterChart>
@@ -662,10 +649,10 @@ export default function ProjectShowcase() {
               <CardContent className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={embeddingBars}>
-                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} />
-                    <YAxis stroke="#94a3b8" fontSize={10} />
-                    <Tooltip contentStyle={{ background: '#0f1419', border: '1px solid #2a3340' }} />
-                    <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    <XAxis dataKey="name" stroke={chart.axis} fontSize={10} />
+                    <YAxis stroke={chart.axis} fontSize={10} />
+                    <Tooltip contentStyle={chart.tooltip} />
+                    <Bar dataKey="value" fill={chart.violet} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>

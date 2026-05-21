@@ -12,6 +12,7 @@ import CompatibilityWizard from '@/components/CompatibilityWizard';
 import MyRequests from '@/components/MyRequests';
 import EditProfileModal from '@/components/EditProfileModal';
 import Avatar from '@/components/Avatar';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { apiFetch } from '@/lib/api';
 
@@ -307,7 +308,10 @@ export default function Profile() {
               <button onClick={() => navigate('/profile')} className="text-primary">Profile</button>
             </div>
           </div>
-          <div className="text-3xl">👤</div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <div className="text-3xl">👤</div>
+          </div>
         </div>
       </nav>
 
