@@ -19,15 +19,8 @@ export default function Footer() {
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
               className="flex items-center justify-center gap-2 mb-1"
             >
-              <img src={'/final.png'} alt="peve" className="w-4 h-4" />
-              <span className="text-lg font-bold gradient-text brand-peve">peve</span>
             </motion.div>
-            
-            <p className="text-muted-foreground text-xs max-w-4xl mx-auto">
-              Built with <Heart className="w-3 h-3 inline text-red-500 mx-1" />, 
-              lots of <Coffee className="w-3 h-3 inline text-amber-600 mx-1" />, 
-              and a sprinkle of <Code className="w-3 h-3 inline text-primary mx-1" /> magic
-            </p>
+  
           </div>
 
           {/* Developer Section */}
@@ -42,9 +35,11 @@ export default function Footer() {
                 <h3 className="text-sm font-semibold text-foreground mb-1 brand-peve">
                   Crafted by <span className="text-primary font-bold">Het Sondagar</span> 🧙‍♂️
                 </h3>
-                <p className="text-xs text-muted-foreground">
-                  When I'm not debugging the universe, I'm probably debugging my code
-                </p>
+                    <p className="text-muted-foreground text-xs max-w-4xl mx-auto">
+              Built with <Heart className="w-3 h-3 inline text-red-500 mx-1" />, 
+              lots of <Coffee className="w-3 h-3 inline text-amber-600 mx-1" />, 
+              and a sprinkle of <Code className="w-3 h-3 inline text-primary mx-1" /> magic
+            </p>
               </div>
               
               <div className="flex items-center justify-center gap-3">
@@ -71,12 +66,6 @@ export default function Footer() {
                   <Linkedin className="w-3 h-3 text-blue-600" />
                   <span className="text-xs font-medium">LinkedIn</span>
                 </motion.a>
-              </div>
-              
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">
-                  P.S. If you find any bugs, they're probably features in disguise 🐛✨
-                </p>
               </div>
             </div>
           </motion.div>
