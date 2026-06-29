@@ -77,12 +77,6 @@ export default function Footer() {
             transition={{ delay: 0.6 }}
             className="pt-2 border-t border-primary/10"
           >
-            <p className="text-xs text-muted-foreground">
-              © 2026 <span className="brand-peve font-semibold">peve</span>. Made with 💻 and a healthy dose of caffeine. 
-              <span className="text-primary/60 block mt-1">
-                "Code is poetry written in logic" - Some wise developer probably
-              </span>
-            </p>
           </motion.div>
         </motion.div>
       </div>
